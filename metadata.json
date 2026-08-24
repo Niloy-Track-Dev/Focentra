@@ -1,0 +1,6 @@
+{
+  "name": "Focentra",
+  "description": "Advanced Offline Study Timer and Personal Productivity Analytics App for Android",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
