@@ -27,16 +27,32 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      - name: Recreate Keystore from Secret
+      - name: Prepare Keystore & Signing Credentials
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          STORE_PASSWORD_SECRET: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD_SECRET: ${{ secrets.KEY_PASSWORD }}
         run: |
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "ERROR: KEYSTORE_BASE64 secret is not set!"
-            exit 1
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Decoding provided KEYSTORE_BASE64 secret..."
+            echo "$KEYSTORE_BASE64" | base64 --decode > my-upload-key.jks
+            echo "STORE_PASS=${STORE_PASSWORD_SECRET:-android}" >> $GITHUB_ENV
+            echo "KEY_PASS=${KEY_PASSWORD_SECRET:-android}" >> $GITHUB_ENV
+          else
+            echo "No KEYSTORE_BASE64 secret provided. Auto-generating a release signing keystore on the fly..."
+            keytool -genkeypair -v \
+              -keystore my-upload-key.jks \
+              -alias upload \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass android \
+              -keypass android \
+              -dname "CN=Focentra, OU=App, O=Niloy, L=Dhaka, S=Dhaka, C=BD"
+            echo "STORE_PASS=android" >> $GITHUB_ENV
+            echo "KEY_PASS=android" >> $GITHUB_ENV
           fi
-          echo "$KEYSTORE_BASE64" | base64 --decode > my-upload-key.jks
-          echo "Keystore successfully written to $(pwd)/my-upload-key.jks"
+          echo "Keystore is ready at $(pwd)/my-upload-key.jks"
 
       - name: Recreate .env file
         env:
@@ -59,8 +75,8 @@ jobs:
       - name: Build Release APK
         env:
           KEYSTORE_PATH: ${{ github.workspace }}/my-upload-key.jks
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          STORE_PASSWORD: ${{ env.STORE_PASS }}
+          KEY_PASSWORD: ${{ env.KEY_PASS }}
         run: |
           ./gradlew assembleRelease --no-daemon --stacktrace
 
