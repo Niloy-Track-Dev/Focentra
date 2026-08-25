@@ -16,6 +16,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2026-08-25
+
+### Added
+- **Persistent 'Quick Start' Floating Action Button (FAB)**:
+  - Added a persistent `ExtendedFloatingActionButton` on the Home (`DashboardScreen`) allowing users to launch a predefined 25-minute study timer with one tap.
+  - Dynamically updates icon and state based on whether a study session is active, paused, or idle.
+
+### Removed
+- **10 Full-Screen UI Theme Presets**:
+  - Removed full-screen theme selection presets to simplify application architecture and eliminate unnecessary clutter.
+  - Restored clean, high-contrast OLED dark canvas for Full-Screen Focus Mode.
+
+### Changed
+- **Version Bump**: Updated `versionCode` to `3` and `versionName` to `1.3.0`.
+- **Documentation & Presentation**: Updated GitHub presentation (`README.md`, `ROADMAP.md`, `CHANGELOG.md`) reflecting the Quick Start FAB component and version 1.3.0.
+
+---
+
 ## [1.2.0] - 2026-08-25
 
 ### Added

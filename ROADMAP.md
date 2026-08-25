@@ -4,12 +4,14 @@ This document outlines the development trajectory of **Focentra**, categorizing 
 
 ---
 
-## 🟢 Completed (v1.2.0)
+## 🟢 Completed (v1.3.0)
 
-- [x] **Full-Screen Focus UI Preset Themes (10 Themes)**:
-  - [x] 10 curated themes (*OLED Midnight*, *Cyberpunk Neon*, *Nordic Aurora*, *Sunset Amber*, *Tokyo Night*, *Emerald Oasis*, *Matrix Green*, *Solar Crimson*, *Deep Cosmos*, *Zen Slate*).
-  - [x] Real-time theme picker in `SettingsScreen` with color swatches and instant preview mode.
-  - [x] Persistent preference caching across Timer, Pomodoro, and Stopwatch modes.
+- [x] **Persistent Quick Start Floating Action Button (FAB)**:
+  - [x] Persistent home screen FAB component to instantly launch a predefined 25-minute study timer with 1 tap.
+  - [x] Smart state detection (Active Session vs. New Quick Launch).
+- [x] **UI Streamlining & AMOLED Focus Mode**:
+  - [x] Removed full-screen theme preset clutter for maximum simplicity and performance.
+  - [x] Pure high-contrast OLED dark focus environment.
 - [x] **Active Recall Flashcards Studio**:
   - [x] Interactive 3D flip cards (`graphicsLayer { rotationY }`) for formulas, questions, and answers.
   - [x] Subject filtering and custom card creation with hints.

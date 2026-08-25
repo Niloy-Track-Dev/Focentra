@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -59,14 +60,15 @@ fun DashboardScreen(
     val goalHrs = dailyGoalMins / 60
     val goalRemMins = dailyGoalMins % 60
 
-    LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
-    ) {
+    Box(modifier = modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(top = 8.dp, bottom = 120.dp)
+        ) {
         // Content begins directly with Active Session or Today's Focus
 
         // Active Session Banner (if running or paused)
@@ -685,6 +687,37 @@ fun DashboardScreen(
             }
         }
     }
+
+    // Persistent 'Quick Start' Floating Action Button Component inside Box
+    ExtendedFloatingActionButton(
+        onClick = {
+            if (timerState.status == TimerStatus.RUNNING || timerState.status == TimerStatus.PAUSED) {
+                viewModel.navigateTo(NavigationTab.TIMER)
+            } else {
+                viewModel.startQuickTimer(25, "Deep Focus", SessionMode.COUNTDOWN)
+            }
+        },
+        icon = {
+            Icon(
+                imageVector = if (timerState.status == TimerStatus.RUNNING) Icons.Default.PlayArrow else Icons.Default.Bolt,
+                contentDescription = "Quick Start 25 Min Timer"
+            )
+        },
+        text = {
+            Text(
+                text = if (timerState.status == TimerStatus.RUNNING) "Active Session" else "Quick Start (25m)",
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+        elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp),
+        modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(end = 16.dp, bottom = 80.dp)
+            .testTag("quick_start_fab")
+    )
+}
 }
 
 @Composable

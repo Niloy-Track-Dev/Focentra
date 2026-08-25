@@ -86,9 +86,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _currentTheme = MutableStateFlow(app.getInitialTheme())
     val currentTheme: StateFlow<String> = _currentTheme.asStateFlow()
 
-    private val _fullScreenTheme = MutableStateFlow(app.getInitialFullScreenTheme())
-    val fullScreenTheme: StateFlow<String> = _fullScreenTheme.asStateFlow()
-
     private val _language = MutableStateFlow(app.getInitialLanguage())
     val language: StateFlow<String> = _language.asStateFlow()
 
@@ -157,10 +154,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _currentTheme.value = themeSetting
             app.saveCachedTheme(themeSetting)
 
-            val fullScreenThemeSetting = repository.getSetting("full_screen_theme", app.getInitialFullScreenTheme())
-            _fullScreenTheme.value = fullScreenThemeSetting
-            app.saveCachedFullScreenTheme(fullScreenThemeSetting)
-
             val langSetting = repository.getSetting("language", app.getInitialLanguage())
             _language.value = langSetting
             app.saveCachedLanguage(langSetting)
@@ -200,14 +193,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         app.saveCachedTheme(theme)
         viewModelScope.launch {
             repository.setSetting("theme", theme)
-        }
-    }
-
-    fun setFullScreenTheme(themeId: String) {
-        _fullScreenTheme.value = themeId
-        app.saveCachedFullScreenTheme(themeId)
-        viewModelScope.launch {
-            repository.setSetting("full_screen_theme", themeId)
         }
     }
 
