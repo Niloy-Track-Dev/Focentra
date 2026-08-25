@@ -95,6 +95,41 @@ private val SunsetColorScheme = darkColorScheme(
     outline = Color(0xFF7C2D12)
 )
 
+private val CyberpunkColorScheme = darkColorScheme(
+    primary = CyberpunkPrimary,
+    onPrimary = Color(0xFF0D0221),
+    primaryContainer = Color(0xFF2E175A),
+    onPrimaryContainer = Color(0xFF00F5D4),
+    secondary = CyberpunkSecondary,
+    onSecondary = Color(0xFFFFFFFF),
+    tertiary = CyberpunkTertiary,
+    background = CyberpunkBackground,
+    onBackground = Color(0xFFF0E6FF),
+    surface = CyberpunkSurface,
+    onSurface = Color(0xFFF0E6FF),
+    surfaceVariant = CyberpunkSurfaceVariant,
+    onSurfaceVariant = Color(0xFFD8B4FE),
+    outline = Color(0xFF7B2CBF)
+)
+
+private val MatchaColorScheme = lightColorScheme(
+    primary = MatchaPrimary,
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFFD8E6D3),
+    onPrimaryContainer = Color(0xFF1B281B),
+    secondary = MatchaSecondary,
+    onSecondary = Color(0xFFFFFFFF),
+    tertiary = MatchaTertiary,
+    background = MatchaBackground,
+    onBackground = MatchaTextPrimary,
+    surface = MatchaSurface,
+    onSurface = MatchaTextPrimary,
+    surfaceVariant = MatchaSurfaceVariant,
+    onSurfaceVariant = MatchaTextSecondary,
+    outline = Color(0xFFC4D5BF),
+    outlineVariant = Color(0xFFDDE6DA)
+)
+
 private val ModernLightColorScheme = CleanMinimalismColorScheme
 
 @Composable
@@ -108,11 +143,13 @@ fun FocentraTheme(
         "ocean" -> OceanColorScheme
         "forest" -> ForestColorScheme
         "sunset" -> SunsetColorScheme
+        "cyberpunk" -> CyberpunkColorScheme
+        "matcha" -> MatchaColorScheme
         "light", "clean_minimalism", "minimalism", "minimal" -> CleanMinimalismColorScheme
         else -> MidnightColorScheme
     }
 
-    val isLight = colorScheme == CleanMinimalismColorScheme
+    val isLight = colorScheme == CleanMinimalismColorScheme || colorScheme == MatchaColorScheme
 
     val view = LocalView.current
     if (!view.isInEditMode) {

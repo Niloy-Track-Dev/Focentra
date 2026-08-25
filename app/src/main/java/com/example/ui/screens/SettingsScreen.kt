@@ -101,6 +101,18 @@ fun SettingsScreen(
                 name = "Sunset Amber",
                 description = "Warm energetic amber",
                 previewColors = listOf(Color(0xFFD97706), Color(0xFFFBBF24), Color(0xFF1C1309))
+            ),
+            ThemeOption(
+                id = "cyberpunk",
+                name = "Cyberpunk Neon",
+                description = "Electric glow & cyan",
+                previewColors = listOf(Color(0xFF00F5D4), Color(0xFFFF007F), Color(0xFF0D0221))
+            ),
+            ThemeOption(
+                id = "matcha",
+                name = "Matcha Latte",
+                description = "Serene sage & warm light",
+                previewColors = listOf(Color(0xFF436B48), Color(0xFF8DA378), Color(0xFFF4F7F2))
             )
         )
     }
@@ -737,7 +749,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Focentra v1.1.0 uses on-device Room SQLite database. Your study sessions, personal records, and goals never leave your device.",
+                        text = "Focentra v1.2.0 uses on-device Room SQLite database. Your study sessions, personal records, and goals never leave your device.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center

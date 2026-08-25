@@ -78,7 +78,7 @@ fun PresetsScreen(
                     text = { Text("New Preset") },
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.padding(bottom = 84.dp)
+                    modifier = Modifier.padding(bottom = 16.dp)
                 )
             }
         }
