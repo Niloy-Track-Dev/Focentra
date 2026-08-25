@@ -9,51 +9,35 @@ The application is completely **offline-first**, storing all state and history l
 ## 📐 High-Level Architecture Overview
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                                 UI LAYER                                    │
-│                                                                             │
-│   • Jetpack Compose Screens (Material Design 3)                             │
-│   • Dashboard, Timer, FullScreen Focus, Analytics, Calendar, Subjects, Etc. │
-│   • Edge-to-Edge Windows, Theme Tokens, Dynamic Color, Ripple Haptics       │
-└──────────────────────────────────────▲──────────────────────────────────────┘
-                                       │ StateFlow<UiState>
-                                       │ UI Interaction Events
-┌──────────────────────────────────────▼──────────────────────────────────────┐
-│                            PRESENTATION LAYER                               │
-│                                                                             │
-│   • MainViewModel (Single Source of Truth for Screen State & Coordination)  │
-│   • Coroutine Scopes (viewModelScope with Dispatchers.Default / IO)         │
-└───────────────────────▲─────────────────────────────▲───────────────────────┘
-                        │                             │
-        ┌───────────────▼─────────────┐       ┌───────▼───────────────────────┐
-        │       DOMAIN ENGINES        │       │      BACKGROUND SERVICE       │
-        │                             │       │                               │
-        │ • StatisticsEngine          │       │ • StudyTimerService           │
-        │   - Focus Score Algorithm   │       │   (Android Foreground Service)│
-        │   - Multi-Period Analytics  │       │ • WhiteNoisePlayer            │
-        │   - 16-Week Heatmap Matrix  │       │   (Audio Synthesizer Engine)  │
-        │   - 24-Hour Curve           │       │ • WakeLock & Burn-In Shield   │
-        │ • TimerEngine               │       └───────────────────────────────┘
-        │   - Countdown/Stopwatch/    │
-        │     Pomodoro State Machine  │
-        └───────────────▲─────────────┘
-                        │
-┌───────────────────────▼─────────────────────────────────────────────────────┐
-│                              DATA REPOSITORY                                │
-│                                                                             │
-│   • StudyRepository (Abstracts Data Sources, Caching, Backup & CSV Exports) │
-└───────────────────────▲─────────────────────────────▲───────────────────────┘
-                        │                             │
-        ┌───────────────▼─────────────┐       ┌───────▼───────────────────────┐
-        │    ROOM DATABASE (SQLite)   │       │      ANDROIDX DATASTORE       │
-        │                             │       │                               │
-        │ • StudySessionEntity        │       │ • User Theme Preferences      │
-        │ • SubjectEntity             │       │ • Soundscape Presets          │
-        │ • TopicEntity               │       │ • Daily Reminder Configs      │
-        │ • PresetEntity              │       │ • First-Run & Onboarding Flags│
-        │ • AchievementEntity         │       └───────────────────────────────┘
-        │ • ReminderEntity            │
-        └─────────────────────────────┘
+               ┌───────────────────────────────┐
+               │    JETPACK COMPOSE UI LAYER   │
+               │  (Dashboard, Timer, Focus,    │
+               │   Analytics, Calendar, Notes) │
+               └───────────────┬───────────────┘
+                               │ StateFlow<UiState>
+                               │ Events / User Intents
+                               ▼
+               ┌───────────────────────────────┐
+               │        VIEWMODEL LAYER        │
+               │   (MainViewModel Coordinator) │
+               └───────┬───────────────┬───────┘
+                       │               │
+       ┌───────────────▼─┐           ┌─▼───────────────┐
+       │ DOMAIN ENGINES  │           │   BG SERVICE    │
+       │• StatisticsEngine           │• StudyTimerSvc  │
+       │• TimerEngine    │           │• WhiteNoisePlay │
+       └───────┬─────────┘           └─────────────────┘
+               │
+               ▼
+       ┌───────────────────────────────────────────────┐
+       │               STUDY REPOSITORY                │
+       └───────┬───────────────────────────────┬───────┘
+               │                               │
+               ▼                               ▼
+       ┌─────────────────┐           ┌─────────────────┐
+       │   ROOM SQLITE   │           │    DATASTORE    │
+       │(Sessions, Subj) │           │ (Settings, Pref)│
+       └─────────────────┘           └─────────────────┘
 ```
 
 ---

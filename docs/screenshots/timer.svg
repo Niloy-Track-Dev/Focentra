@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 640" width="360" height="640">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#1E1B4B" />
+    </linearGradient>
+  </defs>
+  <rect width="360" height="640" rx="32" fill="url(#bg2)" stroke="#334155" stroke-width="2"/>
+  
+  <!-- Mode Selector Pills -->
+  <rect x="36" y="50" width="288" height="40" rx="20" fill="#1E293B"/>
+  <rect x="40" y="54" width="90" height="32" rx="16" fill="#6366F1"/>
+  <text x="85" y="74" fill="#FFFFFF" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Timer</text>
+  <text x="180" y="74" fill="#94A3B8" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="12" font-weight="600" text-anchor="middle">Pomodoro</text>
+  <text x="275" y="74" fill="#94A3B8" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="12" font-weight="600" text-anchor="middle">Stopwatch</text>
+
+  <!-- Big Countdown Dial -->
+  <circle cx="180" cy="230" r="105" fill="none" stroke="#334155" stroke-width="8"/>
+  <circle cx="180" cy="230" r="105" fill="none" stroke="#6366F1" stroke-width="8" stroke-dasharray="660" stroke-dashoffset="180" stroke-linecap="round" transform="rotate(-90 180 230)"/>
+  
+  <text x="180" y="215" fill="#94A3B8" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="13" text-anchor="middle">Mathematics</text>
+  <text x="180" y="250" fill="#F8FAFC" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="44" font-weight="bold" text-anchor="middle">24:50</text>
+  <text x="180" y="275" fill="#10B981" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="12" font-weight="600" text-anchor="middle">Focus Session Active</text>
+
+  <!-- Soundscape / Noise Card -->
+  <rect x="24" y="375" width="312" height="54" rx="16" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+  <text x="44" y="407" fill="#818CF8" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="14" font-weight="bold">🌧️ Ambient Noise: Deep Rain</text>
+  
+  <!-- Action Buttons -->
+  <rect x="50" y="460" width="70" height="50" rx="25" fill="#334155"/>
+  <text x="85" y="490" fill="#F8FAFC" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="14" font-weight="bold" text-anchor="middle">+5m</text>
+
+  <rect x="135" y="450" width="90" height="70" rx="35" fill="#6366F1"/>
+  <text x="180" y="492" fill="#FFFFFF" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="16" font-weight="bold" text-anchor="middle">PAUSE</text>
+
+  <rect x="240" y="460" width="70" height="50" rx="25" fill="#EF4444"/>
+  <text x="275" y="490" fill="#FFFFFF" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="14" font-weight="bold" text-anchor="middle">STOP</text>
+
+  <!-- Distraction logger -->
+  <rect x="24" y="545" width="312" height="44" rx="12" fill="#1E293B"/>
+  <text x="40" y="572" fill="#F59E0B" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="12" font-weight="bold">⚡ Log Distraction (0 logged)</text>
+</svg>

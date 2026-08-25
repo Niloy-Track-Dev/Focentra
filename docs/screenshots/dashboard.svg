@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 640" width="360" height="640">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#1E1B4B" />
+    </linearGradient>
+    <linearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1" />
+      <stop offset="100%" stop-color="#A855F7" />
+    </linearGradient>
+  </defs>
+  <rect width="360" height="640" rx="32" fill="url(#bg)" stroke="#334155" stroke-width="2"/>
+  <circle cx="180" cy="18" r="4" fill="#64748B"/>
+  
+  <!-- Header -->
+  <text x="24" y="60" fill="#94A3B8" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="12" font-weight="600">TODAY'S TARGET</text>
+  <text x="24" y="88" fill="#F8FAFC" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="22" font-weight="bold">Daily Goal: 4.5h</text>
+  
+  <!-- Circular Progress -->
+  <circle cx="180" cy="200" r="80" fill="none" stroke="#334155" stroke-width="14"/>
+  <circle cx="180" cy="200" r="80" fill="none" stroke="url(#ring)" stroke-width="14" stroke-dasharray="502" stroke-dashoffset="140" stroke-linecap="round" transform="rotate(-90 180 200)"/>
+  <text x="180" y="195" fill="#F8FAFC" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="28" font-weight="bold" text-anchor="middle">3h 15m</text>
+  <text x="180" y="218" fill="#818CF8" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="13" font-weight="600" text-anchor="middle">72% Completed</text>
+
+  <!-- Streak & Focus Score Cards -->
+  <rect x="24" y="310" width="148" height="74" rx="16" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+  <text x="38" y="336" fill="#F59E0B" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="14" font-weight="bold">🔥 14 Days</text>
+  <text x="38" y="360" fill="#94A3B8" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="11">Current Streak</text>
+
+  <rect x="188" y="310" width="148" height="74" rx="16" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+  <text x="202" y="336" fill="#10B981" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="14" font-weight="bold">⚡ 94/100</text>
+  <text x="202" y="360" fill="#94A3B8" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="11">Focus Score</text>
+
+  <!-- Active Subjects -->
+  <text x="24" y="420" fill="#F8FAFC" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="15" font-weight="bold">Subject Velocity</text>
+  
+  <rect x="24" y="438" width="312" height="56" rx="14" fill="#1E293B"/>
+  <circle cx="48" cy="466" r="14" fill="#6366F1"/>
+  <text x="72" y="462" fill="#F8FAFC" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="13" font-weight="600">Advanced Mathematics</text>
+  <text x="72" y="478" fill="#94A3B8" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="11">1h 45m today • 85% goal</text>
+
+  <rect x="24" y="504" width="312" height="56" rx="14" fill="#1E293B"/>
+  <circle cx="48" cy="532" r="14" fill="#EC4899"/>
+  <text x="72" y="528" fill="#F8FAFC" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="13" font-weight="600">Quantum Physics</text>
+  <text x="72" y="544" fill="#94A3B8" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="11">1h 30m today • 100% goal</text>
+</svg>

@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 640" width="360" height="640">
+  <defs>
+    <linearGradient id="bg5" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#1E1B4B" />
+    </linearGradient>
+  </defs>
+  <rect width="360" height="640" rx="32" fill="url(#bg5)" stroke="#334155" stroke-width="2"/>
+  
+  <text x="24" y="55" fill="#F8FAFC" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="20" font-weight="bold">Calendar &amp; Session Logs</text>
+  
+  <!-- Mini Monthly Calendar -->
+  <rect x="20" y="80" width="320" height="240" rx="16" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+  <text x="36" y="110" fill="#F8FAFC" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="14" font-weight="bold">August 2026</text>
+  
+  <g fill="#94A3B8" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="11" text-anchor="middle">
+    <text x="50" y="140">M</text><text x="90" y="140">T</text><text x="130" y="140">W</text>
+    <text x="170" y="140">T</text><text x="210" y="140">F</text><text x="250" y="140">S</text><text x="290" y="140">S</text>
+  </g>
+
+  <!-- Calendar Day Badges -->
+  <circle cx="50" cy="170" r="14" fill="#334155"/>
+  <circle cx="90" cy="170" r="14" fill="#10B981"/>
+  <circle cx="130" cy="170" r="14" fill="#10B981"/>
+  <circle cx="170" cy="170" r="14" fill="#059669"/>
+  <circle cx="210" cy="170" r="14" fill="#10B981"/>
+  <circle cx="250" cy="170" r="14" fill="#047857"/>
+  <circle cx="290" cy="170" r="14" fill="#10B981"/>
+
+  <circle cx="50" cy="210" r="14" fill="#10B981"/>
+  <circle cx="90" cy="210" r="14" fill="#059669"/>
+  <circle cx="130" cy="210" r="14" fill="#047857"/>
+  <circle cx="170" cy="210" r="14" fill="#10B981"/>
+  <circle cx="210" cy="210" r="14" fill="#6366F1" stroke="#F8FAFC" stroke-width="2"/>
+  <circle cx="250" cy="210" r="14" fill="#334155"/>
+  <circle cx="290" cy="210" r="14" fill="#334155"/>
+
+  <!-- Recent Session Entry -->
+  <text x="24" y="350" fill="#F8FAFC" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="15" font-weight="bold">Recent Study Logs</text>
+  
+  <rect x="20" y="370" width="320" height="70" rx="14" fill="#1E293B"/>
+  <text x="36" y="398" fill="#F8FAFC" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="14" font-weight="bold">Organic Chemistry • Reaction Mechanisms</text>
+  <text x="36" y="422" fill="#10B981" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="12">50 mins • ⭐ 5.0 Rating • 0 Distractions</text>
+</svg>

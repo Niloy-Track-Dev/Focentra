@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 640" width="360" height="640">
+  <defs>
+    <linearGradient id="bg6" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#1E1B4B" />
+    </linearGradient>
+  </defs>
+  <rect width="360" height="640" rx="32" fill="url(#bg6)" stroke="#334155" stroke-width="2"/>
+  
+  <text x="24" y="55" fill="#F8FAFC" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="20" font-weight="bold">Subjects &amp; Targets</text>
+  
+  <!-- Subject Card 1 -->
+  <rect x="20" y="80" width="320" height="90" rx="16" fill="#1E293B" stroke="#6366F1" stroke-width="1.5"/>
+  <circle cx="48" cy="125" r="18" fill="#6366F1"/>
+  <text x="76" y="118" fill="#F8FAFC" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="15" font-weight="bold">Higher Mathematics</text>
+  <text x="76" y="138" fill="#94A3B8" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="12">Calculus, Linear Algebra, Vectors</text>
+  <text x="76" y="156" fill="#10B981" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="11" font-weight="600">Target: 20h / week • 14.5h completed</text>
+
+  <!-- Subject Card 2 -->
+  <rect x="20" y="185" width="320" height="90" rx="16" fill="#1E293B" stroke="#EC4899" stroke-width="1.5"/>
+  <circle cx="48" cy="230" r="18" fill="#EC4899"/>
+  <text x="76" y="223" fill="#F8FAFC" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="15" font-weight="bold">Computer Architecture</text>
+  <text x="76" y="243" fill="#94A3B8" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="12">Pipelining, Cache Hierarchies, RISC-V</text>
+  <text x="76" y="261" fill="#10B981" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="11" font-weight="600">Target: 15h / week • 12h completed</text>
+
+  <!-- Subject Card 3 -->
+  <rect x="20" y="290" width="320" height="90" rx="16" fill="#1E293B" stroke="#F59E0B" stroke-width="1.5"/>
+  <circle cx="48" cy="335" r="18" fill="#F59E0B"/>
+  <text x="76" y="328" fill="#F8FAFC" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="15" font-weight="bold">Quantum Mechanics</text>
+  <text x="76" y="348" fill="#94A3B8" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="12">Schrödinger Equation, Spin Matrices</text>
+  <text x="76" y="366" fill="#10B981" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="11" font-weight="600">Target: 10h / week • 8.5h completed</text>
+</svg>

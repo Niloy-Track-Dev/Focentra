@@ -32,15 +32,18 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
 
-      - name: Ensure Gradle Wrapper exists
+      - name: Prepare Debug Keystore
         run: |
-          if [ ! -f gradlew ]; then
-            gradle wrapper --gradle-version 9.3.1
+          if [ -f debug.keystore.base64 ]; then
+            base64 -d debug.keystore.base64 > debug.keystore
+          else
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
-          chmod +x gradlew
 
-      - name: Prepare fallback .env
+      - name: Prepare Fallback .env
         run: |
           if [ -f .env.example ]; then
             cp .env.example .env
@@ -49,10 +52,10 @@ jobs:
           fi
 
       - name: Run Unit Tests
-        run: ./gradlew testDebugUnitTest --stacktrace
+        run: gradle testDebugUnitTest --stacktrace
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: gradle assembleDebug --stacktrace
 
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
