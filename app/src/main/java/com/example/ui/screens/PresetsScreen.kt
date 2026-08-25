@@ -95,7 +95,7 @@ fun PresetsScreen(
                     .padding(padding)
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(top = 12.dp, bottom = 100.dp)
+                contentPadding = PaddingValues(top = 12.dp, bottom = 80.dp)
             ) {
                 items(presets, key = { it.id }) { preset ->
                     PresetCard(

@@ -293,41 +293,112 @@ class StudyRepository(private val database: AppDatabase) {
 
     suspend fun importDataJson(jsonString: String, replaceExisting: Boolean): Boolean = withContext(Dispatchers.IO) {
         try {
-            val root = JSONObject(jsonString)
+            val trimmed = jsonString.trim()
+            if (trimmed.isEmpty()) return@withContext false
+
             if (replaceExisting) {
                 database.sessionDao().clearAllSessions()
             }
 
-            if (root.has("sessions")) {
-                val sessionsArray = root.getJSONArray("sessions")
-                val sessionList = mutableListOf<StudySessionEntity>()
+            val sessionList = mutableListOf<StudySessionEntity>()
+
+            fun parseSessionObject(obj: JSONObject): StudySessionEntity {
+                val sTime = obj.optLong("startTime", System.currentTimeMillis())
+                val dur = obj.optLong("durationSeconds", obj.optLong("actualFocusedSeconds", 1500L))
+                val actDur = obj.optLong("actualFocusedSeconds", dur)
+                val eTime = obj.optLong("endTime", sTime + (actDur * 1000L))
+
+                return StudySessionEntity(
+                    id = if (replaceExisting) obj.optLong("id", 0L) else 0L,
+                    startTime = sTime,
+                    endTime = eTime,
+                    durationSeconds = dur,
+                    actualFocusedSeconds = actDur,
+                    pausedSeconds = obj.optLong("pausedSeconds", 0L),
+                    sessionType = obj.optString("sessionType", "COUNTDOWN"),
+                    subject = obj.optString("subject", "General"),
+                    topic = obj.optString("topic", ""),
+                    category = obj.optString("category", "Study"),
+                    goal = obj.optString("goal", ""),
+                    notes = obj.optString("notes", ""),
+                    tags = obj.optString("tags", ""),
+                    productivityRating = obj.optInt("productivityRating", 4).coerceIn(1, 5),
+                    distractionCount = obj.optInt("distractionCount", 0),
+                    distractionDetails = obj.optString("distractionDetails", ""),
+                    mood = obj.optString("mood", "GOOD"),
+                    energyLevel = obj.optString("energyLevel", "HIGH"),
+                    location = obj.optString("location", "Desk"),
+                    completionStatus = obj.optString("completionStatus", "COMPLETED")
+                )
+            }
+
+            if (trimmed.startsWith("{")) {
+                val root = JSONObject(trimmed)
+                if (root.has("sessions")) {
+                    val sessionsArray = root.getJSONArray("sessions")
+                    for (i in 0 until sessionsArray.length()) {
+                        val obj = sessionsArray.getJSONObject(i)
+                        sessionList.add(parseSessionObject(obj))
+                    }
+                } else if (root.has("startTime") || root.has("subject") || root.has("durationSeconds")) {
+                    // Single session object
+                    sessionList.add(parseSessionObject(root))
+                }
+
+                // Also restore subjects if present
+                if (root.has("subjects")) {
+                    val subjectsArray = root.getJSONArray("subjects")
+                    for (i in 0 until subjectsArray.length()) {
+                        val obj = subjectsArray.getJSONObject(i)
+                        val sName = obj.optString("name", "")
+                        if (sName.isNotBlank()) {
+                            database.subjectDao().insertSubject(
+                                SubjectEntity(
+                                    name = sName,
+                                    colorHex = obj.optString("colorHex", "#6366F1"),
+                                    iconName = obj.optString("iconName", "School"),
+                                    targetHours = obj.optDouble("targetHours", 0.0).toFloat(),
+                                    description = obj.optString("description", "")
+                                )
+                            )
+                        }
+                    }
+                }
+
+                // Also restore presets if present
+                if (root.has("presets")) {
+                    val presetsArray = root.getJSONArray("presets")
+                    for (i in 0 until presetsArray.length()) {
+                        val obj = presetsArray.getJSONObject(i)
+                        val title = obj.optString("title", "")
+                        if (title.isNotBlank()) {
+                            database.presetDao().insertPreset(
+                                PresetEntity(
+                                    title = title,
+                                    type = obj.optString("type", "COUNTDOWN"),
+                                    durationMinutes = obj.optInt("durationMinutes", 25),
+                                    subject = obj.optString("subject", "General"),
+                                    pomodoroFocusMin = obj.optInt("pomodoroFocusMin", 25),
+                                    pomodoroShortBreakMin = obj.optInt("pomodoroShortBreakMin", 5),
+                                    pomodoroLongBreakMin = obj.optInt("pomodoroLongBreakMin", 15),
+                                    pomodoroRounds = obj.optInt("pomodoroRounds", 4)
+                                )
+                            )
+                        }
+                    }
+                }
+            } else if (trimmed.startsWith("[")) {
+                // Array of sessions
+                val sessionsArray = JSONArray(trimmed)
                 for (i in 0 until sessionsArray.length()) {
                     val obj = sessionsArray.getJSONObject(i)
-                    sessionList.add(
-                        StudySessionEntity(
-                            id = if (replaceExisting) obj.optLong("id", 0L) else 0L,
-                            startTime = obj.getLong("startTime"),
-                            endTime = obj.getLong("endTime"),
-                            durationSeconds = obj.getLong("durationSeconds"),
-                            actualFocusedSeconds = obj.getLong("actualFocusedSeconds"),
-                            pausedSeconds = obj.optLong("pausedSeconds", 0L),
-                            sessionType = obj.optString("sessionType", "COUNTDOWN"),
-                            subject = obj.optString("subject", "General"),
-                            topic = obj.optString("topic", ""),
-                            category = obj.optString("category", "Study"),
-                            goal = obj.optString("goal", ""),
-                            notes = obj.optString("notes", ""),
-                            tags = obj.optString("tags", ""),
-                            productivityRating = obj.optInt("productivityRating", 4),
-                            distractionCount = obj.optInt("distractionCount", 0),
-                            distractionDetails = obj.optString("distractionDetails", ""),
-                            mood = obj.optString("mood", "GOOD"),
-                            energyLevel = obj.optString("energyLevel", "HIGH"),
-                            location = obj.optString("location", "Desk"),
-                            completionStatus = obj.optString("completionStatus", "COMPLETED")
-                        )
-                    )
+                    sessionList.add(parseSessionObject(obj))
                 }
+            } else {
+                return@withContext false
+            }
+
+            if (sessionList.isNotEmpty()) {
                 database.sessionDao().insertSessions(sessionList)
             }
             checkAndUnlockAchievements()

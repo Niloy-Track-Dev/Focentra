@@ -23,9 +23,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -132,9 +134,15 @@ fun SettingsScreen(
         )
     }
 
+    val clipboardManager = LocalClipboardManager.current
+    var importError by remember { mutableStateOf<String?>(null) }
+
     if (showImportDialog) {
         AlertDialog(
-            onDismissRequest = { showImportDialog = false },
+            onDismissRequest = {
+                showImportDialog = false
+                importError = null
+            },
             title = { Text("Import Data Backup (JSON)") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -142,15 +150,49 @@ fun SettingsScreen(
                         text = "Paste your JSON backup text below to restore sessions, subjects, and study history.",
                         style = MaterialTheme.typography.bodySmall
                     )
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(
+                            onClick = {
+                                val clip = clipboardManager.getText()?.text
+                                if (!clip.isNullOrBlank()) {
+                                    importJsonText = clip
+                                    importError = null
+                                }
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                        ) {
+                            Icon(Icons.Default.ContentPaste, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Paste from Clipboard", style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+
                     OutlinedTextField(
                         value = importJsonText,
-                        onValueChange = { importJsonText = it },
+                        onValueChange = {
+                            importJsonText = it
+                            importError = null
+                        },
                         label = { Text("JSON Backup Content") },
+                        isError = importError != null,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(140.dp),
                         shape = RoundedCornerShape(12.dp)
                     )
+
+                    if (importError != null) {
+                        Text(
+                            text = importError ?: "",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = importReplace, onCheckedChange = { importReplace = it })
                         Text("Replace existing database (Clear all current data)", style = MaterialTheme.typography.bodySmall)
@@ -160,19 +202,32 @@ fun SettingsScreen(
             confirmButton = {
                 Button(
                     onClick = {
+                        if (importJsonText.isBlank()) {
+                            importError = "Please enter or paste JSON backup content"
+                            return@Button
+                        }
                         coroutineScope.launch {
-                            viewModel.importJson(importJsonText, importReplace)
-                            showImportDialog = false
-                            importJsonText = ""
+                            val success = viewModel.importJson(importJsonText, importReplace)
+                            if (success) {
+                                showImportDialog = false
+                                importJsonText = ""
+                                importError = null
+                            } else {
+                                importError = "Invalid JSON format. Please verify your backup string."
+                            }
                         }
                     },
+                    enabled = importJsonText.isNotBlank(),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text("Import Backup")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showImportDialog = false }) { Text("Cancel") }
+                TextButton(onClick = {
+                    showImportDialog = false
+                    importError = null
+                }) { Text("Cancel") }
             }
         )
     }
@@ -182,7 +237,7 @@ fun SettingsScreen(
             .fillMaxSize()
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(top = 12.dp, bottom = 110.dp)
+        contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp)
     ) {
         // Developer & App Banner
         item {
@@ -525,16 +580,20 @@ fun SettingsScreen(
 
                                     Spacer(modifier = Modifier.width(12.dp))
 
-                                    Column {
+                                    Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = reminder.title,
                                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                            color = MaterialTheme.colorScheme.onSurface
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                         Text(
-                                            text = reminder.daysOfWeek,
+                                            text = formatReminderDays(reminder.daysOfWeek),
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
                                 }
@@ -908,6 +967,24 @@ fun GoalEditDialog(
     )
 }
 
+fun formatReminderDays(daysStr: String): String {
+    val upper = daysStr.uppercase()
+    val allDays = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
+    val weekdays = listOf("MON", "TUE", "WED", "THU", "FRI")
+    val weekends = listOf("SAT", "SUN")
+
+    val parts = upper.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+    return when {
+        parts.containsAll(allDays) && parts.size >= 7 -> "Every day"
+        parts.containsAll(weekdays) && parts.size == 5 -> "Weekdays (Mon-Fri)"
+        parts.containsAll(weekends) && parts.size == 2 -> "Weekends (Sat-Sun)"
+        parts.isNotEmpty() -> parts.joinToString(", ") {
+            it.take(3).lowercase().replaceFirstChar { c -> c.uppercase() }
+        }
+        else -> "Every day"
+    }
+}
+
 @Composable
 fun AddReminderDialog(
     onDismiss: () -> Unit,
@@ -916,6 +993,7 @@ fun AddReminderDialog(
     var label by remember { mutableStateOf("Deep Study Session") }
     var hour by remember { mutableStateOf("19") }
     var minute by remember { mutableStateOf("00") }
+    var selectedFrequency by remember { mutableStateOf("Every day") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -945,19 +1023,39 @@ fun AddReminderDialog(
                         shape = RoundedCornerShape(12.dp)
                     )
                 }
+
+                Text("Repeat Schedule", style = MaterialTheme.typography.labelMedium)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    listOf("Every day", "Weekdays", "Weekends").forEach { freq ->
+                        val isSelected = selectedFrequency == freq
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { selectedFrequency = freq },
+                            label = { Text(freq, style = MaterialTheme.typography.labelSmall) }
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    val h = hour.toIntOrNull() ?: 19
-                    val m = minute.toIntOrNull() ?: 0
+                    val h = hour.toIntOrNull()?.coerceIn(0, 23) ?: 19
+                    val m = minute.toIntOrNull()?.coerceIn(0, 59) ?: 0
+                    val days = when (selectedFrequency) {
+                        "Weekdays" -> "Mon,Tue,Wed,Thu,Fri"
+                        "Weekends" -> "Sat,Sun"
+                        else -> "Mon,Tue,Wed,Thu,Fri,Sat,Sun"
+                    }
                     onSave(
                         ReminderEntity(
-                            title = label,
+                            title = label.ifBlank { "Study Session" },
                             hour = h,
                             minute = m,
-                            daysOfWeek = "Mon,Tue,Wed,Thu,Fri,Sat,Sun"
+                            daysOfWeek = days
                         )
                     )
                 },
