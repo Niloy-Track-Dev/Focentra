@@ -4,8 +4,18 @@ This document outlines the development trajectory of **Focentra**, categorizing 
 
 ---
 
-## 🟢 Completed (v1.0.0)
+## 🟢 Completed (v1.2.1)
 
+- [x] **Active Recall Flashcards Studio**:
+  - [x] Interactive 3D flip cards (`graphicsLayer { rotationY }`) for formulas, questions, and answers.
+  - [x] Subject filtering and custom card creation with hints.
+  - [x] Mastery score progress tracker with one-tap status updates.
+- [x] **Focus Brain Dump & Distraction Shield**:
+  - [x] On-the-fly thought capture pad in Timer Screen, AMOLED Focus Mode, and Dashboard.
+  - [x] Time-stamped thought list with checkboxes and instant clear.
+- [x] **Shareable Performance Card Exporter**:
+  - [x] High-contrast PNG performance card generator for social media sharing.
+  - [x] Formatted text report exporter.
 - [x] **Core Focus Timer Engine**:
   - [x] Countdown timer with customizable preset durations.
   - [x] Open-ended Stopwatch mode for freeform deep work.
@@ -52,8 +62,6 @@ This document outlines the development trajectory of **Focentra**, categorizing 
   - Glance-based Compose AppWidget for quick timer starting directly from the Android home screen.
 - [ ] **Expanded Audio Synthesizer**:
   - Additional binaural beats (Alpha/Theta frequencies) and brown noise presets.
-- [ ] **Tag-Based Session Filtering**:
-  - Filter analytics charts and history logs by custom tags (e.g., `#exam`, `#homework`, `#reading`).
 
 ---
 

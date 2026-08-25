@@ -16,6 +16,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.1] - 2026-08-25
+
+### Added
+- **Active Recall Flashcards Studio**:
+  - Dedicated `FlashcardsScreen` for creating, reviewing, and organizing subject-based study cards.
+  - Interactive 3D perspective card flip animation (`graphicsLayer { rotationY }`) revealing solution and optional clue hints.
+  - Mastery progress indicator bar calculating percentage of mastered cards per subject deck.
+  - Quick access integrated into Top Bar actions, More menu, and Dashboard cards.
+- **Focus Brain Dump & Distraction Shield**:
+  - Instant thought-capture dialog (`BrainDumpDialog`) enabling learners to record off-topic ideas or tasks during study sessions without interrupting timer flow.
+  - Accessible directly from `TimerScreen`, `FullScreenFocusScreen` (AMOLED mode), and `DashboardScreen`.
+  - Checkable thought items with time stamps and one-tap clear for completed items.
+
+### Changed
+- **Shareable Study Report & PNG Card**:
+  - Optimized the "Share PNG" and "Share Text" buttons in `AnalyticsScreen` with uniform heights (`46.dp`), explicit text padding, and single-line constraints to ensure perfectly symmetrical alignment on all screen sizes.
+  - Updated high-contrast bitmap card generation for crisp social media sharing.
+- **System & Version Updates**:
+  - Incremented `versionCode` to `4` and `versionName` to `1.2.1`.
+  - Synchronized Settings screen database info string to reflect v1.2.1.
+
+---
+
 ## [1.1.0] - 2026-08-25
 
 ### Changed
