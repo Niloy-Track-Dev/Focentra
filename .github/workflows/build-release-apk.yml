@@ -89,24 +89,35 @@ jobs:
         run: |
           gradle assembleRelease --no-daemon --stacktrace
 
+      - name: Extract App Version Name
+        id: get_version
+        run: |
+          VERSION=$(grep "versionName" app/build.gradle.kts | head -n1 | sed -E 's/.*"([^"]+)".*/\1/')
+          if [ -z "$VERSION" ]; then
+            VERSION="1.1.0"
+          fi
+          echo "APP_VERSION=v$VERSION" >> $GITHUB_ENV
+          echo "VERSION_RAW=$VERSION" >> $GITHUB_ENV
+          echo "Detected App Version: v$VERSION"
+
       - name: Copy & Rename APK
         run: |
-          cp app/build/outputs/apk/release/app-release.apk focentra-v1.1.0-release.apk
+          cp app/build/outputs/apk/release/app-release.apk focentra-${{ env.APP_VERSION }}-release.apk
 
       - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: focentra-release-apk
-          path: focentra-v1.1.0-release.apk
+          path: focentra-${{ env.APP_VERSION }}-release.apk
           if-no-files-found: error
 
       - name: Create or Update GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.release_tag || (startsWith(github.ref, 'refs/tags/v') && github.ref_name) || 'v1.1.0' }}
-          name: ${{ github.event.inputs.release_tag || (startsWith(github.ref, 'refs/tags/v') && github.ref_name) || 'Focentra v1.1.0' }}
-          files: focentra-v1.1.0-release.apk
+          tag_name: ${{ github.event.inputs.release_tag || (startsWith(github.ref, 'refs/tags/v') && github.ref_name) || env.APP_VERSION }}
+          name: ${{ github.event.inputs.release_tag || (startsWith(github.ref, 'refs/tags/v') && github.ref_name) || format('Focentra {0}', env.APP_VERSION) }}
+          files: focentra-${{ env.APP_VERSION }}-release.apk
           generate_release_notes: true
           draft: false
           prerelease: false
