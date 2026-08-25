@@ -119,9 +119,6 @@ fun StudyBarChart(
 
             items.forEachIndexed { i, item ->
                 val x = (i * slotWidth) + (slotWidth - barWidth) / 2
-                val barHeight = (item.studyMinutes / maxVal * canvasHeight).coerceAtLeast(4.dp.toPx())
-                val y = canvasHeight - barHeight
-
                 val isSelected = selectedIndex == i
 
                 // Background track
@@ -132,23 +129,28 @@ fun StudyBarChart(
                     cornerRadius = cornerRadius
                 )
 
-                // Active study bar
-                val brush = Brush.verticalGradient(
-                    colors = if (isSelected) {
-                        listOf(highlightColor, primaryColor)
-                    } else {
-                        listOf(primaryColor, secondaryColor)
-                    },
-                    startY = y,
-                    endY = canvasHeight
-                )
+                // Active study bar (only if actual study time > 0)
+                if (item.studyMinutes > 0f) {
+                    val barHeight = (item.studyMinutes / maxVal * canvasHeight).coerceAtLeast(8.dp.toPx())
+                    val y = canvasHeight - barHeight
 
-                drawRoundRect(
-                    brush = brush,
-                    topLeft = Offset(x, y),
-                    size = Size(barWidth, barHeight),
-                    cornerRadius = cornerRadius
-                )
+                    val brush = Brush.verticalGradient(
+                        colors = if (isSelected) {
+                            listOf(highlightColor, primaryColor)
+                        } else {
+                            listOf(primaryColor, secondaryColor)
+                        },
+                        startY = y,
+                        endY = canvasHeight
+                    )
+
+                    drawRoundRect(
+                        brush = brush,
+                        topLeft = Offset(x, y),
+                        size = Size(barWidth, barHeight),
+                        cornerRadius = cornerRadius
+                    )
+                }
             }
         }
 

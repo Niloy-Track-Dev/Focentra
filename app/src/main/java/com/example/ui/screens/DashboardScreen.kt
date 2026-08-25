@@ -65,7 +65,7 @@ fun DashboardScreen(
             .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(top = 8.dp, bottom = 32.dp)
+        contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
     ) {
         // Welcome Header Bar
         item {

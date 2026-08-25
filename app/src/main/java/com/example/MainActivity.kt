@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.ui.components.FocentraFloatingNavBar
 import com.example.ui.screens.*
 import com.example.ui.theme.FocentraTheme
 import com.example.viewmodel.MainViewModel
@@ -173,103 +174,12 @@ class MainActivity : ComponentActivity() {
                             )
                         },
                         bottomBar = {
-                            NavigationBar(
-                                containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp),
-                                contentColor = MaterialTheme.colorScheme.onSurface,
-                                tonalElevation = 3.dp,
-                                windowInsets = WindowInsets.navigationBars
-                            ) {
-                                NavigationBarItem(
-                                    selected = currentTab == NavigationTab.DASHBOARD,
-                                    onClick = { viewModel.navigateTo(NavigationTab.DASHBOARD) },
-                                    icon = {
-                                        Icon(
-                                            imageVector = if (currentTab == NavigationTab.DASHBOARD) Icons.Filled.Dashboard else Icons.Outlined.Dashboard,
-                                            contentDescription = "Dashboard"
-                                        )
-                                    },
-                                    label = { Text("Home", fontWeight = if (currentTab == NavigationTab.DASHBOARD) FontWeight.Bold else FontWeight.Normal) },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                )
-                                NavigationBarItem(
-                                    selected = currentTab == NavigationTab.TIMER,
-                                    onClick = { viewModel.navigateTo(NavigationTab.TIMER) },
-                                    icon = {
-                                        Icon(
-                                            imageVector = if (currentTab == NavigationTab.TIMER) Icons.Filled.HourglassBottom else Icons.Outlined.Timer,
-                                            contentDescription = "Timer"
-                                        )
-                                    },
-                                    label = { Text("Timer", fontWeight = if (currentTab == NavigationTab.TIMER) FontWeight.Bold else FontWeight.Normal) },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                )
-                                NavigationBarItem(
-                                    selected = currentTab == NavigationTab.ANALYTICS,
-                                    onClick = { viewModel.navigateTo(NavigationTab.ANALYTICS) },
-                                    icon = {
-                                        Icon(
-                                            imageVector = if (currentTab == NavigationTab.ANALYTICS) Icons.Filled.Insights else Icons.Outlined.BarChart,
-                                            contentDescription = "Analytics"
-                                        )
-                                    },
-                                    label = { Text("Stats", fontWeight = if (currentTab == NavigationTab.ANALYTICS) FontWeight.Bold else FontWeight.Normal) },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                )
-                                NavigationBarItem(
-                                    selected = currentTab == NavigationTab.CALENDAR,
-                                    onClick = { viewModel.navigateTo(NavigationTab.CALENDAR) },
-                                    icon = {
-                                        Icon(
-                                            imageVector = if (currentTab == NavigationTab.CALENDAR) Icons.Filled.CalendarMonth else Icons.Outlined.CalendarToday,
-                                            contentDescription = "Calendar"
-                                        )
-                                    },
-                                    label = { Text("History", fontWeight = if (currentTab == NavigationTab.CALENDAR) FontWeight.Bold else FontWeight.Normal) },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                )
-                                NavigationBarItem(
-                                    selected = currentTab == NavigationTab.SETTINGS,
-                                    onClick = { viewModel.navigateTo(NavigationTab.SETTINGS) },
-                                    icon = {
-                                        Icon(
-                                            imageVector = if (currentTab == NavigationTab.SETTINGS) Icons.Filled.Settings else Icons.Outlined.Settings,
-                                            contentDescription = "Settings"
-                                        )
-                                    },
-                                    label = { Text("Settings", fontWeight = if (currentTab == NavigationTab.SETTINGS) FontWeight.Bold else FontWeight.Normal) },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                )
-                            }
+                            FocentraFloatingNavBar(
+                                currentTab = currentTab,
+                                onTabSelected = { tab ->
+                                    viewModel.navigateTo(tab)
+                                }
+                            )
                         }
                     ) { innerPadding ->
                         AnimatedContent(

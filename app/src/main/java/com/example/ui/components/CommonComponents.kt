@@ -254,12 +254,15 @@ fun RecentSessionItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
                 Box(
                     modifier = Modifier
                         .size(42.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFF1F3FB)),
+                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -270,25 +273,36 @@ fun RecentSessionItem(
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Column {
+                Column(modifier = Modifier.weight(1f, fill = false)) {
                     Text(
                         text = session.subject,
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = if (session.topic.isNotBlank()) "${session.topic} • $dateStr" else dateStr,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
 
-            Column(horizontalAlignment = Alignment.End) {
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(
+                horizontalAlignment = Alignment.End,
+                modifier = Modifier.widthIn(min = 46.dp)
+            ) {
                 Text(
                     text = "${focusedMins}m",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    softWrap = false
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     for (i in 1..session.productivityRating) {
