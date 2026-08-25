@@ -1,9 +1,100 @@
-<?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:width="66dp"
-        android:height="66dp"
-        android:drawable="@drawable/ic_focentra_logo"
-        android:gravity="center" />
-</layer-list>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
 
+    <!-- Subtle Outer Focus Aura Ring -->
+    <path
+        android:pathData="M54,26 A28,28 0 1,1 53.99,26 Z"
+        android:strokeWidth="1.5"
+        android:strokeAlpha="0.4"
+        android:strokeColor="#6366F1" />
+
+    <!-- Cardinal Precision Tick Marks -->
+    <path
+        android:pathData="M54,20 L54,23 M54,85 L54,88 M20,54 L23,54 M85,54 L88,54"
+        android:strokeWidth="2.5"
+        android:strokeColor="#38BDF8"
+        android:strokeLineCap="round" />
+
+    <!-- Outer High-Tech Accent Arc -->
+    <path
+        android:pathData="M35,35 A27,27 0 0,1 73,35"
+        android:strokeWidth="2.5"
+        android:strokeColor="#38BDF8"
+        android:strokeLineCap="round" />
+
+    <path
+        android:pathData="M73,73 A27,27 0 0,1 35,73"
+        android:strokeWidth="2.5"
+        android:strokeColor="#A855F7"
+        android:strokeLineCap="round" />
+
+    <!-- Top Hourglass Chamber (Prism) -->
+    <path
+        android:pathData="M36,36 L72,36 C70,36 67,42 58,49 C56,51 54,51.5 54,51.5 C54,51.5 52,51 50,49 C41,42 38,36 36,36 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="36"
+                android:startY="36"
+                android:endX="72"
+                android:endY="52"
+                android:type="linear">
+                <item android:color="#38BDF8" android:offset="0.0" />
+                <item android:color="#6366F1" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Top Chamber Rim Bar -->
+    <path
+        android:pathData="M34,35 L74,35"
+        android:strokeWidth="3.5"
+        android:strokeColor="#E0F2FE"
+        android:strokeLineCap="round" />
+
+    <!-- Bottom Hourglass Chamber (Accumulated Focus Light) -->
+    <path
+        android:pathData="M54,56.5 C54,56.5 56,57 58,59 C67,66 70,72 72,72 L36,72 C38,72 41,66 50,59 C52,57 54,56.5 54,56.5 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="36"
+                android:startY="56"
+                android:endX="72"
+                android:endY="72"
+                android:type="linear">
+                <item android:color="#6366F1" android:offset="0.0" />
+                <item android:color="#A855F7" android:offset="0.7" />
+                <item android:color="#EC4899" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Bottom Chamber Rim Bar -->
+    <path
+        android:pathData="M34,73 L74,73"
+        android:strokeWidth="3.5"
+        android:strokeColor="#F5D0FE"
+        android:strokeLineCap="round" />
+
+    <!-- Center Flow Pulse Stream -->
+    <path
+        android:pathData="M54,48 L54,60"
+        android:strokeWidth="2.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round" />
+
+    <!-- Central Glowing Focus Core / Spark -->
+    <path
+        android:pathData="M54,51 A3,3 0 1,1 53.99,51 Z"
+        android:fillColor="#FFFFFF" />
+
+    <path
+        android:pathData="M54,52 A5,5 0 1,1 53.99,52 Z"
+        android:strokeWidth="1"
+        android:strokeAlpha="0.6"
+        android:strokeColor="#38BDF8" />
+
+</vector>

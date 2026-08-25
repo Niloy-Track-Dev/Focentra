@@ -36,6 +36,16 @@ jobs:
           fi
           chmod +x gradlew
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Ensure Gradle Wrapper and gradlew exist
+        run: |
+          if [ ! -f gradlew ]; then
+            gradle wrapper --gradle-version 9.3.1
+          fi
+          chmod +x gradlew
+
       - name: Prepare Keystore & Signing Credentials
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}

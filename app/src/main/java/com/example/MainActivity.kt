@@ -12,12 +12,14 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -172,19 +174,20 @@ class MainActivity : ComponentActivity() {
                         },
                         bottomBar = {
                             NavigationBar(
-                                containerColor = MaterialTheme.colorScheme.surface,
+                                containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp),
                                 contentColor = MaterialTheme.colorScheme.onSurface,
-                                tonalElevation = 2.dp,
-                                modifier = Modifier.border(
-                                    width = 1.dp,
-                                    color = MaterialTheme.colorScheme.outlineVariant,
-                                    shape = androidx.compose.ui.graphics.RectangleShape
-                                )
+                                tonalElevation = 3.dp,
+                                windowInsets = WindowInsets.navigationBars
                             ) {
                                 NavigationBarItem(
                                     selected = currentTab == NavigationTab.DASHBOARD,
                                     onClick = { viewModel.navigateTo(NavigationTab.DASHBOARD) },
-                                    icon = { Icon(Icons.Default.Dashboard, contentDescription = "Dashboard") },
+                                    icon = {
+                                        Icon(
+                                            imageVector = if (currentTab == NavigationTab.DASHBOARD) Icons.Filled.Dashboard else Icons.Outlined.Dashboard,
+                                            contentDescription = "Dashboard"
+                                        )
+                                    },
                                     label = { Text("Home", fontWeight = if (currentTab == NavigationTab.DASHBOARD) FontWeight.Bold else FontWeight.Normal) },
                                     colors = NavigationBarItemDefaults.colors(
                                         selectedIconColor = MaterialTheme.colorScheme.primary,
@@ -197,7 +200,12 @@ class MainActivity : ComponentActivity() {
                                 NavigationBarItem(
                                     selected = currentTab == NavigationTab.TIMER,
                                     onClick = { viewModel.navigateTo(NavigationTab.TIMER) },
-                                    icon = { Icon(Icons.Default.Timer, contentDescription = "Timer") },
+                                    icon = {
+                                        Icon(
+                                            imageVector = if (currentTab == NavigationTab.TIMER) Icons.Filled.HourglassBottom else Icons.Outlined.Timer,
+                                            contentDescription = "Timer"
+                                        )
+                                    },
                                     label = { Text("Timer", fontWeight = if (currentTab == NavigationTab.TIMER) FontWeight.Bold else FontWeight.Normal) },
                                     colors = NavigationBarItemDefaults.colors(
                                         selectedIconColor = MaterialTheme.colorScheme.primary,
@@ -210,7 +218,12 @@ class MainActivity : ComponentActivity() {
                                 NavigationBarItem(
                                     selected = currentTab == NavigationTab.ANALYTICS,
                                     onClick = { viewModel.navigateTo(NavigationTab.ANALYTICS) },
-                                    icon = { Icon(Icons.Default.BarChart, contentDescription = "Analytics") },
+                                    icon = {
+                                        Icon(
+                                            imageVector = if (currentTab == NavigationTab.ANALYTICS) Icons.Filled.Insights else Icons.Outlined.BarChart,
+                                            contentDescription = "Analytics"
+                                        )
+                                    },
                                     label = { Text("Stats", fontWeight = if (currentTab == NavigationTab.ANALYTICS) FontWeight.Bold else FontWeight.Normal) },
                                     colors = NavigationBarItemDefaults.colors(
                                         selectedIconColor = MaterialTheme.colorScheme.primary,
@@ -223,7 +236,12 @@ class MainActivity : ComponentActivity() {
                                 NavigationBarItem(
                                     selected = currentTab == NavigationTab.CALENDAR,
                                     onClick = { viewModel.navigateTo(NavigationTab.CALENDAR) },
-                                    icon = { Icon(Icons.Default.CalendarToday, contentDescription = "Calendar") },
+                                    icon = {
+                                        Icon(
+                                            imageVector = if (currentTab == NavigationTab.CALENDAR) Icons.Filled.CalendarMonth else Icons.Outlined.CalendarToday,
+                                            contentDescription = "Calendar"
+                                        )
+                                    },
                                     label = { Text("History", fontWeight = if (currentTab == NavigationTab.CALENDAR) FontWeight.Bold else FontWeight.Normal) },
                                     colors = NavigationBarItemDefaults.colors(
                                         selectedIconColor = MaterialTheme.colorScheme.primary,
@@ -236,7 +254,12 @@ class MainActivity : ComponentActivity() {
                                 NavigationBarItem(
                                     selected = currentTab == NavigationTab.SETTINGS,
                                     onClick = { viewModel.navigateTo(NavigationTab.SETTINGS) },
-                                    icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
+                                    icon = {
+                                        Icon(
+                                            imageVector = if (currentTab == NavigationTab.SETTINGS) Icons.Filled.Settings else Icons.Outlined.Settings,
+                                            contentDescription = "Settings"
+                                        )
+                                    },
                                     label = { Text("Settings", fontWeight = if (currentTab == NavigationTab.SETTINGS) FontWeight.Bold else FontWeight.Normal) },
                                     colors = NavigationBarItemDefaults.colors(
                                         selectedIconColor = MaterialTheme.colorScheme.primary,
@@ -251,6 +274,9 @@ class MainActivity : ComponentActivity() {
                     ) { innerPadding ->
                         AnimatedContent(
                             targetState = currentTab,
+                            transitionSpec = {
+                                fadeIn(animationSpec = tween(200)) togetherWith fadeOut(animationSpec = tween(150))
+                            },
                             label = "tab_navigation",
                             modifier = Modifier
                                 .fillMaxSize()

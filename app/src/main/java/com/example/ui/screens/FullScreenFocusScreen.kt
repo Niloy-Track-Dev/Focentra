@@ -64,13 +64,15 @@ fun FullScreenFocusScreen(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
+            .statusBarsPadding()
+            .navigationBarsPadding()
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             ) {
                 showControls = !showControls
             }
-            .padding(24.dp)
+            .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
         // Top Bar: Exit Fullscreen button & Subject
         AnimatedVisibility(
@@ -78,34 +80,53 @@ fun FullScreenFocusScreen(
             modifier = Modifier.align(Alignment.TopCenter)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = { viewModel.setFullScreenFocus(false) },
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(42.dp)
                         .clip(CircleShape)
                         .background(Color(0xFF1E2135))
                 ) {
                     Icon(
                         imageVector = Icons.Default.FullscreenExit,
                         contentDescription = "Exit Fullscreen",
-                        tint = Color.White
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
 
+                Spacer(modifier = Modifier.width(12.dp))
+
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFF1E2135)
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xFF1E2135),
+                    modifier = Modifier.weight(1f, fill = false)
                 ) {
-                    Text(
-                        text = timerState.subject + if (timerState.topic.isNotBlank()) " • ${timerState.topic}" else "",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = timerState.subject + if (timerState.topic.isNotBlank()) " • ${timerState.topic}" else "",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
         }
@@ -173,7 +194,7 @@ fun FullScreenFocusScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "«$currentQuote»",
+                text = "“$currentQuote”",
                 style = MaterialTheme.typography.bodyMedium.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
                 color = Color(0xFF94A3B8),
                 textAlign = TextAlign.Center,

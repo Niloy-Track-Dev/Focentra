@@ -408,6 +408,10 @@ class TimerEngine private constructor(
                 }
             }
         }
+
+        if (_uiState.value.status == TimerStatus.RUNNING) {
+            updateServiceState(TimerStatus.RUNNING)
+        }
     }
 
     private fun handlePomodoroPhaseTransition() {

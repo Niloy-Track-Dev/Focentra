@@ -11,9 +11,8 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.example.MainActivity
-import com.example.R
+import com.example.engine.PomodoroPhase
 import com.example.engine.SessionMode
-import com.example.engine.TimerEngine
 import com.example.engine.TimerStatus
 import com.example.engine.TimerUiState
 
@@ -29,21 +28,43 @@ class StudyTimerService : Service() {
         const val ACTION_STOP = "com.niloy.focentra.ACTION_STOP"
 
         private const val EXTRA_SUBJECT = "extra_subject"
+        private const val EXTRA_TOPIC = "extra_topic"
         private const val EXTRA_TIME_TEXT = "extra_time_text"
         private const val EXTRA_IS_PAUSED = "extra_is_paused"
         private const val EXTRA_MODE = "extra_mode"
+        private const val EXTRA_REMAINING_SEC = "extra_remaining_sec"
+        private const val EXTRA_FOCUSED_SEC = "extra_focused_sec"
+        private const val EXTRA_POMO_PHASE = "extra_pomo_phase"
+        private const val EXTRA_POMO_ROUND = "extra_pomo_round"
+        private const val EXTRA_POMO_TOTAL_ROUNDS = "extra_pomo_total_rounds"
 
         fun startOrUpdate(context: Context, state: TimerUiState) {
             val intent = Intent(context, StudyTimerService::class.java).apply {
                 putExtra(EXTRA_SUBJECT, state.subject)
+                putExtra(EXTRA_TOPIC, state.topic)
                 putExtra(EXTRA_IS_PAUSED, state.status == TimerStatus.PAUSED)
                 putExtra(EXTRA_MODE, state.mode.name)
+                putExtra(EXTRA_REMAINING_SEC, state.remainingSeconds)
+                putExtra(EXTRA_FOCUSED_SEC, state.focusedSeconds)
+                putExtra(EXTRA_POMO_PHASE, state.pomodoroPhase.name)
+                putExtra(EXTRA_POMO_ROUND, state.currentRound)
+                putExtra(EXTRA_POMO_TOTAL_ROUNDS, state.totalRounds)
 
                 val timeFormatted = when (state.mode) {
-                    SessionMode.COUNTDOWN, SessionMode.POMODORO -> {
+                    SessionMode.COUNTDOWN -> {
                         val min = state.remainingSeconds / 60
                         val sec = state.remainingSeconds % 60
                         String.format("%02d:%02d remaining", min, sec)
+                    }
+                    SessionMode.POMODORO -> {
+                        val min = state.remainingSeconds / 60
+                        val sec = state.remainingSeconds % 60
+                        val phaseLabel = when (state.pomodoroPhase) {
+                            PomodoroPhase.FOCUS -> "Focus"
+                            PomodoroPhase.SHORT_BREAK -> "Short Break"
+                            PomodoroPhase.LONG_BREAK -> "Long Break"
+                        }
+                        String.format("%02d:%02d • %s (R%d/%d)", min, sec, phaseLabel, state.currentRound, state.totalRounds)
                     }
                     SessionMode.STOPWATCH -> {
                         val hrs = state.focusedSeconds / 3600
@@ -86,12 +107,27 @@ class StudyTimerService : Service() {
         }
 
         val subject = intent?.getStringExtra(EXTRA_SUBJECT) ?: "Focus Study"
+        val topic = intent?.getStringExtra(EXTRA_TOPIC) ?: ""
         val timeText = intent?.getStringExtra(EXTRA_TIME_TEXT) ?: "Session in progress"
         val isPaused = intent?.getBooleanExtra(EXTRA_IS_PAUSED, false) ?: false
+        val modeStr = intent?.getStringExtra(EXTRA_MODE) ?: SessionMode.COUNTDOWN.name
+        val remainingSec = intent?.getLongExtra(EXTRA_REMAINING_SEC, 0L) ?: 0L
+        val focusedSec = intent?.getLongExtra(EXTRA_FOCUSED_SEC, 0L) ?: 0L
 
-        val notification = buildNotification(subject, timeText, isPaused)
+        val notification = buildNotification(
+            subject = subject,
+            topic = topic,
+            timeText = timeText,
+            isPaused = isPaused,
+            modeStr = modeStr,
+            remainingSec = remainingSec,
+            focusedSec = focusedSec
+        )
+
         try {
             startForeground(NOTIFICATION_ID, notification)
+            val manager = getSystemService(NotificationManager::class.java)
+            manager?.notify(NOTIFICATION_ID, notification)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -110,7 +146,15 @@ class StudyTimerService : Service() {
         }
     }
 
-    private fun buildNotification(subject: String, timeText: String, isPaused: Boolean): Notification {
+    private fun buildNotification(
+        subject: String,
+        topic: String,
+        timeText: String,
+        isPaused: Boolean,
+        modeStr: String,
+        remainingSec: Long,
+        focusedSec: Long
+    ): Notification {
         val openAppIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
@@ -136,10 +180,12 @@ class StudyTimerService : Service() {
         val finishAction = NotificationCompat.Action.Builder(android.R.drawable.checkbox_on_background, "Finish", finishPending).build()
 
         val statusLabel = if (isPaused) "Paused" else "Studying"
+        val headerTitle = if (topic.isNotBlank()) "Focentra • $subject ($topic)" else "Focentra • $subject"
 
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Focentra — $statusLabel: $subject")
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(headerTitle)
             .setContentText(timeText)
+            .setSubText(statusLabel)
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setContentIntent(openAppPendingIntent)
             .setOngoing(true)
@@ -148,7 +194,26 @@ class StudyTimerService : Service() {
             .addAction(finishAction)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
-            .build()
+
+        // Realtime Android Chronometer support
+        if (!isPaused) {
+            builder.setUsesChronometer(true)
+            if (modeStr == SessionMode.COUNTDOWN.name || modeStr == SessionMode.POMODORO.name) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    builder.setChronometerCountDown(true)
+                }
+                builder.setWhen(System.currentTimeMillis() + (remainingSec * 1000L))
+            } else {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    builder.setChronometerCountDown(false)
+                }
+                builder.setWhen(System.currentTimeMillis() - (focusedSec * 1000L))
+            }
+        } else {
+            builder.setUsesChronometer(false)
+        }
+
+        return builder.build()
     }
 
     private fun createNotificationChannel() {
@@ -158,7 +223,7 @@ class StudyTimerService : Service() {
                 "Study Focus Timer",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Shows live study session progress and controls"
+                description = "Shows realtime study session countdown and controls"
                 setShowBadge(false)
             }
             val manager = getSystemService(NotificationManager::class.java)
