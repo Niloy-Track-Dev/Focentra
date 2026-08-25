@@ -859,7 +859,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Focentra v1.2.1 uses on-device Room SQLite database. Your study sessions, personal records, and goals never leave your device.",
+                        text = "Focentra v1.2.0 uses on-device Room SQLite database. Your study sessions, personal records, and goals never leave your device.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center

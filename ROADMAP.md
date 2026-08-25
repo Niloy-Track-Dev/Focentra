@@ -4,8 +4,12 @@ This document outlines the development trajectory of **Focentra**, categorizing 
 
 ---
 
-## 🟢 Completed (v1.2.1)
+## 🟢 Completed (v1.2.0)
 
+- [x] **Full-Screen Focus UI Preset Themes (10 Themes)**:
+  - [x] 10 curated themes (*OLED Midnight*, *Cyberpunk Neon*, *Nordic Aurora*, *Sunset Amber*, *Tokyo Night*, *Emerald Oasis*, *Matrix Green*, *Solar Crimson*, *Deep Cosmos*, *Zen Slate*).
+  - [x] Real-time theme picker in `SettingsScreen` with color swatches and instant preview mode.
+  - [x] Persistent preference caching across Timer, Pomodoro, and Stopwatch modes.
 - [x] **Active Recall Flashcards Studio**:
   - [x] Interactive 3D flip cards (`graphicsLayer { rotationY }`) for formulas, questions, and answers.
   - [x] Subject filtering and custom card creation with hints.
@@ -24,7 +28,7 @@ This document outlines the development trajectory of **Focentra**, categorizing 
   - [x] Distraction logging and focus rating (1 to 5 stars).
   - [x] Ambient sound player (Rain, White Noise, Cafe, Stream, Ambient, Forest).
 - [x] **Full-Screen Immersive Focus**:
-  - [x] Minimalist dark canvas with flip-clock aesthetics.
+  - [x] Minimalist dark canvas with flip-clock aesthetics and customizable theme presets.
   - [x] Anti-burn-in display protection for OLED/AMOLED screens.
   - [x] Screen wake-lock management during active sessions.
 - [x] **Subject & Topic Architecture**:
@@ -39,7 +43,7 @@ This document outlines the development trajectory of **Focentra**, categorizing 
   - [x] Focus Score calculation (0–100) combining rating, distractions, and pause ratio.
   - [x] Smart offline analytical insights.
 - [x] **History & Calendar**:
-  - [x] Month-view study calendar showing focused days and durations.
+  - [x] Month-view study calendar showing focused days and durations with balanced 7-column grid.
   - [x] Detailed session log list with search and filter capabilities.
   - [x] Session detail inspector with deletion and note viewing.
 - [x] **Gamification & Habits**:

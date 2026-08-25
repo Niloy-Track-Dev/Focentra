@@ -16,6 +16,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-08-25
+
+### Added
+- **Full-Screen Focus UI Preset Themes (10 Presets)**:
+  - Custom full-screen themes for Timer, Pomodoro, and Stopwatch modes (*OLED Midnight*, *Cyberpunk Neon*, *Nordic Aurora*, *Sunset Amber*, *Tokyo Night*, *Emerald Oasis*, *Matrix Green*, *Solar Crimson*, *Deep Cosmos*, *Zen Slate*).
+  - Theme selection integrated directly in `SettingsScreen` under Appearance & Themes with interactive preview swatches and a live "Preview" button.
+  - Persistent theme configuration cached locally via `DataStore` and application preferences.
+- **System Stability & Android 14+ Compatibility**:
+  - Updated `StudyTimerService` foreground notification dispatch with `FOREGROUND_SERVICE_TYPE_SPECIAL_USE` for Android 14 (API level 34+) compatibility.
+  - Enhanced grid alignment in `CalendarScreen` month view to ensure 7-column layout balance.
+
+### Changed
+- **Version Set**: Set `versionCode` to `2` and `versionName` to `1.2.0`.
+- **Documentation & Presentation**: Synchronized GitHub presentation (`README.md`, `ROADMAP.md`, `CHANGELOG.md`) detailing all core features, architecture, and full-screen theme presets.
+
+---
+
 ## [1.2.1] - 2026-08-25
 
 ### Added
