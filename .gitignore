@@ -1,18 +1,76 @@
-*.iml
-.gradle
-.kotlin
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+# Built application files
+*.apk
+*.aar
+*.aab
+*.ap_
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+release/
+
+# Gradle files
+.gradle/
+build/
+app/build/
+.kotlin/
+.build-outputs/
+
+# Local configuration file (sdk path, etc)
 local.properties
+/local.properties
+
+# Secrets & Environment variables
 .env
+.env.local
+.env.*.local
+*.jks
+*.keystore
+*.p12
+*.key
 debug.keystore
+my-upload-key.jks
+google-services.json
+
+# Log files
+*.log
+
+# Android Studio / IntelliJ IDEA
+*.iml
+.idea/
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/deploymentTargetDropDown.xml
+.idea/render.experimental.xml
+
+# Visual Studio Code
+.vscode/
+
+# External native build folder
+.externalNativeBuild
+.cxx/
+captures/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Roborazzi test outputs (untracked generated outputs)
+roborazzi/
+
