@@ -69,6 +69,13 @@ fun DashboardScreen(
     ) {
         // Welcome Header Bar
         item {
+            val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+            val greeting = when {
+                currentHour < 12 -> "Good Morning"
+                currentHour < 17 -> "Good Afternoon"
+                else -> "Good Evening"
+            }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -78,15 +85,15 @@ fun DashboardScreen(
             ) {
                 Column {
                     Text(
-                        text = "WELCOME BACK",
+                        text = "WELCOME TO FOCENTRA",
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.SemiBold,
                             letterSpacing = 1.2.sp
                         ),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "Focentra",
+                        text = greeting,
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold,
                             letterSpacing = (-0.5).sp
@@ -527,13 +534,51 @@ fun DashboardScreen(
                     Spacer(modifier = Modifier.height(14.dp))
 
                     if (sessions.isEmpty()) {
-                        EmptyStateView(
-                            icon = Icons.Default.HourglassEmpty,
-                            title = "No study sessions yet",
-                            description = "Start your first timer to begin tracking your study progress.",
-                            actionButtonText = "Start Timer",
-                            onActionClick = { viewModel.navigateTo(NavigationTab.TIMER) }
-                        )
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.HourglassEmpty,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "No study sessions yet",
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Start your first session to begin tracking focus time.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            FilledTonalButton(
+                                onClick = { viewModel.navigateTo(NavigationTab.TIMER) },
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                            ) {
+                                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Start Timer")
+                            }
+                        }
                     } else {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             sessions.take(4).forEachIndexed { index, session ->

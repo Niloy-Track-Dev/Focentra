@@ -99,8 +99,8 @@ private val ModernLightColorScheme = CleanMinimalismColorScheme
 
 @Composable
 fun FocentraTheme(
-    themeName: String = "clean_minimalism",
-    darkTheme: Boolean = false,
+    themeName: String = "midnight",
+    darkTheme: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when (themeName.lowercase()) {
@@ -109,7 +109,7 @@ fun FocentraTheme(
         "forest" -> ForestColorScheme
         "sunset" -> SunsetColorScheme
         "light", "clean_minimalism", "minimalism", "minimal" -> CleanMinimalismColorScheme
-        else -> CleanMinimalismColorScheme
+        else -> MidnightColorScheme
     }
 
     val isLight = colorScheme == CleanMinimalismColorScheme

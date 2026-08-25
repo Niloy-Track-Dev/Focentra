@@ -1,6 +1,8 @@
 package com.example
 
 import android.app.Application
+import android.content.Context
+import android.content.SharedPreferences
 import com.example.data.local.AppDatabase
 import com.example.data.repository.StudyRepository
 import com.example.engine.TimerEngine
@@ -13,9 +15,29 @@ class FocentraApp : Application() {
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    val prefs: SharedPreferences by lazy {
+        getSharedPreferences("focentra_prefs", Context.MODE_PRIVATE)
+    }
+
     val database by lazy { AppDatabase.getDatabase(this, applicationScope) }
     val repository by lazy { StudyRepository(database) }
     val timerEngine by lazy { TimerEngine.getInstance(this, repository) }
+
+    fun getInitialTheme(): String {
+        return prefs.getString("saved_theme", "midnight") ?: "midnight"
+    }
+
+    fun saveCachedTheme(theme: String) {
+        prefs.edit().putString("saved_theme", theme).apply()
+    }
+
+    fun getInitialLanguage(): String {
+        return prefs.getString("saved_language", "en") ?: "en"
+    }
+
+    fun saveCachedLanguage(language: String) {
+        prefs.edit().putString("saved_language", language).apply()
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -25,3 +47,4 @@ class FocentraApp : Application() {
         }
     }
 }
+

@@ -63,11 +63,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _historyMinProductivity = MutableStateFlow(0)
     val historyMinProductivity: StateFlow<Int> = _historyMinProductivity.asStateFlow()
 
-    // Theme & Settings State
-    private val _currentTheme = MutableStateFlow("clean_minimalism")
+    // Theme & Settings State (Initialized synchronously to prevent white flash)
+    private val _currentTheme = MutableStateFlow(app.getInitialTheme())
     val currentTheme: StateFlow<String> = _currentTheme.asStateFlow()
 
-    private val _language = MutableStateFlow("en")
+    private val _language = MutableStateFlow(app.getInitialLanguage())
     val language: StateFlow<String> = _language.asStateFlow()
 
     // Snackbar event channel
@@ -131,10 +131,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch {
-            val themeSetting = repository.getSetting("theme", "clean_minimalism")
+            val themeSetting = repository.getSetting("theme", app.getInitialTheme())
             _currentTheme.value = themeSetting
-            val langSetting = repository.getSetting("language", "en")
+            app.saveCachedTheme(themeSetting)
+
+            val langSetting = repository.getSetting("language", app.getInitialLanguage())
             _language.value = langSetting
+            app.saveCachedLanguage(langSetting)
         }
     }
 
@@ -168,6 +171,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setTheme(theme: String) {
         _currentTheme.value = theme
+        app.saveCachedTheme(theme)
         viewModelScope.launch {
             repository.setSetting("theme", theme)
         }
@@ -175,6 +179,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setLanguage(lang: String) {
         _language.value = lang
+        app.saveCachedLanguage(lang)
         viewModelScope.launch {
             repository.setSetting("language", lang)
         }

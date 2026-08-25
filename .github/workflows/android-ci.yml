@@ -51,7 +51,12 @@ jobs:
             touch .env
           fi
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Run Unit Tests
+        env:
+          ANDROID_SDK_ROOT: /opt/hostedtoolcache/android
         run: gradle testDebugUnitTest --stacktrace
 
       - name: Build Debug APK

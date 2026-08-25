@@ -95,13 +95,16 @@ fun SubjectsScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showCreateDialog = true },
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("New Subject") },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            )
+            if (subjects.isNotEmpty()) {
+                ExtendedFloatingActionButton(
+                    onClick = { showCreateDialog = true },
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    text = { Text("New Subject") },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.padding(bottom = 84.dp)
+                )
+            }
         }
     ) { padding ->
         if (subjects.isEmpty()) {
@@ -120,7 +123,7 @@ fun SubjectsScreen(
                     .padding(padding)
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
-                contentPadding = PaddingValues(top = 12.dp, bottom = 80.dp)
+                contentPadding = PaddingValues(top = 12.dp, bottom = 120.dp)
             ) {
                 items(subjects, key = { it.id }) { subject ->
                     val subTopics = topics.filter { it.subjectName.equals(subject.name, ignoreCase = true) }
