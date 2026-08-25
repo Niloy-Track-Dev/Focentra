@@ -6,7 +6,6 @@ import com.example.engine.StatisticsEngine
 import com.example.engine.TimePeriod
 import org.junit.Assert.*
 import org.junit.Test
-import java.util.Calendar
 
 class ExampleUnitTest {
 
@@ -57,6 +56,8 @@ class ExampleUnitTest {
             endTime = now + 1800_000L,
             durationSeconds = 1800L,
             actualFocusedSeconds = 1800L,
+            pausedSeconds = 0L,
+            sessionType = "STOPWATCH",
             subject = "Mathematics"
         )
         val streak = calculateStreak(listOf(session))
@@ -73,6 +74,8 @@ class ExampleUnitTest {
             endTime = now + 1200_000L,
             durationSeconds = 1200L,
             actualFocusedSeconds = 1200L,
+            pausedSeconds = 0L,
+            sessionType = "COUNTDOWN",
             subject = "Biology"
         )
         val s2 = StudySessionEntity(
@@ -81,6 +84,8 @@ class ExampleUnitTest {
             endTime = now + 7200_000L,
             durationSeconds = 3600L,
             actualFocusedSeconds = 3600L,
+            pausedSeconds = 0L,
+            sessionType = "POMODORO",
             subject = "Higher Math"
         )
         val records = StatisticsEngine.calculatePersonalRecords(listOf(s1, s2))
@@ -90,4 +95,3 @@ class ExampleUnitTest {
         assertEquals(80L, records.totalAllTimeMinutes)
     }
 }
-

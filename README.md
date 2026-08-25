@@ -7,10 +7,10 @@
 [![Android](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0+-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-Material_3-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
-[![Offline First](https://img.shields.io/badge/Architecture-100%25_Offline_First-00897B?style=for-the-badge&logo=sqlite&logoColor=white)](#-privacy--offline-first-guarantee)
-[![CI](https://img.shields.io/github/actions/workflow/status/NiloyMitra/Focentra/android-ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI)](https://github.com/NiloyMitra/Focentra/actions)
+[![Offline First](https://img.shields.io/badge/Architecture-100%25_Offline_First-00897B?style=for-the-badge&logo=sqlite&logoColor=white)](#privacy-and-offline-first-guarantee)
+[![CI](https://img.shields.io/github/actions/workflow/status/Niloy-Track-Dev/Focentra/android-ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI)](https://github.com/Niloy-Track-Dev/Focentra/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F59E0B?style=for-the-badge)](LICENSE)
-[![Latest Release](https://img.shields.io/github/v/release/NiloyMitra/Focentra?style=for-the-badge&color=8B5CF6&label=Release)](https://github.com/NiloyMitra/Focentra/releases)
+[![Latest Release](https://img.shields.io/github/v/release/Niloy-Track-Dev/Focentra?style=for-the-badge&color=8B5CF6&label=Release)](https://github.com/Niloy-Track-Dev/Focentra/releases)
 
 <br/>
 
@@ -18,39 +18,43 @@
 
 <br/>
 
-[📥 Download Latest APK](#-download-focentra) • [✨ Key Features](#-key-features) • [🏛️ Architecture](#-project-architecture) • [🛠️ Developer Setup](#-setup-instructions-for-developers) • [🤝 Contributing](#-contributing)
+[📥 Download Latest APK](#download-focentra) • [✨ Key Features](#key-features) • [🏛️ Architecture](#project-architecture) • [🛠️ Developer Setup](#setup-instructions-for-developers) • [🤝 Contributing](#contributing)
 
 ---
 
 </div>
 
+<a id="table-of-contents"></a>
 ## 📖 Table of Contents
-- [✨ Why Focentra?](#-why-focentra)
-- [🚀 Key Features](#-key-features)
-- [📸 Screenshots & Visual Preview](#-screenshots--visual-preview)
-- [📥 Download Focentra](#-download-focentra)
+- [💡 Why Focentra?](#why-focentra)
+- [🚀 Key Features](#key-features)
+- [📸 Screenshots & Visual Preview](#screenshots-and-visual-preview)
+- [📥 Download Focentra](#download-focentra)
   - [Latest APK Release](#latest-apk-release)
   - [Installation Guide](#installation-guide)
-- [🔒 Privacy & Offline-First Guarantee](#-privacy--offline-first-guarantee)
-- [🏛️ Project Architecture](#-project-architecture)
-- [💻 Tech Stack & Libraries](#-tech-stack--libraries)
-- [🗄️ Local Database & Storage Model](#-local-database--storage-model)
-- [🔄 Backup, Import & Export](#-backup-import--export)
-- [🛠️ Setup Instructions for Developers](#-setup-instructions-for-developers)
-  - [Prerequisites](#prerequisites)
+- [🔒 Privacy & Offline-First Guarantee](#privacy-and-offline-first-guarantee)
+- [🏛️ Project Architecture](#project-architecture)
+  - [High-Level Data Flow Diagram](#high-level-data-flow-diagram)
+  - [Architectural Components & Modules](#architectural-components-and-modules)
+- [💻 Tech Stack & Libraries](#tech-stack-and-libraries)
+- [🗄️ Local Database & Storage Model](#local-database-and-storage-model)
+- [🔄 Backup, Import & Export](#backup-import-and-export)
+- [🛠️ Setup Instructions for Developers](#setup-instructions-for-developers)
+  - [Workstation Prerequisites](#workstation-prerequisites)
   - [Cloning and Building](#cloning-and-building)
-- [🧪 Testing & Quality Assurance](#-testing--quality-assurance)
-- [🤖 GitHub Actions & CI/CD Pipeline](#-github-actions--cicd-pipeline)
-- [🗺️ Roadmap](#-roadmap)
-- [📝 Changelog](#-changelog)
-- [🐛 Reporting Issues & Feature Requests](#-reporting-issues--feature-requests)
-- [🤝 Contributing](#-contributing)
-- [📄 License](#-license)
-- [👨‍💻 Author & Developer](#-author--developer)
-- [📬 Contact & Community](#-contact--community)
+- [🧪 Testing & Quality Assurance](#testing-and-quality-assurance)
+- [🤖 GitHub Actions & CI/CD Pipeline](#github-actions-and-cicd-pipeline)
+- [🗺️ Roadmap](#roadmap)
+- [📝 Changelog](#changelog)
+- [🐛 Reporting Issues & Feature Requests](#reporting-issues-and-feature-requests)
+- [🤝 Contributing](#contributing)
+- [📄 License](#license)
+- [👨‍💻 Author & Developer](#author-and-developer)
+- [📬 Contact & Community](#contact-and-community)
 
 ---
 
+<a id="why-focentra"></a>
 ## 💡 Why Focentra?
 
 Modern productivity apps are often bloated with mandatory sign-ins, intrusive push notifications, aggressive subscription paywalls, and persistent cloud tracking. 
@@ -63,6 +67,7 @@ Modern productivity apps are often bloated with mandatory sign-ins, intrusive pu
 
 ---
 
+<a id="key-features"></a>
 ## 🚀 Key Features
 
 | Category | Features Included |
@@ -78,9 +83,9 @@ Modern productivity apps are often bloated with mandatory sign-ins, intrusive pu
 
 ---
 
+<a id="screenshots-and-visual-preview"></a>
 ## 📸 Screenshots & Visual Preview
 
-<!-- Visual preview layout for Focentra -->
 <div align="center">
 
 | Dashboard & Goal Progress | Active Focus Timer | Immersive OLED Mode |
@@ -93,20 +98,23 @@ Modern productivity apps are often bloated with mandatory sign-ins, intrusive pu
 
 </div>
 
-> ℹ️ *For screenshot contribution specs and guidelines, see [`docs/screenshots/README.md`](docs/screenshots/README.md).*
+> ℹ️ *For screenshot contribution specifications, see [`docs/screenshots/README.md`](docs/screenshots/README.md).*
 
 ---
 
+<a id="download-focentra"></a>
 ## 📥 Download Focentra
 
+<a id="latest-apk-release"></a>
 ### Latest APK Release
-You can download the latest pre-compiled Android APK directly from the [GitHub Releases page](https://github.com/NiloyMitra/Focentra/releases).
+You can download the latest pre-compiled Android APK directly from the [GitHub Releases page](https://github.com/Niloy-Track-Dev/Focentra/releases).
 
 | Release Type | Channel | Minimum OS | Download Link |
 | :--- | :--- | :--- | :--- |
-| **Stable APK (v1.0.0)** | GitHub Releases | Android 7.0+ (API 24) | [**Download `apk-release.apk`**](https://github.com/NiloyMitra/Focentra/releases/latest) |
-| **Debug Build (CI Artifact)** | GitHub Actions | Android 7.0+ (API 24) | [**Download from Actions**](https://github.com/NiloyMitra/Focentra/actions) |
+| **Stable APK (v1.0.0)** | GitHub Releases | Android 7.0+ (API 24) | [**Download `apk-release.apk`**](https://github.com/Niloy-Track-Dev/Focentra/releases/latest) |
+| **Debug Build (CI Artifact)** | GitHub Actions | Android 7.0+ (API 24) | [**Download from Actions**](https://github.com/Niloy-Track-Dev/Focentra/actions) |
 
+<a id="installation-guide"></a>
 ### Installation Guide
 1. Download `apk-release.apk` on your Android device from the link above.
 2. Open your device's **Downloads** folder and tap the APK file.
@@ -115,6 +123,7 @@ You can download the latest pre-compiled Android APK directly from the [GitHub R
 
 ---
 
+<a id="privacy-and-offline-first-guarantee"></a>
 ## 🔒 Privacy & Offline-First Guarantee
 
 Focentra is engineered with an unwavering commitment to digital privacy:
@@ -135,46 +144,76 @@ Your data is stored exclusively inside your device's sandboxed SQLite database v
 
 ---
 
+<a id="project-architecture"></a>
 ## 🏛️ Project Architecture
 
-Focentra follows **Clean Architecture** and **MVVM** principles with **Unidirectional Data Flow (UDF)**:
+Focentra is engineered following **Clean Architecture**, **MVVM (Model-View-ViewModel)**, and **Unidirectional Data Flow (UDF)** principles. The codebase strictly separates UI rendering, state management, algorithmic computation, foreground background execution, and persistent storage.
+
+<a id="high-level-data-flow-diagram"></a>
+### High-Level Data Flow Diagram
 
 ```text
-                               ┌───────────────────────────┐
-                               │       User Interaction    │
-                               └─────────────┬─────────────┘
-                                             │
-                                             ▼
-                               ┌───────────────────────────┐
-                               │   Jetpack Compose UI      │
-                               │  (Material 3 Composables) │
-                               └─────────────▲─────────────┘
-                                             │ StateFlow
-                                             ▼
-                               ┌───────────────────────────┐
-                               │       MainViewModel       │
-                               │   (State & Orchestration) │
-                               └─────────────▲─────────────┘
-                                             │
-                      ┌──────────────────────┴──────────────────────┐
-                      ▼                                             ▼
-       ┌─────────────────────────────┐               ┌─────────────────────────────┐
-       │   Timer / Stats Engines     │               │       StudyRepository       │
-       │ (Pure Algorithmic Logic)    │               │  (Single Source of Truth)   │
-       └─────────────────────────────┘               └──────────────┬──────────────┘
-                                                                    │
-                                             ┌──────────────────────┴──────────────────────┐
-                                             ▼                                             ▼
-                              ┌─────────────────────────────┐               ┌─────────────────────────────┐
-                              │    Room SQLite Database     │               │     Android DataStore       │
-                              │ (Sessions, Subjects, Badges)│               │    (User Preferences)       │
-                              └─────────────────────────────┘               └─────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────────┐
+│                                   USER UI                                     │
+│                                                                               │
+│   Jetpack Compose Screens (Dashboard, Timer, Focus, Analytics, Subjects)      │
+│   Material Design 3 Components • Edge-to-Edge Layout • Tactile Haptics        │
+└──────────────────────────────────────▲────────────────────────────────────────┘
+                                       │ StateFlow<UiState>
+                                       │ User Action Events (Intents)
+┌──────────────────────────────────────▼────────────────────────────────────────┐
+│                              VIEWMODEL LAYER                                  │
+│                                                                               │
+│   MainViewModel (Single Source of Truth for Screen State & Event Handling)    │
+└───────────────────────▲───────────────────────────────▲───────────────────────┘
+                        │                               │
+        ┌───────────────▼───────────────┐       ┌───────▼───────────────────────┐
+        │        DOMAIN ENGINES         │       │      BACKGROUND SERVICE       │
+        │                               │       │                               │
+        │ • StatisticsEngine (Scores,   │       │ • StudyTimerService           │
+        │   Heatmaps, Period Analytics) │       │   (Foreground Lifecycle)      │
+        │ • TimerEngine (State Machine: │       │ • WhiteNoisePlayer            │
+        │   Countdown, Pomodoro, Stopw.)│       │ • WakeLock & Burn-in Shield   │
+        └───────────────▲───────────────┘       └───────────────────────────────┘
+                        │
+┌───────────────────────▼───────────────────────────────────────────────────────┐
+│                              DATA REPOSITORY                                  │
+│                                                                               │
+│   StudyRepository (Abstracts Data Sources, Caching, and Export/Import Logic)  │
+└───────────────────────▲───────────────────────────────▲───────────────────────┘
+                        │                               │
+        ┌───────────────▼───────────────┐       ┌───────▼───────────────────────┐
+        │     ROOM DATABASE (SQLite)    │       │     ANDROIDX DATASTORE        │
+        │                               │       │                               │
+        │ • StudySessionEntity          │       │ • Theme & Sound Preferences   │
+        │ • Subject & Topic Entities    │       │ • Reminder Notification Times │
+        │ • Timer Presets & Badges      │       │ • Onboarding State Flags      │
+        └───────────────────────────────┘       └───────────────────────────────┘
 ```
 
-> 📖 *For an in-depth architectural breakdown, check out [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md).*
+<a id="architectural-components-and-modules"></a>
+### Architectural Components & Modules
+
+1. **Presentation Layer (`com.example.ui`)**:
+   - 100% declarative UI built with Jetpack Compose and Material 3.
+   - Distinct screens for Dashboard, Active Timer, Full-Screen AMOLED Focus, Analytics, Calendar History, Subjects, Achievements, and Settings.
+2. **State & Orchestration Layer (`com.example.viewmodel`)**:
+   - `MainViewModel` observes asynchronous Kotlin `Flow` streams and exposes immutable `StateFlow` state to Composables.
+3. **Domain Engines (`com.example.engine`)**:
+   - **`StatisticsEngine`**: High-performance mathematical engine calculating Focus Scores ($0-100$), multi-period aggregations, 16-week GitHub-style heatmap matrices, and 24-hour concentration curves.
+   - **`TimerEngine`**: Deterministic state machine governing Countdown, Stopwatch, and Pomodoro phase transitions.
+4. **Service & Background Layer (`com.example.service`)**:
+   - **`StudyTimerService`**: Android Foreground Service ensuring zero battery-killer termination during active study.
+   - **`WhiteNoisePlayer`**: Low-latency ambient audio soundscape engine.
+5. **Data & Storage Layer (`com.example.data`)**:
+   - **`StudyRepository`**: Orchestrator bridging DAOs, DataStore, and business logic.
+   - **`AppDatabase`**: AndroidX Room SQLite database managing relational entities with transactional safety.
+
+> 📖 *For a comprehensive technical deep-dive, consult [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md).*
 
 ---
 
+<a id="tech-stack-and-libraries"></a>
 ## 💻 Tech Stack & Libraries
 
 Focentra is built with cutting-edge Android development technologies:
@@ -191,6 +230,7 @@ Focentra is built with cutting-edge Android development technologies:
 
 ---
 
+<a id="local-database-and-storage-model"></a>
 ## 🗄️ Local Database & Storage Model
 
 Focentra organizes local data into structured Room entities:
@@ -207,6 +247,7 @@ Room Database: "focentra_study_db"
 
 ---
 
+<a id="backup-import-and-export"></a>
 ## 🔄 Backup, Import & Export
 
 Focentra provides full data portability under **Settings > Data & Backup**:
@@ -220,19 +261,22 @@ Focentra provides full data portability under **Settings > Data & Backup**:
 
 ---
 
+<a id="setup-instructions-for-developers"></a>
 ## 🛠️ Setup Instructions for Developers
 
-### Prerequisites
+<a id="workstation-prerequisites"></a>
+### Workstation Prerequisites
 - **JDK**: Java Development Kit 17 (Temurin recommended)
 - **Android Studio**: Android Studio Ladybug (2024.2.1) or newer
 - **Android SDK**: Android API Level 36 (Minimum SDK 24, Target SDK 36)
 - **Git**: Version 2.30+
 
+<a id="cloning-and-building"></a>
 ### Cloning and Building
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/NiloyMitra/Focentra.git
+   git clone https://github.com/Niloy-Track-Dev/Focentra.git
    cd Focentra
    ```
 
@@ -259,6 +303,7 @@ Focentra provides full data portability under **Settings > Data & Backup**:
 
 ---
 
+<a id="testing-and-quality-assurance"></a>
 ## 🧪 Testing & Quality Assurance
 
 Focentra utilizes unit tests and Robolectric tests to verify core functionality:
@@ -278,6 +323,7 @@ Test coverage focuses on:
 
 ---
 
+<a id="github-actions-and-cicd-pipeline"></a>
 ## 🤖 GitHub Actions & CI/CD Pipeline
 
 The repository is equipped with automated CI/CD workflows:
@@ -291,6 +337,7 @@ The repository is equipped with automated CI/CD workflows:
 
 ---
 
+<a id="roadmap"></a>
 ## 🗺️ Roadmap
 
 - [x] **v1.0.0 - Core Launch**: Countdown, Stopwatch, and Pomodoro timer modes.
@@ -305,12 +352,14 @@ The repository is equipped with automated CI/CD workflows:
 
 ---
 
+<a id="changelog"></a>
 ## 📝 Changelog
 
 Detailed release notes and historical changes are maintained in [`CHANGELOG.md`](CHANGELOG.md).
 
 ---
 
+<a id="reporting-issues-and-feature-requests"></a>
 ## 🐛 Reporting Issues & Feature Requests
 
 Found a bug or have a suggestion?
@@ -320,6 +369,7 @@ Found a bug or have a suggestion?
 
 ---
 
+<a id="contributing"></a>
 ## 🤝 Contributing
 
 Contributions of all kinds are welcome! Whether you are fixing a bug, adding a new soundscape, improving documentation, or polishing the UI:
@@ -330,6 +380,7 @@ Contributions of all kinds are welcome! Whether you are fixing a bug, adding a n
 
 ---
 
+<a id="license"></a>
 ## 📄 License
 
 Focentra is released as open-source software under the permissive **[MIT License](LICENSE)**.
@@ -344,6 +395,7 @@ in the Software without restriction...
 
 ---
 
+<a id="author-and-developer"></a>
 ## 👨‍💻 Author & Developer
 
 <table align="center">
@@ -352,7 +404,7 @@ in the Software without restriction...
       <br />
       <b>Niloy Mitra</b><br />
       <sub>Student Developer & Aspiring Software Engineer</sub><br />
-      <a href="https://github.com/NiloyMitra">GitHub Profile</a>
+      <a href="https://github.com/Niloy-Track-Dev">GitHub Profile</a>
     </td>
   </tr>
 </table>
@@ -361,11 +413,12 @@ in the Software without restriction...
 
 ---
 
+<a id="contact-and-community"></a>
 ## 📬 Contact & Community
 
-- **Project Repository**: [https://github.com/NiloyMitra/Focentra](https://github.com/NiloyMitra/Focentra)
-- **Bug Reports & Issues**: [GitHub Issues](https://github.com/NiloyMitra/Focentra/issues)
-- **Community Discussions**: [GitHub Discussions](https://github.com/NiloyMitra/Focentra/discussions)
+- **Project Repository**: [https://github.com/Niloy-Track-Dev/Focentra](https://github.com/Niloy-Track-Dev/Focentra)
+- **Bug Reports & Issues**: [GitHub Issues](https://github.com/Niloy-Track-Dev/Focentra/issues)
+- **Community Discussions**: [GitHub Discussions](https://github.com/Niloy-Track-Dev/Focentra/discussions)
 - **Developer Email**: `niloymitra889@gmail.com`
 
 ---
@@ -374,6 +427,6 @@ in the Software without restriction...
 
 *Built with ❤️ and Kotlin for focused learners worldwide.*
 
-**[⬆ Back to Top](#️-focentra)**
+**[⬆ Back to Top](#table-of-contents)**
 
 </div>

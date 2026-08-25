@@ -21,7 +21,7 @@ Please **do not** file public GitHub issues, discussions, or social media posts 
 ### 2. How to Report
 Please report security concerns privately using one of the following methods:
 
-- **GitHub Security Advisory (Preferred)**: Submit a private advisory report directly via [GitHub Security Advisories](https://github.com/NiloyMitra/Focentra/security/advisories/new).
+- **GitHub Security Advisory (Preferred)**: Submit a private advisory report directly via [GitHub Security Advisories](https://github.com/Niloy-Track-Dev/Focentra/security/advisories/new).
 - **Direct Email**: Send a detailed email to the maintainer at **niloymitra889@gmail.com** with the subject line `[SECURITY VULNERABILITY] Focentra`.
 
 ### 3. What to Include in Your Report

@@ -39,7 +39,7 @@ Please review our [Code of Conduct](CODE_OF_CONDUCT.md) before participating in 
 - **Git**: Installed and configured on your machine
 
 ### Forking and Cloning
-1. Fork the repository on GitHub: Click the **Fork** button in the top-right corner of [https://github.com/NiloyMitra/Focentra](https://github.com/NiloyMitra/Focentra).
+1. Fork the repository on GitHub: Click the **Fork** button in the top-right corner of [https://github.com/Niloy-Track-Dev/Focentra](https://github.com/Niloy-Track-Dev/Focentra).
 2. Clone your fork locally:
    ```bash
    git clone https://github.com/<your-username>/Focentra.git
@@ -47,7 +47,7 @@ Please review our [Code of Conduct](CODE_OF_CONDUCT.md) before participating in 
    ```
 3. Add the upstream repository as a remote:
    ```bash
-   git remote add upstream https://github.com/NiloyMitra/Focentra.git
+   git remote add upstream https://github.com/Niloy-Track-Dev/Focentra.git
    ```
 
 ### Opening in Android Studio
@@ -155,6 +155,6 @@ If you add new business logic (such as statistical algorithms, export formatters
 ## 🐛 Reporting Bugs & Requesting Features
 - **Bug Reports**: Use the [Bug Report Template](.github/ISSUE_TEMPLATE/bug_report.md) with reproduction steps and device details.
 - **Feature Requests**: Use the [Feature Request Template](.github/ISSUE_TEMPLATE/feature_request.md) describing the user problem and proposed solution.
-- **General Questions**: Use [GitHub Discussions](https://github.com/NiloyMitra/Focentra/discussions).
+- **General Questions**: Use [GitHub Discussions](https://github.com/Niloy-Track-Dev/Focentra/discussions).
 
 Thank you for helping make Focentra better! 🚀

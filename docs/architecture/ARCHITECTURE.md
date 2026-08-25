@@ -1,4 +1,4 @@
-# System Architecture
+# 🏛️ Focentra System Architecture
 
 **Focentra** is designed following modern Android architecture best practices, leveraging **Clean Architecture**, **MVVM (Model-View-ViewModel)**, and **Unidirectional Data Flow (UDF)**.
 
@@ -6,44 +6,54 @@ The application is completely **offline-first**, storing all state and history l
 
 ---
 
-## 🏛️ Architecture Overview Diagram
+## 📐 High-Level Architecture Overview
 
 ```text
-┌────────────────────────────────────────────────────────┐
-│                      UI LAYER                          │
-│                                                        │
-│   Jetpack Compose Screens & Material 3 Components      │
-│   (Dashboard, Timer, Analytics, History, Subjects)     │
-└───────────────────────────▲────────────────────────────┘
-                            │ StateFlow / UI Events
-┌───────────────────────────▼────────────────────────────┐
-│                  PRESENTATION LAYER                    │
-│                                                        │
-│   MainViewModel (Unidirectional State Management)      │
-│   TimerEngine & StatisticsEngine Calculations          │
-└───────────────────────────▲────────────────────────────┘
-                            │ Kotlin Coroutines / Flow
-┌───────────────────────────▼────────────────────────────┐
-│                    DOMAIN / SERVICE                    │
-│                                                        │
-│   StudyTimerService (Foreground Service + Notifs)      │
-│   WhiteNoisePlayer (Audio Synthesizer Engine)          │
-└───────────────────────────▲────────────────────────────┘
-                            │ Repository Pattern
-┌───────────────────────────▼────────────────────────────┐
-│                     DATA LAYER                         │
-│                                                        │
-│   StudyRepository (Data Orchestration & Caching)       │
-│   AndroidX Room Database (Daos & SQLite Entities)      │
-│   AndroidX DataStore (User Preferences)                │
-└───────────────────────────▲────────────────────────────┘
-                            │ SQL Queries / File I/O
-┌───────────────────────────▼────────────────────────────┐
-│                   ON-DEVICE STORAGE                    │
-│                                                        │
-│   Local SQLite Database (/databases/focentra.db)       │
-│   JSON & CSV Export/Import File System                 │
-└────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                 UI LAYER                                    │
+│                                                                             │
+│   • Jetpack Compose Screens (Material Design 3)                             │
+│   • Dashboard, Timer, FullScreen Focus, Analytics, Calendar, Subjects, Etc. │
+│   • Edge-to-Edge Windows, Theme Tokens, Dynamic Color, Ripple Haptics       │
+└──────────────────────────────────────▲──────────────────────────────────────┘
+                                       │ StateFlow<UiState>
+                                       │ UI Interaction Events
+┌──────────────────────────────────────▼──────────────────────────────────────┐
+│                            PRESENTATION LAYER                               │
+│                                                                             │
+│   • MainViewModel (Single Source of Truth for Screen State & Coordination)  │
+│   • Coroutine Scopes (viewModelScope with Dispatchers.Default / IO)         │
+└───────────────────────▲─────────────────────────────▲───────────────────────┘
+                        │                             │
+        ┌───────────────▼─────────────┐       ┌───────▼───────────────────────┐
+        │       DOMAIN ENGINES        │       │      BACKGROUND SERVICE       │
+        │                             │       │                               │
+        │ • StatisticsEngine          │       │ • StudyTimerService           │
+        │   - Focus Score Algorithm   │       │   (Android Foreground Service)│
+        │   - Multi-Period Analytics  │       │ • WhiteNoisePlayer            │
+        │   - 16-Week Heatmap Matrix  │       │   (Audio Synthesizer Engine)  │
+        │   - 24-Hour Curve           │       │ • WakeLock & Burn-In Shield   │
+        │ • TimerEngine               │       └───────────────────────────────┘
+        │   - Countdown/Stopwatch/    │
+        │     Pomodoro State Machine  │
+        └───────────────▲─────────────┘
+                        │
+┌───────────────────────▼─────────────────────────────────────────────────────┐
+│                              DATA REPOSITORY                                │
+│                                                                             │
+│   • StudyRepository (Abstracts Data Sources, Caching, Backup & CSV Exports) │
+└───────────────────────▲─────────────────────────────▲───────────────────────┘
+                        │                             │
+        ┌───────────────▼─────────────┐       ┌───────▼───────────────────────┐
+        │    ROOM DATABASE (SQLite)   │       │      ANDROIDX DATASTORE       │
+        │                             │       │                               │
+        │ • StudySessionEntity        │       │ • User Theme Preferences      │
+        │ • SubjectEntity             │       │ • Soundscape Presets          │
+        │ • TopicEntity               │       │ • Daily Reminder Configs      │
+        │ • PresetEntity              │       │ • First-Run & Onboarding Flags│
+        │ • AchievementEntity         │       └───────────────────────────────┘
+        │ • ReminderEntity            │
+        └─────────────────────────────┘
 ```
 
 ---
@@ -65,11 +75,11 @@ The application is completely **offline-first**, storing all state and history l
 ### 2. State & Engine Layer (`com.example.engine` & `com.example.viewmodel`)
 - **`MainViewModel`**: Single source of truth managing UI state using Kotlin Coroutines and `MutableStateFlow`.
 - **`StatisticsEngine`**: Pure algorithmic engine computing:
-  - Focus scores ($0 - 100$) based on productivity ratings, pause ratios, and distraction frequencies.
-  - Time period aggregations (Today, Yesterday, This Week, Last Week, This Month, Last Month, This Year, All Time).
-  - 16-week GitHub-style heatmap matrices.
-  - 24-hour hourly concentration curves.
-- **`TimerEngine`**: State machine managing countdown, stopwatch, and pomodoro phase transitions.
+  - **Focus Score ($0 - 100$)**: Algorithmic formulation factoring in productivity star ratings, pause-to-work ratios, and distraction frequencies.
+  - **Time Period Aggregations**: Precise timestamp boundary calculations across Today, Yesterday, This Week, Last Week, This Month, Last Month, This Year, and All Time.
+  - **16-Week Heatmap Grid**: Generates a GitHub-style activity grid measuring daily study intensity.
+  - **24-Hour Peak Productivity Curve**: Analyzes start timestamps to uncover optimal cognitive focus hours.
+- **`TimerEngine`**: Deterministic state machine governing Countdown, Stopwatch, and Pomodoro phase transitions.
 
 ### 3. Background Services (`com.example.service`)
 - **`StudyTimerService`**: Foreground Service running with a persistent notification, ensuring study sessions never get terminated by Android battery optimizations.

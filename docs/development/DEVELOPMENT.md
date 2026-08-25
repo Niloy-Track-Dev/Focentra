@@ -21,7 +21,7 @@ Ensure you have the following software installed on your machine:
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/NiloyMitra/Focentra.git
+   git clone https://github.com/Niloy-Track-Dev/Focentra.git
    cd Focentra
    ```
 

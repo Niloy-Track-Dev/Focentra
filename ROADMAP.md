@@ -81,4 +81,4 @@ This document outlines the development trajectory of **Focentra**, categorizing 
 
 ---
 
-*Suggestions and feedback are welcome! Feel free to open a [Feature Request](https://github.com/NiloyMitra/Focentra/issues/new?template=feature_request.md).*
+*Suggestions and feedback are welcome! Feel free to open a [Feature Request](https://github.com/Niloy-Track-Dev/Focentra/issues/new?template=feature_request.md).*
