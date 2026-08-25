@@ -16,6 +16,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-08-25
+
+### Changed
+- **Version Bump**: Upgraded app `versionCode` to `2` and `versionName` to `1.1.0`.
+- **Developer Info & Contact**:
+  - Replaced temporary learning status descriptions with a clean, professional profile layout.
+  - Added direct **Gmail** contact integration with one-tap email composer and clipboard fallback (`niloymitra889@gmail.com`).
+  - Added direct **GitHub repository & profile** link integration (`https://github.com/Niloy-Track-Dev/Focentra`).
+  - Polished the About dialog design with Material 3 elevated cards and typography.
+
+### Fixed
+- Verified and fine-tuned all UI layouts, text contrast ratios, and touch targets across all screens.
+- Synchronized CI/CD GitHub Actions release pipeline and artifact naming with v1.1.0.
+
+---
+
 ## [1.0.0] - 2026-08-25
 
 ### Added
