@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -25,6 +26,7 @@ import com.example.engine.PomodoroPhase
 import com.example.engine.SessionMode
 import com.example.engine.TimerStatus
 import com.example.ui.components.DistractionLoggerDialog
+import com.example.ui.theme.FullScreenThemePresets
 import com.example.viewmodel.MainViewModel
 
 @Composable
@@ -33,6 +35,9 @@ fun FullScreenFocusScreen(
     modifier: Modifier = Modifier
 ) {
     val timerState by viewModel.timerEngine.uiState.collectAsStateWithLifecycle()
+    val fullScreenThemeId by viewModel.fullScreenTheme.collectAsStateWithLifecycle()
+    val activeTheme = remember(fullScreenThemeId) { FullScreenThemePresets.getPresetById(fullScreenThemeId) }
+
     var showDistractionDialog by remember { mutableStateOf(false) }
     var showBrainDumpDialog by remember { mutableStateOf(false) }
     var showControls by remember { mutableStateOf(true) }
@@ -73,10 +78,16 @@ fun FullScreenFocusScreen(
         )
     }
 
+    val backgroundModifier = if (activeTheme.backgroundGradient != null) {
+        Modifier.background(Brush.verticalGradient(activeTheme.backgroundGradient))
+    } else {
+        Modifier.background(activeTheme.backgroundColor)
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .then(backgroundModifier)
             .statusBarsPadding()
             .navigationBarsPadding()
             .clickable(
@@ -104,12 +115,12 @@ fun FullScreenFocusScreen(
                     modifier = Modifier
                         .size(42.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF1E2135))
+                        .background(activeTheme.cardBackgroundColor)
                 ) {
                     Icon(
                         imageVector = Icons.Default.FullscreenExit,
                         contentDescription = "Exit Fullscreen",
-                        tint = Color.White,
+                        tint = activeTheme.cardTextColor,
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -118,7 +129,7 @@ fun FullScreenFocusScreen(
 
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = Color(0xFF1E2135),
+                    color = activeTheme.cardBackgroundColor,
                     modifier = Modifier.weight(1f, fill = false)
                 ) {
                     Row(
@@ -129,13 +140,13 @@ fun FullScreenFocusScreen(
                             modifier = Modifier
                                 .size(8.dp)
                                 .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary)
+                                .background(activeTheme.accentColor)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = timerState.subject + if (timerState.topic.isNotBlank()) " • ${timerState.topic}" else "",
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = Color.White,
+                            color = activeTheme.cardTextColor,
                             maxLines = 1,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
@@ -176,7 +187,7 @@ fun FullScreenFocusScreen(
                     fontFamily = FontFamily.Monospace,
                     letterSpacing = (-2).sp
                 ),
-                color = if (isPaused) Color(0xFFEF4444) else Color.White
+                color = if (isPaused) Color(0xFFEF4444) else activeTheme.clockColor
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -201,7 +212,7 @@ fun FullScreenFocusScreen(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 2.sp
                 ),
-                color = MaterialTheme.colorScheme.primary
+                color = activeTheme.accentColor
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -209,7 +220,7 @@ fun FullScreenFocusScreen(
             Text(
                 text = "“$currentQuote”",
                 style = MaterialTheme.typography.bodyMedium.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
-                color = Color(0xFF94A3B8),
+                color = activeTheme.quoteColor,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 24.dp)
             )
@@ -233,12 +244,12 @@ fun FullScreenFocusScreen(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF1E2135))
+                        .background(activeTheme.buttonBackgroundColor)
                 ) {
                     Icon(
                         imageVector = Icons.Default.WarningAmber,
                         contentDescription = "Log Distraction",
-                        tint = Color.White
+                        tint = activeTheme.buttonIconColor
                     )
                 }
 
@@ -248,12 +259,12 @@ fun FullScreenFocusScreen(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF1E2135))
+                        .background(activeTheme.buttonBackgroundColor)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Psychology,
                         contentDescription = "Focus Brain Dump",
-                        tint = Color.White
+                        tint = activeTheme.buttonIconColor
                     )
                 }
 
@@ -269,7 +280,7 @@ fun FullScreenFocusScreen(
                     modifier = Modifier.size(68.dp),
                     shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
+                        containerColor = activeTheme.accentColor,
                         contentColor = Color.White
                     ),
                     contentPadding = PaddingValues(0.dp)
@@ -290,12 +301,12 @@ fun FullScreenFocusScreen(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .background(activeTheme.accentColor.copy(alpha = 0.25f))
                 ) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Finish Session",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        tint = activeTheme.accentColor
                     )
                 }
             }

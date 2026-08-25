@@ -39,6 +39,14 @@ class FocentraApp : Application() {
         prefs.edit().putString("saved_language", language).apply()
     }
 
+    fun getInitialFullScreenTheme(): String {
+        return prefs.getString("saved_full_screen_theme", "oled_midnight") ?: "oled_midnight"
+    }
+
+    fun saveCachedFullScreenTheme(theme: String) {
+        prefs.edit().putString("saved_full_screen_theme", theme).apply()
+    }
+
     override fun onCreate() {
         super.onCreate()
         applicationScope.launch {

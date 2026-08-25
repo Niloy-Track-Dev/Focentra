@@ -125,7 +125,15 @@ class StudyTimerService : Service() {
         )
 
         try {
-            startForeground(NOTIFICATION_ID, notification)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
             val manager = getSystemService(NotificationManager::class.java)
             manager?.notify(NOTIFICATION_ID, notification)
         } catch (e: Exception) {

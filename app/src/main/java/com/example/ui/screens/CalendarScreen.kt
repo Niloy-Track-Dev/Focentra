@@ -90,6 +90,9 @@ fun CalendarScreen(
                 )
             )
         }
+        while (list.size % 7 != 0) {
+            list.add(null)
+        }
         list
     }
 
@@ -187,7 +190,7 @@ fun CalendarScreen(
                         ) {
                             for (item in row) {
                                 if (item == null) {
-                                    Spacer(modifier = Modifier.size(36.dp))
+                                    Spacer(modifier = Modifier.size(38.dp))
                                 } else {
                                     val isSelected = item.dateKey == selectedDateKey
                                     val daySessions = sessionsByDate[item.dateKey] ?: emptyList()
