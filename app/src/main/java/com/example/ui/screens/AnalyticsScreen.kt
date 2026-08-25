@@ -358,7 +358,10 @@ fun AnalyticsScreen(
                                     streak = streakInfo
                                 )
                             },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
@@ -371,7 +374,11 @@ fun AnalyticsScreen(
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Share PNG Card")
+                            Text(
+                                text = "Share PNG",
+                                maxLines = 1,
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
+                            )
                         }
 
                         OutlinedButton(
@@ -385,7 +392,10 @@ fun AnalyticsScreen(
                                 val shareIntent = Intent.createChooser(sendIntent, "Share Study Report")
                                 context.startActivity(shareIntent)
                             },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Icon(
@@ -394,7 +404,11 @@ fun AnalyticsScreen(
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Share Text")
+                            Text(
+                                text = "Share Text",
+                                maxLines = 1,
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
+                            )
                         }
                     }
                 }

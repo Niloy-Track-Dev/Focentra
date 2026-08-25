@@ -20,10 +20,29 @@ enum class NavigationTab {
     CALENDAR,
     HISTORY,
     SUBJECTS,
+    FLASHCARDS,
     ACHIEVEMENTS,
     PRESETS,
     SETTINGS
 }
+
+data class FlashcardItem(
+    val id: String = UUID.randomUUID().toString(),
+    val subject: String,
+    val question: String,
+    val answer: String,
+    val hint: String = "",
+    val isMastered: Boolean = false,
+    val reviewCount: Int = 0
+)
+
+data class BrainDumpNote(
+    val id: String = UUID.randomUUID().toString(),
+    val note: String,
+    val timestamp: Long = System.currentTimeMillis(),
+    val subject: String = "General",
+    val isDone: Boolean = false
+)
 
 data class DashboardWidgetOrder(
     val id: String,
@@ -351,6 +370,111 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _snackbarMessage.emit("Import failed: Invalid backup format.")
         }
         return success
+    }
+
+    // Brain Dump & Focus Notes Feature
+    private val _brainDumpNotes = MutableStateFlow<List<BrainDumpNote>>(
+        listOf(
+            BrainDumpNote(
+                note = "Review calculus chain rule formulas before tomorrow's test",
+                subject = "Mathematics"
+            ),
+            BrainDumpNote(
+                note = "Outline bibliography for term research paper",
+                subject = "General"
+            )
+        )
+    )
+    val brainDumpNotes: StateFlow<List<BrainDumpNote>> = _brainDumpNotes.asStateFlow()
+
+    fun addBrainDumpNote(text: String, subject: String = "General") {
+        if (text.isBlank()) return
+        val newNote = BrainDumpNote(note = text.trim(), subject = subject)
+        _brainDumpNotes.value = listOf(newNote) + _brainDumpNotes.value
+        viewModelScope.launch {
+            _snackbarMessage.emit("Thought captured to Brain Dump!")
+        }
+    }
+
+    fun toggleBrainDumpDone(id: String) {
+        _brainDumpNotes.value = _brainDumpNotes.value.map {
+            if (it.id == id) it.copy(isDone = !it.isDone) else it
+        }
+    }
+
+    fun deleteBrainDumpNote(id: String) {
+        _brainDumpNotes.value = _brainDumpNotes.value.filter { it.id != id }
+    }
+
+    fun clearCompletedBrainDumps() {
+        _brainDumpNotes.value = _brainDumpNotes.value.filter { !it.isDone }
+    }
+
+    // Active Recall Flashcards Feature
+    private val _flashcards = MutableStateFlow<List<FlashcardItem>>(
+        listOf(
+            FlashcardItem(
+                subject = "Mathematics",
+                question = "What is the derivative of sin(x)?",
+                answer = "cos(x)",
+                hint = "Trigonometric standard derivative"
+            ),
+            FlashcardItem(
+                subject = "Mathematics",
+                question = "What is Euler's Formula relating complex numbers and trigonometry?",
+                answer = "e^(ix) = cos(x) + i*sin(x)",
+                hint = "Connects exponential and trigonometric functions"
+            ),
+            FlashcardItem(
+                subject = "Physics",
+                question = "State Newton's Second Law of Motion.",
+                answer = "Force = mass × acceleration (F = ma)",
+                hint = "Relationship between force, mass, and acceleration"
+            ),
+            FlashcardItem(
+                subject = "Physics",
+                question = "What is the speed of light in a vacuum (c)?",
+                answer = "Approximately 3 × 10^8 m/s (299,792,458 m/s)",
+                hint = "Universal physical constant"
+            ),
+            FlashcardItem(
+                subject = "Computer Science",
+                question = "What is the time complexity of binary search on a sorted array?",
+                answer = "O(log n)",
+                hint = "Halves search space each step"
+            ),
+            FlashcardItem(
+                subject = "Chemistry",
+                question = "What is Avogadro's constant?",
+                answer = "6.022 × 10^23 particles per mole",
+                hint = "Number of units in one mole of any substance"
+            )
+        )
+    )
+    val flashcards: StateFlow<List<FlashcardItem>> = _flashcards.asStateFlow()
+
+    fun addFlashcard(subject: String, question: String, answer: String, hint: String = "") {
+        if (question.isBlank() || answer.isBlank()) return
+        val newCard = FlashcardItem(
+            subject = subject.ifBlank { "General" },
+            question = question.trim(),
+            answer = answer.trim(),
+            hint = hint.trim()
+        )
+        _flashcards.value = _flashcards.value + newCard
+        viewModelScope.launch {
+            _snackbarMessage.emit("Flashcard created successfully!")
+        }
+    }
+
+    fun toggleFlashcardMastered(id: String) {
+        _flashcards.value = _flashcards.value.map {
+            if (it.id == id) it.copy(isMastered = !it.isMastered, reviewCount = it.reviewCount + 1) else it
+        }
+    }
+
+    fun deleteFlashcard(id: String) {
+        _flashcards.value = _flashcards.value.filter { it.id != id }
     }
 
     fun generateShareableStudyReport(): String {

@@ -50,6 +50,8 @@ fun TimerScreen(
     var autoStartBreaks by remember { mutableStateOf(false) }
 
     var showDistractionDialog by remember { mutableStateOf(false) }
+    var showBrainDumpDialog by remember { mutableStateOf(false) }
+    val brainDumpNotes by viewModel.brainDumpNotes.collectAsStateWithLifecycle()
 
     // Sync subject default if subjects loaded
     LaunchedEffect(subjects) {
@@ -59,13 +61,16 @@ fun TimerScreen(
     }
 
     if (timerState.showCompletionSheet && timerState.completedSessionData != null) {
-        SessionCompletionDialog(
-            session = timerState.completedSessionData!!,
-            onDismiss = { viewModel.timerEngine.dismissCompletionSheet() },
-            onSave = { rating, mood, energy, notes, loc ->
-                viewModel.timerEngine.saveCompletedSessionWithFeedback(rating, mood, energy, notes, loc)
-            }
-        )
+        val completed = timerState.completedSessionData
+        if (completed != null) {
+            SessionCompletionDialog(
+                session = completed,
+                onDismiss = { viewModel.timerEngine.dismissCompletionSheet() },
+                onSave = { rating, mood, energy, notes, loc ->
+                    viewModel.timerEngine.saveCompletedSessionWithFeedback(rating, mood, energy, notes, loc)
+                }
+            )
+        }
     }
 
     if (showDistractionDialog) {
@@ -74,6 +79,17 @@ fun TimerScreen(
             onLogCategory = { cat ->
                 viewModel.timerEngine.addDistraction(cat)
             }
+        )
+    }
+
+    if (showBrainDumpDialog) {
+        BrainDumpDialog(
+            notes = brainDumpNotes,
+            onDismiss = { showBrainDumpDialog = false },
+            onAddNote = { text -> viewModel.addBrainDumpNote(text, selectedSubject) },
+            onToggleDone = { id -> viewModel.toggleBrainDumpDone(id) },
+            onDeleteNote = { id -> viewModel.deleteBrainDumpNote(id) },
+            onClearCompleted = { viewModel.clearCompletedBrainDumps() }
         )
     }
 
@@ -469,7 +485,41 @@ fun TimerScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                // Quick Study Tools (Brain Dump & Recall Flashcards)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { showBrainDumpDialog = true },
+                        modifier = Modifier.weight(1f).height(46.dp),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Psychology,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Brain Dump (${brainDumpNotes.size})", maxLines = 1)
+                    }
+
+                    OutlinedButton(
+                        onClick = { viewModel.navigateTo(com.example.viewmodel.NavigationTab.FLASHCARDS) },
+                        modifier = Modifier.weight(1f).height(46.dp),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Style,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Flashcards", maxLines = 1)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
 
                 // Big Start Button
                 Button(

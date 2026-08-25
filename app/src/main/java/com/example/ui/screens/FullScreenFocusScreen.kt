@@ -34,7 +34,9 @@ fun FullScreenFocusScreen(
 ) {
     val timerState by viewModel.timerEngine.uiState.collectAsStateWithLifecycle()
     var showDistractionDialog by remember { mutableStateOf(false) }
+    var showBrainDumpDialog by remember { mutableStateOf(false) }
     var showControls by remember { mutableStateOf(true) }
+    val brainDumpNotes by viewModel.brainDumpNotes.collectAsStateWithLifecycle()
 
     val quotes = remember {
         listOf(
@@ -57,6 +59,17 @@ fun FullScreenFocusScreen(
             onLogCategory = { cat ->
                 viewModel.timerEngine.addDistraction(cat)
             }
+        )
+    }
+
+    if (showBrainDumpDialog) {
+        com.example.ui.components.BrainDumpDialog(
+            notes = brainDumpNotes,
+            onDismiss = { showBrainDumpDialog = false },
+            onAddNote = { text -> viewModel.addBrainDumpNote(text, timerState.subject) },
+            onToggleDone = { id -> viewModel.toggleBrainDumpDone(id) },
+            onDeleteNote = { id -> viewModel.deleteBrainDumpNote(id) },
+            onClearCompleted = { viewModel.clearCompletedBrainDumps() }
         )
     }
 
@@ -225,6 +238,21 @@ fun FullScreenFocusScreen(
                     Icon(
                         imageVector = Icons.Default.WarningAmber,
                         contentDescription = "Log Distraction",
+                        tint = Color.White
+                    )
+                }
+
+                // Brain Dump / Focus Notes Button
+                IconButton(
+                    onClick = { showBrainDumpDialog = true },
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF1E2135))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Psychology,
+                        contentDescription = "Focus Brain Dump",
                         tint = Color.White
                     )
                 }

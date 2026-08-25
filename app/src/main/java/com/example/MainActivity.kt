@@ -111,6 +111,7 @@ class MainActivity : ComponentActivity() {
                                             NavigationTab.CALENDAR -> "Study Calendar"
                                             NavigationTab.HISTORY -> "Session History"
                                             NavigationTab.SUBJECTS -> "Subjects & Topics"
+                                            NavigationTab.FLASHCARDS -> "Recall Flashcards"
                                             NavigationTab.ACHIEVEMENTS -> "Achievements"
                                             NavigationTab.PRESETS -> "Study Presets"
                                             NavigationTab.SETTINGS -> "Settings"
@@ -136,6 +137,9 @@ class MainActivity : ComponentActivity() {
                                 actions = {
                                     // More Menu items
                                     var showMenu by remember { mutableStateOf(false) }
+                                    IconButton(onClick = { viewModel.navigateTo(NavigationTab.FLASHCARDS) }) {
+                                        Icon(Icons.Default.Style, contentDescription = "Flashcards")
+                                    }
                                     IconButton(onClick = { viewModel.navigateTo(NavigationTab.SUBJECTS) }) {
                                         Icon(Icons.Default.School, contentDescription = "Subjects")
                                     }
@@ -149,6 +153,14 @@ class MainActivity : ComponentActivity() {
                                         expanded = showMenu,
                                         onDismissRequest = { showMenu = false }
                                     ) {
+                                        DropdownMenuItem(
+                                            text = { Text("Active Recall Flashcards") },
+                                            leadingIcon = { Icon(Icons.Default.Style, contentDescription = null) },
+                                            onClick = {
+                                                showMenu = false
+                                                viewModel.navigateTo(NavigationTab.FLASHCARDS)
+                                            }
+                                        )
                                         DropdownMenuItem(
                                             text = { Text("Study Presets") },
                                             leadingIcon = { Icon(Icons.Default.BookmarkBorder, contentDescription = null) },
@@ -199,6 +211,7 @@ class MainActivity : ComponentActivity() {
                                 NavigationTab.CALENDAR -> CalendarScreen(viewModel = viewModel)
                                 NavigationTab.HISTORY -> HistoryScreen(viewModel = viewModel)
                                 NavigationTab.SUBJECTS -> SubjectsScreen(viewModel = viewModel)
+                                NavigationTab.FLASHCARDS -> FlashcardsScreen(viewModel = viewModel)
                                 NavigationTab.ACHIEVEMENTS -> AchievementsScreen(viewModel = viewModel)
                                 NavigationTab.PRESETS -> PresetsScreen(viewModel = viewModel)
                                 NavigationTab.SETTINGS -> SettingsScreen(viewModel = viewModel)
