@@ -1,9 +1,9 @@
-package com.example
+package com.niloy.focentra
 
-import com.example.data.local.entity.StudySessionEntity
-import com.example.data.repository.calculateStreak
-import com.example.engine.StatisticsEngine
-import com.example.engine.TimePeriod
+import com.niloy.focentra.data.local.entity.StudySessionEntity
+import com.niloy.focentra.data.repository.calculateStreak
+import com.niloy.focentra.engine.StatisticsEngine
+import com.niloy.focentra.engine.TimePeriod
 import org.junit.Assert.*
 import org.junit.Test
 

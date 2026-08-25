@@ -4,6 +4,16 @@ This document outlines the development trajectory of **Focentra**, categorizing 
 
 ---
 
+## 🟢 Completed (v1.3.1)
+
+- [x] **UI Polish & Clean Architecture**:
+  - [x] Migrated all source package declarations and directory structures from `com.example` to `com.niloy.focentra`.
+  - [x] Removed Quick Start FAB from Dashboard to minimize cognitive load and layout clutter.
+  - [x] Fixed layout paddings in Flashcards Screen for optimal Floating Action Button placement above the bottom navigation bar.
+  - [x] Enhanced AppBar semantics with concise titling.
+
+---
+
 ## 🟢 Completed (v1.3.0)
 
 - [x] **Persistent Quick Start Floating Action Button (FAB)**:

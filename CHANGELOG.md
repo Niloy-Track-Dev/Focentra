@@ -16,6 +16,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.1] - 2026-08-25
+
+### Changed
+- **Architectural Refactoring**:
+  - Fully migrated all source package declarations and directory structures from `com.example` to `com.niloy.focentra` to align with the production application ID.
+- **UI Redesign & Polish**:
+  - Removed the `Quick Start (25m)` Floating Action Button from the Home Screen (`DashboardScreen`) as it cluttered the UI and felt out of place.
+  - Adjusted padding and layout constraints in `FlashcardsScreen` to properly align the "New Flashcard" button with the screen's bottom navigation bar, preventing awkward floating.
+  - Improved typography and semantics by changing the Top App Bar title from "Recall Flashcards" to a cleaner "Flashcards".
+- **Version Bump**: Updated `versionCode` to `4` and `versionName` to `1.3.1`.
+
+---
+
 ## [1.3.0] - 2026-08-25
 
 ### Added

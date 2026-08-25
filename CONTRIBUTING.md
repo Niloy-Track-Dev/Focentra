@@ -132,7 +132,7 @@ Before submitting your changes, ensure all tests pass and your code compiles cle
 ./gradlew assembleDebug
 ```
 
-If you add new business logic (such as statistical algorithms, export formatters, or timer state machines), please write corresponding unit tests under `app/src/test/java/com/example/`.
+If you add new business logic (such as statistical algorithms, export formatters, or timer state machines), please write corresponding unit tests under `app/src/test/java/com/niloy/focentra/`.
 
 ---
 

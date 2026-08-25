@@ -9,7 +9,7 @@
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-Material_3-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![Offline First](https://img.shields.io/badge/Architecture-100%25_Offline_First-00897B?style=for-the-badge&logo=sqlite&logoColor=white)](#-privacy--offline-first-guarantee)
 [![CI Status](https://img.shields.io/badge/CI-Passing-brightgreen?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/Niloy-Track-Dev/Focentra/actions)
-[![Release](https://img.shields.io/badge/Release-v1.3.0-8B5CF6?style=for-the-badge&logo=github)](https://github.com/Niloy-Track-Dev/Focentra/releases)
+[![Release](https://img.shields.io/badge/Release-v1.3.1-8B5CF6?style=for-the-badge&logo=github)](https://github.com/Niloy-Track-Dev/Focentra/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F59E0B?style=for-the-badge)](LICENSE)
 
 <br/>
@@ -69,7 +69,7 @@ Modern productivity apps are often bloated with mandatory sign-ins, intrusive pu
 
 | Category | Features Included |
 | :--- | :--- |
-| ⚡ **Quick Start FAB** | • **Persistent Home FAB**: Floating Action Button component on the Home screen allowing 1-tap launch of a 25-minute study timer.<br/>• **Active Session Launcher**: Seamlessly transitions into active timer state or configures a new countdown block instantly. |
+| ⏱️ **Timer Engine** | • **3 Study Modes**: Countdown timer with presets, open-ended Stopwatch, and structured multi-cycle Pomodoro.<br/>• **Background Service**: Uninterrupted session tracking via Android Foreground Service with interactive notifications.<br/>• **Distraction Logging**: One-tap distraction counter with tags to measure focus friction.<br/>• **Ambient Soundscape**: Built-in sound generator (Rain, Cafe, White Noise, Stream, Forest, Ambient). |
 | 📇 **Active Recall Flashcards** | • **3D Perspective Flip**: Interactive 3D flip-card decks (`rotationY`) with question/hint on front and answer on back.<br/>• **Mastery Analytics**: Track mastery progress percentage per subject with one-tap status toggles.<br/>• **Subject Filtering**: Filter decks by subject (Mathematics, Physics, CS, Chemistry, etc.). |
 | 🧠 **Focus Brain Dump** | • **Distraction Shield**: Instantly jot down off-topic thoughts or urgent to-dos mid-study without interrupting timer or leaving focus screen.<br/>• **Thought Log**: Time-stamped thought list with checkboxes to review and clear completed items. |
 | 🌌 **Immersive Focus** | • **Full-Screen Focus Mode**: Streamlined OLED dark canvas with flip-clock aesthetics and quick Brain Dump access.<br/>• **Anti-Burn-In Protection**: Subtle pixel shifting for OLED displays.<br/>• **Wake-Lock Management**: Keeps the screen awake during active deep work blocks. |
@@ -105,12 +105,12 @@ You can obtain the latest pre-compiled Android APK directly from this repository
 
 | Release Method | Location | Compatibility | Direct Link |
 | :--- | :--- | :--- | :--- |
-| **Official GitHub Release (v1.3.0)** | GitHub Releases Tab | Android 7.0+ (API 24+) | [**Releases Page**](https://github.com/Niloy-Track-Dev/Focentra/releases) |
+| **Official GitHub Release (v1.3.1)** | GitHub Releases Tab | Android 7.0+ (API 24+) | [**Releases Page**](https://github.com/Niloy-Track-Dev/Focentra/releases) |
 | **Automated Build (GitHub Actions)** | GitHub Actions Tab | Android 7.0+ (API 24+) | [**Actions Artifacts**](https://github.com/Niloy-Track-Dev/Focentra/actions) |
 
 ### Installation Guide
 1. Go to [**GitHub Releases**](https://github.com/Niloy-Track-Dev/Focentra/releases) or the [**GitHub Actions**](https://github.com/Niloy-Track-Dev/Focentra/actions) tab.
-2. Download the APK file (`focentra-v1.3.0-release.apk` or `focentra-debug-apk`).
+2. Download the APK file (`focentra-v1.3.1-release.apk` or `focentra-debug-apk`).
 3. Open your device's **Downloads** folder and tap the APK file.
 4. If prompted, enable **"Install unknown apps"** in your Android Settings.
 5. Tap **Install** and launch **Focentra**.
@@ -126,6 +126,7 @@ You can obtain the latest pre-compiled Android APK directly from this repository
 │  ✓  NO Account or Login Required                            │
 │  ✓  NO Cloud Database Synchronization                       │
 │  ✓  NO Analytics SDKs, Ad Networks, or Third-Party Trackers │
+│  ✓  NO AI, LLMs, or Server-Side Processing                  │
 │  ✓  NO Background Data Transmissions                        │
 │  ✓  100% of your notes, metrics, and timers stay on-device  │
 └─────────────────────────────────────────────────────────────┘
@@ -175,18 +176,18 @@ Focentra is engineered following **Clean Architecture**, **MVVM (Model-View-View
 
 ### Layer Breakdown
 
-1. **Presentation Layer (`com.example.ui`)**:
+1. **Presentation Layer (`com.niloy.focentra.ui`)**:
    - 100% declarative UI built with Jetpack Compose and Material 3.
    - Distinct screens for Dashboard, Active Timer, Full-Screen AMOLED Focus, Analytics, Calendar History, Subjects, Achievements, and Settings.
-2. **State & Orchestration Layer (`com.example.viewmodel`)**:
+2. **State & Orchestration Layer (`com.niloy.focentra.viewmodel`)**:
    - `MainViewModel` observes asynchronous Kotlin `Flow` streams and exposes immutable `StateFlow` state to Composables.
-3. **Domain Engines (`com.example.engine`)**:
+3. **Domain Engines (`com.niloy.focentra.engine`)**:
    - **`StatisticsEngine`**: High-performance mathematical engine calculating Focus Scores ($0-100$), multi-period aggregations, 16-week GitHub-style heatmap matrices, and 24-hour concentration curves.
    - **`TimerEngine`**: Deterministic state machine governing Countdown, Stopwatch, and Pomodoro phase transitions.
-4. **Service & Background Layer (`com.example.service`)**:
+4. **Service & Background Layer (`com.niloy.focentra.service`)**:
    - **`StudyTimerService`**: Android Foreground Service ensuring zero battery-killer termination during active study.
    - **`WhiteNoisePlayer`**: Low-latency ambient audio soundscape engine.
-5. **Data & Storage Layer (`com.example.data`)**:
+5. **Data & Storage Layer (`com.niloy.focentra.data`)**:
    - **`StudyRepository`**: Orchestrator bridging DAOs, DataStore, and business logic.
    - **`AppDatabase`**: AndroidX Room SQLite database managing relational entities with transactional safety.
 
@@ -299,7 +300,7 @@ The repository is equipped with automated CI/CD workflows:
 - [x] **v1.2.1 - Active Recall Flashcards**: 3D interactive flip cards with mastery progress tracking.
 - [x] **v1.2.1 - Focus Brain Dump**: Instant distraction shield & thought pad mid-study.
 - [x] **v1.2.1 - Performance Card Exporter**: One-tap shareable PNG performance card generation.
-- [x] **v1.3.0 - Persistent Quick Start FAB**: Persistent 1-tap floating action button UI on home screen launching 25-minute study timer instantly.
+- [x] **v1.3.1 - UI Polishing**: Removed persistent Home FAB to declutter the dashboard, fixed Flashcards alignment padding, and improved AppBar semantics.
 - [ ] **v1.4.0 - Glance AppWidget**: Home-screen study widget for one-tap timer launches.
 - [ ] **v2.0.0 - Wear OS Module**: Standalone Wear OS companion app.
 

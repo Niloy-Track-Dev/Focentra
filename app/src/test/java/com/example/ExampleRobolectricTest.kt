@@ -1,4 +1,4 @@
-package com.example
+package com.niloy.focentra
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
