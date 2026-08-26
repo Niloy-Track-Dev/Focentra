@@ -44,7 +44,7 @@ The application is completely **offline-first**, storing all state and history l
 
 ## 📦 Layer Breakdown
 
-### 1. UI Layer (`com.example.ui`)
+### 1. UI Layer (`com.niloy.focentra.ui`)
 - **Declarative Compose UI**: Written 100% in Jetpack Compose using Material Design 3.
 - **Screens**:
   - `DashboardScreen`: Daily study goal progress ring, quick stats, active streak, subject velocity, and recent sessions.
@@ -56,7 +56,7 @@ The application is completely **offline-first**, storing all state and history l
   - `AchievementsScreen`: Milestone badges and streak progress.
   - `SettingsScreen`: Theme toggles, study reminders, soundscape options, and JSON/CSV backup utilities.
 
-### 2. State & Engine Layer (`com.example.engine` & `com.example.viewmodel`)
+### 2. State & Engine Layer (`com.niloy.focentra.engine` & `com.niloy.focentra.viewmodel`)
 - **`MainViewModel`**: Single source of truth managing UI state using Kotlin Coroutines and `MutableStateFlow`.
 - **`StatisticsEngine`**: Pure algorithmic engine computing:
   - **Focus Score ($0 - 100$)**: Algorithmic formulation factoring in productivity star ratings, pause-to-work ratios, and distraction frequencies.
@@ -65,11 +65,11 @@ The application is completely **offline-first**, storing all state and history l
   - **24-Hour Peak Productivity Curve**: Analyzes start timestamps to uncover optimal cognitive focus hours.
 - **`TimerEngine`**: Deterministic state machine governing Countdown, Stopwatch, and Pomodoro phase transitions.
 
-### 3. Background Services (`com.example.service`)
+### 3. Background Services (`com.niloy.focentra.service`)
 - **`StudyTimerService`**: Foreground Service running with a persistent notification, ensuring study sessions never get terminated by Android battery optimizations.
 - **`WhiteNoisePlayer`**: Local synthesized ambient audio playback (Rain, White Noise, Cafe, Stream, Ambient, Forest).
 
-### 4. Data Layer (`com.example.data`)
+### 4. Data Layer (`com.niloy.focentra.data`)
 - **`StudyRepository`**: Central repository providing Flow streams from Room DAOs.
 - **Room SQLite Entities**:
   - `StudySessionEntity`: Represents each completed or saved study interval with duration, distraction logs, subject, mood, rating, and timestamps.

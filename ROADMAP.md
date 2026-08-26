@@ -4,7 +4,7 @@ This document outlines the development trajectory of **Focentra**, categorizing 
 
 ---
 
-## 🟢 Completed (v1.3.1)
+## 🟢 Completed (v1.3.2)
 
 - [x] **UI Polish & Clean Architecture**:
   - [x] Migrated all source package declarations and directory structures from `com.example` to `com.niloy.focentra`.
