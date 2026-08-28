@@ -82,6 +82,15 @@ The application is completely **offline-first**, storing all state and history l
   - Full JSON serialization for backup and restore with clipboard paste support.
   - Universal CSV exporter for spreadsheet integrations (Notion, Google Sheets, Microsoft Excel).
 
+### 5. Inter-App Integration Layer (`com.niloy.focentra.data.provider`)
+- **`DaynexaSessionsProvider`**: Secure, read-only Android `ContentProvider` implementing the Daynexa Integration API (Schema v1).
+  - Authority: `com.focentra.provider`
+  - Sessions URI: `content://com.focentra.provider/sessions`
+  - Single URI: `content://com.focentra.provider/sessions/#`
+  - Permission: `com.focentra.permission.READ_SESSIONS`
+  - User Consent Gate: In-app toggle and authorization dialog under Settings. If disabled, data queries return empty result sets.
+  - In-Memory IPC: Operates strictly via Android Binder IPC locally on the device with zero cloud connectivity.
+
 ---
 
 ## 🔒 Privacy & Local Storage Invariants

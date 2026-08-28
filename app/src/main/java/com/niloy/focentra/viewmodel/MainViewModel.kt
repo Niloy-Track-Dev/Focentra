@@ -89,6 +89,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _language = MutableStateFlow(app.getInitialLanguage())
     val language: StateFlow<String> = _language.asStateFlow()
 
+    // Daynexa Integration State
+    private val _isDaynexaConnected = MutableStateFlow(false)
+    val isDaynexaConnected: StateFlow<Boolean> = _isDaynexaConnected.asStateFlow()
+
+    private val _daynexaConnectedAt = MutableStateFlow(0L)
+    val daynexaConnectedAt: StateFlow<Long> = _daynexaConnectedAt.asStateFlow()
+
     // Snackbar event channel
     private val _snackbarMessage = MutableSharedFlow<String>()
     val snackbarMessage: SharedFlow<String> = _snackbarMessage.asSharedFlow()
@@ -157,6 +164,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val langSetting = repository.getSetting("language", app.getInitialLanguage())
             _language.value = langSetting
             app.saveCachedLanguage(langSetting)
+
+            val daynexaEnabled = repository.getSetting("daynexa_integration_enabled", "false")
+            _isDaynexaConnected.value = daynexaEnabled.equals("true", ignoreCase = true)
+
+            val daynexaTime = repository.getSetting("daynexa_connected_timestamp", "0")
+            _daynexaConnectedAt.value = daynexaTime.toLongOrNull() ?: 0L
+        }
+    }
+
+    fun setDaynexaConsent(enabled: Boolean) {
+        _isDaynexaConnected.value = enabled
+        val now = if (enabled) System.currentTimeMillis() else 0L
+        _daynexaConnectedAt.value = now
+        viewModelScope.launch {
+            repository.setSetting("daynexa_integration_enabled", if (enabled) "true" else "false")
+            repository.setSetting("daynexa_connected_timestamp", now.toString())
+            if (enabled) {
+                _snackbarMessage.emit("Daynexa Integration connected (API v1).")
+            } else {
+                _snackbarMessage.emit("Daynexa Integration disconnected.")
+            }
         }
     }
 

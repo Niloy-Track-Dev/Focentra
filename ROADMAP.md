@@ -4,6 +4,17 @@ This document outlines the development trajectory of **Focentra**, categorizing 
 
 ---
 
+## 🟢 Completed (v1.4.0)
+
+- [x] **Daynexa Integration API v1**:
+  - [x] Implemented secure, read-only Android `ContentProvider` (`DaynexaSessionsProvider`) with authority `com.focentra.provider`.
+  - [x] Exposes study session logs at `content://com.focentra.provider/sessions` adhering to Schema Version 1.
+  - [x] Custom declared permission `com.focentra.permission.READ_SESSIONS`.
+  - [x] Settings UI section for managing connection state and transparent consent authorization dialog.
+  - [x] Comprehensive Robolectric unit test suite covering schema, projection, and consent gating.
+
+---
+
 ## 🟢 Completed (v1.3.2)
 
 - [x] **UI Polish & Clean Architecture**:

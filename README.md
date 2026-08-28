@@ -9,16 +9,16 @@
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-Material_3-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![Offline First](https://img.shields.io/badge/Architecture-100%25_Offline_First-00897B?style=for-the-badge&logo=sqlite&logoColor=white)](#-privacy--offline-first-guarantee)
 [![CI Status](https://img.shields.io/badge/CI-Passing-brightgreen?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/Niloy-Track-Dev/Focentra/actions)
-[![Release](https://img.shields.io/badge/Release-v1.3.2-8B5CF6?style=for-the-badge&logo=github)](https://github.com/Niloy-Track-Dev/Focentra/releases)
+[![Release](https://img.shields.io/badge/Release-v1.4.0-8B5CF6?style=for-the-badge&logo=github)](https://github.com/Niloy-Track-Dev/Focentra/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F59E0B?style=for-the-badge)](LICENSE)
 
 <br/>
 
-**Focentra** is an open-source, privacy-first personal productivity and study timer application crafted for Android. Designed from the ground up for students, researchers, and engineers, Focentra empowers you to build laser-focused study habits with powerful interval timers, ambient soundscapes, multi-period analytics, and visual heatmaps—**without requiring an account, internet connection, or cloud subscription.**
+**Focentra** is an open-source, privacy-first personal productivity and study timer application crafted for Android. Designed from the ground up for students, researchers, and engineers, Focentra empowers you to build laser-focused study habits with powerful interval timers, ambient soundscapes, multi-period analytics, visual heatmaps, and secure local companion integrations—**without requiring an account, internet connection, or cloud subscription.**
 
 <br/>
 
-[📥 Download APK](#-download-focentra) • [✨ Key Features](#-key-features) • [🏛️ Architecture](#️-project-architecture) • [🛠️ Setup Guide](#-setup-instructions-for-developers) • [🤝 Contributing](#-contributing)
+[📥 Download APK](#-download-focentra) • [✨ Key Features](#-key-features) • [🔌 Daynexa Integration](#-daynexa-integration-api-v1) • [🏛️ Architecture](#️-project-architecture) • [🛠️ Setup Guide](#-setup-instructions-for-developers) • [🤝 Contributing](#-contributing)
 
 ---
 
@@ -31,6 +31,7 @@
 - [📥 Download Focentra](#-download-focentra)
   - [Latest APK Release](#latest-apk-release)
   - [Installation Guide](#installation-guide)
+- [🔌 Daynexa Integration (API v1)](#-daynexa-integration-api-v1)
 - [🔒 Privacy & Offline-First Guarantee](#-privacy--offline-first-guarantee)
 - [🏛️ Project Architecture](#️-project-architecture)
   - [Architecture Flow Diagram](#architecture-flow-diagram)
@@ -105,15 +106,69 @@ You can obtain the latest pre-compiled Android APK directly from this repository
 
 | Release Method | Location | Compatibility | Direct Link |
 | :--- | :--- | :--- | :--- |
-| **Official GitHub Release (v1.3.2)** | GitHub Releases Tab | Android 7.0+ (API 24+) | [**Releases Page**](https://github.com/Niloy-Track-Dev/Focentra/releases) |
+| **Official GitHub Release (v1.4.0)** | GitHub Releases Tab | Android 7.0+ (API 24+) | [**Releases Page**](https://github.com/Niloy-Track-Dev/Focentra/releases) |
 | **Automated Build (GitHub Actions)** | GitHub Actions Tab | Android 7.0+ (API 24+) | [**Actions Artifacts**](https://github.com/Niloy-Track-Dev/Focentra/actions) |
 
 ### Installation Guide
 1. Go to [**GitHub Releases**](https://github.com/Niloy-Track-Dev/Focentra/releases) or the [**GitHub Actions**](https://github.com/Niloy-Track-Dev/Focentra/actions) tab.
-2. Download the APK file (`focentra-v1.3.2-release.apk` or `focentra-debug-apk`).
+2. Download the APK file (`focentra-v1.4.0-release.apk` or `focentra-debug-apk`).
 3. Open your device's **Downloads** folder and tap the APK file.
 4. If prompted, enable **"Install unknown apps"** in your Android Settings.
 5. Tap **Install** and launch **Focentra**.
+
+---
+
+## 🔌 Daynexa Integration (API v1)
+
+Focentra provides native, privacy-preserving App-to-App interoperability with **Daynexa** via a dedicated Android `ContentProvider`. This integration allows Daynexa to query completed study session records entirely on-device without cloud synchronization or external networks.
+
+```text
+┌────────────────────────┐      Local IPC / Binder      ┌────────────────────────┐
+│        DAYNEXA         │ ───────────────────────────> │        FOCENTRA        │
+│   (Companion App)      │  content://com.focentra.     │  DaynexaSessions       │
+│                        │       provider/sessions      │     Provider (v1)      │
+└────────────────────────┘                              └───────────┬────────────┘
+                                                                    │
+                                                         User Consent Check
+                                                        (Settings Enabled?)
+                                                                    │
+                                                                    ▼
+                                                        ┌────────────────────────┐
+                                                        │  Room SQLite Database  │
+                                                        │   (study_sessions)     │
+                                                        └────────────────────────┘
+```
+
+### 📋 Integration Contract Specifications
+
+| Specification | Value | Description |
+| :--- | :--- | :--- |
+| **API Version** | `1` | Daynexa Integration API Schema v1 |
+| **Provider Authority** | `com.focentra.provider` | Android ContentProvider Authority |
+| **Sessions Endpoint** | `content://com.focentra.provider/sessions` | Directory query returning all study sessions |
+| **Single Item Endpoint** | `content://com.focentra.provider/sessions/#` | Query single session record by primary ID |
+| **Read Permission** | `com.focentra.permission.READ_SESSIONS` | Declared custom permission for session reading |
+| **Access Mode** | **Strictly Read-Only** | Mutation operations (`insert`, `update`, `delete`) are blocked |
+
+### 🗃️ Exposed Session Data Schema (v1)
+
+| Column Name | Data Type | Description |
+| :--- | :--- | :--- |
+| `sessionId` | `Long` | Unique primary key of the study session |
+| `subject` | `String` | Associated subject name (e.g., Mathematics, Computer Science) |
+| `topic` | `String` | Specific sub-topic studied (e.g., Calculus, Machine Learning) |
+| `category` | `String` | Study category designation (e.g., Study, Deep Work) |
+| `startTime` | `Long` | Start timestamp in epoch milliseconds |
+| `endTime` | `Long` | End timestamp in epoch milliseconds |
+| `durationMinutes` | `Long` / `Int` | Total focused duration in whole minutes |
+| `completed` | `Int` | Completion flag (`1` for completed, `0` for early finish / cancelled) |
+| `focusScore` | `Int` | Algorithmic session focus score ($0 - 100$) |
+| `schemaVersion` | `Int` | Constant schema version identifier (`1`) |
+
+### 🛡️ Security & User Consent Control
+- **User Consent Gate**: The provider validates that the user explicitly authorized Daynexa integration under **Settings > INTEGRATIONS > Daynexa**. If disabled, queries return empty sets to preserve total privacy.
+- **Read-Only Protection**: The ContentProvider rejects any attempted insertions, deletions, or updates with `UnsupportedOperationException`.
+- **Zero Cloud Exposure**: All data exchanges occur strictly in-memory via Android Binder IPC on the local device.
 
 ---
 

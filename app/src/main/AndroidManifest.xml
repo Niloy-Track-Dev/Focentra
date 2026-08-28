@@ -8,6 +8,12 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" tools:ignore="ForegroundServicePermission" />
 
+    <permission
+        android:name="com.focentra.permission.READ_SESSIONS"
+        android:description="@string/perm_read_sessions_desc"
+        android:label="@string/perm_read_sessions_label"
+        android:protectionLevel="normal" />
+
     <application
         android:name=".FocentraApp"
         android:allowBackup="true"
@@ -36,6 +42,14 @@
             android:exported="false"
             android:foregroundServiceType="specialUse"
             tools:ignore="ForegroundServicePermission" />
+
+        <!-- Daynexa Integration ContentProvider API v1 -->
+        <provider
+            android:name=".data.provider.DaynexaSessionsProvider"
+            android:authorities="com.focentra.provider"
+            android:exported="true"
+            android:readPermission="com.focentra.permission.READ_SESSIONS"
+            android:enabled="true" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
