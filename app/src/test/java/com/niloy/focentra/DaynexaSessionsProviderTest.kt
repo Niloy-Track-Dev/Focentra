@@ -158,21 +158,19 @@ class DaynexaSessionsProviderTest {
                     found = true
                     val subject = cursor.getString(cursor.getColumnIndexOrThrow(DaynexaContract.COLUMN_SUBJECT))
                     val topic = cursor.getString(cursor.getColumnIndexOrThrow(DaynexaContract.COLUMN_TOPIC))
-                    val category = cursor.getString(cursor.getColumnIndexOrThrow(DaynexaContract.COLUMN_CATEGORY))
                     val start = cursor.getLong(cursor.getColumnIndexOrThrow(DaynexaContract.COLUMN_START_TIME))
                     val end = cursor.getLong(cursor.getColumnIndexOrThrow(DaynexaContract.COLUMN_END_TIME))
-                    val durationMin = cursor.getLong(cursor.getColumnIndexOrThrow(DaynexaContract.COLUMN_DURATION_MINUTES))
-                    val completed = cursor.getInt(cursor.getColumnIndexOrThrow(DaynexaContract.COLUMN_COMPLETED))
+                    val durationMin = cursor.getLong(cursor.getColumnIndexOrThrow(DaynexaContract.COLUMN_DURATION))
+                    val status = cursor.getString(cursor.getColumnIndexOrThrow(DaynexaContract.COLUMN_COMPLETION_STATUS))
                     val focusScore = cursor.getInt(cursor.getColumnIndexOrThrow(DaynexaContract.COLUMN_FOCUS_SCORE))
                     val schemaVersion = cursor.getInt(cursor.getColumnIndexOrThrow(DaynexaContract.COLUMN_SCHEMA_VERSION))
 
                     assertEquals("Computer Science", subject)
                     assertEquals("Algorithms", topic)
-                    assertEquals("Engineering", category)
                     assertEquals(startTime, start)
                     assertEquals(endTime, end)
                     assertEquals(56L, durationMin) // 3400s / 60 = 56m
-                    assertEquals(1, completed)
+                    assertEquals("COMPLETED", status)
                     assertTrue("Focus score should be between 0 and 100", focusScore in 0..100)
                     assertEquals(1, schemaVersion)
                 }

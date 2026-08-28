@@ -19,23 +19,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.0] - 2026-08-28
 
 ### Added
-- **Daynexa Integration API (Schema v1)**:
+- **Daynexa Integration API (Final v1 Contract)**:
   - Implemented secure, read-only Android `ContentProvider` (`DaynexaSessionsProvider`) with authority `com.focentra.provider`.
-  - Exposes study sessions endpoint at `content://com.focentra.provider/sessions` and single-item endpoint `content://com.focentra.provider/sessions/#`.
-  - Standardized Schema Version 1 payload: `sessionId`, `subject`, `topic`, `category`, `startTime`, `endTime`, `durationMinutes`, `completed`, `focusScore`, and `schemaVersion`.
+  - Added **Push Broadcast System**: Real-time `com.focentra.ACTION_SESSION_COMPLETED` events sent upon session save.
+  - Finalized Schema v1 Contract: `sessionId`, `subject`, `topic`, `startTime`, `endTime`, `duration` (min), `completionStatus` (String), `focusScore`, and `schemaVersion`.
   - Enforced strict read-only guarantees (mutations reject with `UnsupportedOperationException`).
-  - Defined declared custom permission `com.focentra.permission.READ_SESSIONS`.
+  - Defined secure custom permission `com.focentra.permission.READ_SESSIONS` to protect both Provider access and Broadcast delivery.
 - **Integrations Hub & User Consent Controls**:
   - Added dedicated `INTEGRATIONS` section in `SettingsScreen` with live status indicator and Daynexa companion card.
   - Transparent authorization consent dialog detailing provider authority, endpoints, schema format, and privacy invariants.
-  - One-tap Disconnect toggle to instantly revoke data access at any time.
-  - Fully decoupled and optional; Focentra operates 100% independently regardless of whether Daynexa is present.
+  - One-tap Disconnect toggle to instantly revoke data access and stop all outgoing broadcasts.
 - **Unit & Robolectric Test Suite**:
-  - Added comprehensive test coverage in `DaynexaSessionsProviderTest` verifying MIME types, read-only constraints, consent gate enforcement, schema column mappings, single ID lookups, and projection filtering.
+  - Comprehensive test coverage in `DaynexaSessionsProviderTest` and `DaynexaBroadcastTest` verifying pull/push data integrity, secure permission enforcement, and consent gate logic.
 
 ### Changed
 - **Version Bump**: Incremented `versionCode` to `6` and `versionName` to `1.4.0`.
-- **Documentation**: Updated `README.md`, `ROADMAP.md`, and `ARCHITECTURE.md` with complete Daynexa Integration architecture diagrams and contract data dictionaries.
+- **Documentation**: Updated `README.md`, `ROADMAP.md`, and `ARCHITECTURE.md` with finalized API v1 specifications.
 
 ---
 

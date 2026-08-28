@@ -120,7 +120,7 @@ You can obtain the latest pre-compiled Android APK directly from this repository
 
 ## 🔌 Daynexa Integration (API v1)
 
-Focentra provides native, privacy-preserving App-to-App interoperability with **Daynexa** via a dedicated Android `ContentProvider`. This integration allows Daynexa to query completed study session records entirely on-device without cloud synchronization or external networks.
+Focentra provides native, privacy-preserving App-to-App interoperability with **Daynexa** via a dedicated Android `ContentProvider` (Pull) and a secure `Broadcast` system (Push). This integration allows Daynexa to synchronize completed study session records entirely on-device without cloud synchronization or external networks.
 
 ```text
 ┌────────────────────────┐      Local IPC / Binder      ┌────────────────────────┐
@@ -128,10 +128,10 @@ Focentra provides native, privacy-preserving App-to-App interoperability with **
 │   (Companion App)      │  content://com.focentra.     │  DaynexaSessions       │
 │                        │       provider/sessions      │     Provider (v1)      │
 └────────────────────────┘                              └───────────┬────────────┘
-                                                                    │
-                                                         User Consent Check
-                                                        (Settings Enabled?)
-                                                                    │
+            ▲                                                       │
+            │           Secure Broadcast (Push)            User Consent Check
+            └────────────────────────────────────────────── (Settings Enabled?)
+                 com.focentra.ACTION_SESSION_COMPLETED              │
                                                                     ▼
                                                         ┌────────────────────────┐
                                                         │  Room SQLite Database  │
@@ -147,27 +147,29 @@ Focentra provides native, privacy-preserving App-to-App interoperability with **
 | **Provider Authority** | `com.focentra.provider` | Android ContentProvider Authority |
 | **Sessions Endpoint** | `content://com.focentra.provider/sessions` | Directory query returning all study sessions |
 | **Single Item Endpoint** | `content://com.focentra.provider/sessions/#` | Query single session record by primary ID |
-| **Read Permission** | `com.focentra.permission.READ_SESSIONS` | Declared custom permission for session reading |
+| **Broadcast Action** | `com.focentra.ACTION_SESSION_COMPLETED` | Push event sent upon session completion |
+| **Secure Permission** | `com.focentra.permission.READ_SESSIONS` | Required permission for Provider access & Broadcast reception |
 | **Access Mode** | **Strictly Read-Only** | Mutation operations (`insert`, `update`, `delete`) are blocked |
 
 ### 🗃️ Exposed Session Data Schema (v1)
 
-| Column Name | Data Type | Description |
+| Column Name / Key | Data Type | Description |
 | :--- | :--- | :--- |
 | `sessionId` | `Long` | Unique primary key of the study session |
 | `subject` | `String` | Associated subject name (e.g., Mathematics, Computer Science) |
 | `topic` | `String` | Specific sub-topic studied (e.g., Calculus, Machine Learning) |
-| `category` | `String` | Study category designation (e.g., Study, Deep Work) |
 | `startTime` | `Long` | Start timestamp in epoch milliseconds |
 | `endTime` | `Long` | End timestamp in epoch milliseconds |
-| `durationMinutes` | `Long` / `Int` | Total focused duration in whole minutes |
-| `completed` | `Int` | Completion flag (`1` for completed, `0` for early finish / cancelled) |
+| `duration` | `Long` / `Int` | Total focused duration in whole minutes |
+| `completionStatus` | `String` | Status: `COMPLETED`, `EARLY_FINISH`, or `CANCELLED` |
 | `focusScore` | `Int` | Algorithmic session focus score ($0 - 100$) |
 | `schemaVersion` | `Int` | Constant schema version identifier (`1`) |
 
 ### 🛡️ Security & User Consent Control
-- **User Consent Gate**: The provider validates that the user explicitly authorized Daynexa integration under **Settings > INTEGRATIONS > Daynexa**. If disabled, queries return empty sets to preserve total privacy.
+- **User Consent Gate**: Both the Provider and the Broadcast system validate that the user explicitly authorized Daynexa integration under **Settings > INTEGRATIONS > Daynexa**. If disabled, queries return empty sets and no broadcasts are sent.
 - **Read-Only Protection**: The ContentProvider rejects any attempted insertions, deletions, or updates with `UnsupportedOperationException`.
+- **Broadcast Security**: The completion broadcast is sent with the `com.focentra.permission.READ_SESSIONS` permission. Only apps declaring this permission in their manifest can receive the event, preventing data leakage to unauthorized third parties.
+- **Duplicate Protection**: Use the persistent `sessionId` as a unique identifier to ensure idempotent synchronization between Pull (Provider) and Push (Broadcast) events.
 - **Zero Cloud Exposure**: All data exchanges occur strictly in-memory via Android Binder IPC on the local device.
 
 ---

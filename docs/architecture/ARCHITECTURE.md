@@ -83,13 +83,17 @@ The application is completely **offline-first**, storing all state and history l
   - Universal CSV exporter for spreadsheet integrations (Notion, Google Sheets, Microsoft Excel).
 
 ### 5. Inter-App Integration Layer (`com.niloy.focentra.data.provider`)
-- **`DaynexaSessionsProvider`**: Secure, read-only Android `ContentProvider` implementing the Daynexa Integration API (Schema v1).
-  - Authority: `com.focentra.provider`
-  - Sessions URI: `content://com.focentra.provider/sessions`
-  - Single URI: `content://com.focentra.provider/sessions/#`
-  - Permission: `com.focentra.permission.READ_SESSIONS`
-  - User Consent Gate: In-app toggle and authorization dialog under Settings. If disabled, data queries return empty result sets.
-  - In-Memory IPC: Operates strictly via Android Binder IPC locally on the device with zero cloud connectivity.
+- **Daynexa Integration API (Schema v1)**: Secure, privacy-preserving App-to-App interoperability with Daynexa companion app.
+  - **`DaynexaSessionsProvider` (Pull)**: Read-only Android `ContentProvider` exposing completed study logs.
+    - Authority: `com.focentra.provider`
+    - Sessions URI: `content://com.focentra.provider/sessions`
+    - Single URI: `content://com.focentra.provider/sessions/#`
+  - **Push Broadcast System (Push)**: Real-time event notifications for session completion.
+    - Broadcast Action: `com.focentra.ACTION_SESSION_COMPLETED`
+    - Secure Permission: `com.focentra.permission.READ_SESSIONS` (Permission-protected broadcast delivery).
+  - **User Consent Gate**: Both Pull and Push access are strictly governed by an in-app toggle and authorization dialog under Settings. If disabled, data queries return empty sets and no broadcasts are sent.
+  - **Schema v1 Payload**: `sessionId`, `subject`, `topic`, `startTime`, `endTime`, `duration` (minutes), `completionStatus`, `focusScore`, `schemaVersion`.
+  - **In-Memory IPC**: Operates strictly via Android Binder IPC locally on the device with zero cloud connectivity.
 
 ---
 

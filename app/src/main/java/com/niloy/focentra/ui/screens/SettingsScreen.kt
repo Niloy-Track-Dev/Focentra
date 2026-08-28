@@ -299,7 +299,7 @@ fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = "• Data Shared: Session ID, Subject, Topic, Category, Start/End Time, Duration, Completed Flag, Focus Score.",
+                                text = "• Data Shared: Session ID, Subject, Topic, Start/End Time, Duration, Completion Status, Focus Score.",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -356,7 +356,7 @@ fun SettingsScreen(
             },
             text = {
                 Text(
-                    text = "Daynexa will immediately lose access to query study sessions from Focentra. You can reconnect whenever you wish.",
+                    text = "Daynexa will immediately lose access to query study sessions and receive completion broadcasts from Focentra. You can reconnect whenever you wish.",
                     style = MaterialTheme.typography.bodyMedium
                 )
             },
@@ -914,7 +914,7 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.height(2.dp))
 
                             Text(
-                                text = if (isDaynexaConnected) "Connected (Read-Only ContentProvider)" else "Disconnected • Tap to configure access",
+                                text = if (isDaynexaConnected) "Connected (Provider + Broadcast Push)" else "Disconnected • Tap to configure access",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = if (isDaynexaConnected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )

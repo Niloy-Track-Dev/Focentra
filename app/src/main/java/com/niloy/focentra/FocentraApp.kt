@@ -20,7 +20,7 @@ class FocentraApp : Application() {
     }
 
     val database by lazy { AppDatabase.getDatabase(this, applicationScope) }
-    val repository by lazy { StudyRepository(database) }
+    val repository by lazy { StudyRepository(database, this) }
     val timerEngine by lazy { TimerEngine.getInstance(this, repository) }
 
     fun getInitialTheme(): String {

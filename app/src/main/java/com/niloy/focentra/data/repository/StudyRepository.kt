@@ -1,17 +1,25 @@
 package com.niloy.focentra.data.repository
 
 import android.content.Context
+import android.content.Intent
 import com.niloy.focentra.data.local.AppDatabase
 import com.niloy.focentra.data.local.entity.*
+import com.niloy.focentra.data.provider.DaynexaContract
+import com.niloy.focentra.data.provider.DaynexaIntegrationHelper
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.util.Calendar
 
-class StudyRepository(private val database: AppDatabase) {
+class StudyRepository(private val database: AppDatabase, private val context: Context) {
+    
+    private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     val allSessions: Flow<List<StudySessionEntity>> = database.sessionDao().getAllSessionsFlow()
     val allSubjects: Flow<List<SubjectEntity>> = database.subjectDao().getAllSubjectsFlow()
@@ -24,8 +32,50 @@ class StudyRepository(private val database: AppDatabase) {
 
     suspend fun insertSession(session: StudySessionEntity): Long = withContext(Dispatchers.IO) {
         val id = database.sessionDao().insertSession(session)
+        val savedSession = session.copy(id = id)
         checkAndUnlockAchievements()
+        sendDaynexaSessionBroadcast(savedSession)
         id
+    }
+
+    private fun sendDaynexaSessionBroadcast(session: StudySessionEntity) {
+        repositoryScope.launch {
+            try {
+                // 1. Verify User Consent Gate
+                val consent = database.settingDao().getSettingValue(DaynexaContract.SETTING_DAYNEXA_CONSENT)
+                if (consent.equals("true", ignoreCase = true)) {
+                    
+                    // 2. Map to Daynexa Integration API v1 Contract
+                    val intent = Intent(DaynexaContract.ACTION_SESSION_COMPLETED).apply {
+                        putExtra(DaynexaContract.COLUMN_SESSION_ID, session.id)
+                        putExtra(DaynexaContract.COLUMN_SUBJECT, session.subject)
+                        putExtra(DaynexaContract.COLUMN_TOPIC, session.topic)
+                        putExtra(DaynexaContract.COLUMN_START_TIME, session.startTime)
+                        putExtra(DaynexaContract.COLUMN_END_TIME, session.endTime)
+                        
+                        val durationMin = if (session.actualFocusedSeconds > 0) {
+                            (session.actualFocusedSeconds / 60).coerceAtLeast(1)
+                        } else {
+                            (session.durationSeconds / 60).coerceAtLeast(1)
+                        }
+                        putExtra(DaynexaContract.COLUMN_DURATION, durationMin)
+                        putExtra(DaynexaContract.COLUMN_COMPLETION_STATUS, session.completionStatus.uppercase())
+                        
+                        val focusScore = DaynexaIntegrationHelper.calculateFocusScore(session)
+                        putExtra(DaynexaContract.COLUMN_FOCUS_SCORE, focusScore)
+                        putExtra(DaynexaContract.COLUMN_SCHEMA_VERSION, DaynexaContract.SCHEMA_VERSION)
+                    }
+
+                    // 3. SECURE BROADCAST: Use permission protection
+                    // Only apps that declare com.focentra.permission.READ_SESSIONS in their manifest can receive this.
+                    // This prevents data leakage to unauthorized apps.
+                    context.sendBroadcast(intent, "com.focentra.permission.READ_SESSIONS")
+                }
+            } catch (e: Exception) {
+                // Silently fail integration broadcasts to avoid breaking core app flow
+                e.printStackTrace()
+            }
+        }
     }
 
     suspend fun updateSession(session: StudySessionEntity) = withContext(Dispatchers.IO) {

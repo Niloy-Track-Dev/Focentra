@@ -31,6 +31,11 @@ object DaynexaContract {
     val SESSIONS_URI: Uri = BASE_CONTENT_URI.buildUpon().appendPath(PATH_SESSIONS).build()
 
     /**
+     * Broadcast Action sent when a study session is successfully saved.
+     */
+    const val ACTION_SESSION_COMPLETED = "com.focentra.ACTION_SESSION_COMPLETED"
+
+    /**
      * Schema Version of the Daynexa Integration API.
      */
     const val SCHEMA_VERSION = 1
@@ -48,20 +53,17 @@ object DaynexaContract {
     const val SETTING_DAYNEXA_CONNECTED_AT = "daynexa_connected_timestamp"
 
     // ==========================================
-    // Exposed Column Names (Schema Version 1)
+    // Exposed Column Names (Final API v1 Contract)
     // ==========================================
 
     /** Unique persistent session identifier (Long) */
     const val COLUMN_SESSION_ID = "sessionId"
 
-    /** Study subject name, e.g. "Mathematics", "Programming" (String) */
+    /** Study subject name, e.g. "Mathematics" (String) */
     const val COLUMN_SUBJECT = "subject"
 
-    /** Specific sub-topic studied, e.g. "Calculus", "Algorithms" (String) */
+    /** Specific sub-topic studied, e.g. "Calculus" (String) */
     const val COLUMN_TOPIC = "topic"
-
-    /** Study category, e.g. "Study", "Deep Work" (String) */
-    const val COLUMN_CATEGORY = "category"
 
     /** Session start timestamp in epoch milliseconds (Long) */
     const val COLUMN_START_TIME = "startTime"
@@ -70,12 +72,12 @@ object DaynexaContract {
     const val COLUMN_END_TIME = "endTime"
 
     /** Total focused duration in minutes (Int / Long) */
-    const val COLUMN_DURATION_MINUTES = "durationMinutes"
+    const val COLUMN_DURATION = "duration"
 
-    /** Completion status flag: 1 if COMPLETED, 0 if CANCELLED or EARLY_FINISH (Int) */
-    const val COLUMN_COMPLETED = "completed"
+    /** Completion status: "COMPLETED", "EARLY_FINISH", "CANCELLED" (String) */
+    const val COLUMN_COMPLETION_STATUS = "completionStatus"
 
-    /** Calculated Focus Score (0 - 100) based on productivity and distractions (Int) */
+    /** Calculated Focus Score (0 - 100) (Int) */
     const val COLUMN_FOCUS_SCORE = "focusScore"
 
     /** Current schema version: always 1 (Int) */
@@ -88,11 +90,10 @@ object DaynexaContract {
         COLUMN_SESSION_ID,
         COLUMN_SUBJECT,
         COLUMN_TOPIC,
-        COLUMN_CATEGORY,
         COLUMN_START_TIME,
         COLUMN_END_TIME,
-        COLUMN_DURATION_MINUTES,
-        COLUMN_COMPLETED,
+        COLUMN_DURATION,
+        COLUMN_COMPLETION_STATUS,
         COLUMN_FOCUS_SCORE,
         COLUMN_SCHEMA_VERSION
     )

@@ -107,19 +107,17 @@ class DaynexaSessionsProvider : ContentProvider() {
                 0L
             }
 
-            val isCompleted = if (session.completionStatus.equals("COMPLETED", ignoreCase = true)) 1 else 0
-            val sessionFocusScore = calculateSessionFocusScore(session)
-
+            val sessionFocusScore = DaynexaIntegrationHelper.calculateFocusScore(session)
+            
             for (columnName in requestedColumns) {
                 when (columnName) {
                     DaynexaContract.COLUMN_SESSION_ID -> rowBuilder.add(session.id)
                     DaynexaContract.COLUMN_SUBJECT -> rowBuilder.add(session.subject)
                     DaynexaContract.COLUMN_TOPIC -> rowBuilder.add(session.topic)
-                    DaynexaContract.COLUMN_CATEGORY -> rowBuilder.add(session.category)
                     DaynexaContract.COLUMN_START_TIME -> rowBuilder.add(session.startTime)
                     DaynexaContract.COLUMN_END_TIME -> rowBuilder.add(session.endTime)
-                    DaynexaContract.COLUMN_DURATION_MINUTES -> rowBuilder.add(durationMin)
-                    DaynexaContract.COLUMN_COMPLETED -> rowBuilder.add(isCompleted)
+                    DaynexaContract.COLUMN_DURATION -> rowBuilder.add(durationMin)
+                    DaynexaContract.COLUMN_COMPLETION_STATUS -> rowBuilder.add(session.completionStatus.uppercase())
                     DaynexaContract.COLUMN_FOCUS_SCORE -> rowBuilder.add(sessionFocusScore)
                     DaynexaContract.COLUMN_SCHEMA_VERSION -> rowBuilder.add(DaynexaContract.SCHEMA_VERSION)
                     else -> rowBuilder.add(null)
@@ -150,35 +148,5 @@ class DaynexaSessionsProvider : ContentProvider() {
 
     override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?): Int {
         throw UnsupportedOperationException("Focentra Daynexa Integration ContentProvider is strictly READ-ONLY.")
-    }
-
-    /**
-     * Calculates an individualized 0-100 Focus Score for an individual session
-     * based on productivity rating, distraction count, pause ratio, and completion status.
-     */
-    private fun calculateSessionFocusScore(session: StudySessionEntity): Int {
-        // Base rating score: up to 50 points (rating 1 to 5)
-        val ratingPoints = (session.productivityRating.coerceIn(1, 5) / 5.0f) * 50f
-
-        // Distraction penalty: -5 points per distraction (up to -25 points)
-        val distractionPenalty = (session.distractionCount * 5f).coerceAtMost(25f)
-
-        // Completion reward: +25 points for completed, +10 for early finish, 0 for cancelled
-        val completionPoints = when (session.completionStatus.uppercase()) {
-            "COMPLETED" -> 25f
-            "EARLY_FINISH" -> 15f
-            else -> 0f
-        }
-
-        // Pause factor: up to 25 points based on focus vs pause ratio
-        val totalSec = session.actualFocusedSeconds + session.pausedSeconds
-        val pausePoints = if (totalSec > 0) {
-            (1.0f - (session.pausedSeconds.toFloat() / totalSec)) * 25f
-        } else {
-            25f
-        }
-
-        val total = ratingPoints + (25f - distractionPenalty) + completionPoints + pausePoints
-        return (total / 125f * 100f).roundToInt().coerceIn(0, 100)
     }
 }
