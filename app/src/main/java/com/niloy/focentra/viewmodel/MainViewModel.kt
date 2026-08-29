@@ -26,6 +26,13 @@ enum class NavigationTab {
     SETTINGS
 }
 
+enum class SrsRating(val label: String, val intervalBonus: String) {
+    AGAIN("Again", "<10m"),
+    HARD("Hard", "+1d"),
+    GOOD("Good", "+3d"),
+    EASY("Easy", "+7d")
+}
+
 data class FlashcardItem(
     val id: String = UUID.randomUUID().toString(),
     val subject: String,
@@ -33,7 +40,10 @@ data class FlashcardItem(
     val answer: String,
     val hint: String = "",
     val isMastered: Boolean = false,
-    val reviewCount: Int = 0
+    val reviewCount: Int = 0,
+    val intervalDays: Int = 1,
+    val easeFactor: Float = 2.5f,
+    val nextReviewEpochMs: Long = System.currentTimeMillis()
 )
 
 data class BrainDumpNote(
@@ -42,6 +52,15 @@ data class BrainDumpNote(
     val timestamp: Long = System.currentTimeMillis(),
     val subject: String = "General",
     val isDone: Boolean = false
+)
+
+data class ExamTarget(
+    val id: String = UUID.randomUUID().toString(),
+    val title: String,
+    val targetDateEpochMs: Long,
+    val targetHours: Float = 50f,
+    val subject: String = "General",
+    val notes: String = ""
 )
 
 data class DashboardWidgetOrder(
@@ -155,6 +174,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         list.filter { it.startTime >= startOfToday }.sumOf { it.actualFocusedSeconds } / 60
     }.stateIn(viewModelScope, SharingStarted.Lazily, 0L)
 
+    // Exam / Target Countdown Planner Feature
+    private val _examTargets = MutableStateFlow<List<ExamTarget>>(emptyList())
+    val examTargets: StateFlow<List<ExamTarget>> = _examTargets.asStateFlow()
+
     init {
         viewModelScope.launch {
             val themeSetting = repository.getSetting("theme", app.getInitialTheme())
@@ -170,6 +193,149 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             val daynexaTime = repository.getSetting("daynexa_connected_timestamp", "0")
             _daynexaConnectedAt.value = daynexaTime.toLongOrNull() ?: 0L
+
+            loadPersistentUserData()
+        }
+    }
+
+    private suspend fun loadPersistentUserData() {
+        try {
+            // Load Brain Dumps
+            val bdJson = repository.getSetting("brain_dumps_json", "")
+            if (bdJson.isNotBlank()) {
+                val array = org.json.JSONArray(bdJson)
+                val list = mutableListOf<BrainDumpNote>()
+                for (i in 0 until array.length()) {
+                    val obj = array.getJSONObject(i)
+                    list.add(
+                        BrainDumpNote(
+                            id = obj.optString("id", UUID.randomUUID().toString()),
+                            note = obj.optString("note", ""),
+                            timestamp = obj.optLong("timestamp", System.currentTimeMillis()),
+                            subject = obj.optString("subject", "General"),
+                            isDone = obj.optBoolean("isDone", false)
+                        )
+                    )
+                }
+                _brainDumpNotes.value = list
+            }
+
+            // Load Flashcards
+            val fcJson = repository.getSetting("flashcards_json", "")
+            if (fcJson.isNotBlank()) {
+                val array = org.json.JSONArray(fcJson)
+                val list = mutableListOf<FlashcardItem>()
+                for (i in 0 until array.length()) {
+                    val obj = array.getJSONObject(i)
+                    list.add(
+                        FlashcardItem(
+                            id = obj.optString("id", UUID.randomUUID().toString()),
+                            subject = obj.optString("subject", "General"),
+                            question = obj.optString("question", ""),
+                            answer = obj.optString("answer", ""),
+                            hint = obj.optString("hint", ""),
+                            isMastered = obj.optBoolean("isMastered", false),
+                            reviewCount = obj.optInt("reviewCount", 0),
+                            intervalDays = obj.optInt("intervalDays", 1),
+                            easeFactor = obj.optDouble("easeFactor", 2.5).toFloat(),
+                            nextReviewEpochMs = obj.optLong("nextReviewEpochMs", System.currentTimeMillis())
+                        )
+                    )
+                }
+                _flashcards.value = list
+            }
+
+            // Load Exam Targets
+            val etJson = repository.getSetting("exam_targets_json", "")
+            if (etJson.isNotBlank()) {
+                val array = org.json.JSONArray(etJson)
+                val list = mutableListOf<ExamTarget>()
+                for (i in 0 until array.length()) {
+                    val obj = array.getJSONObject(i)
+                    list.add(
+                        ExamTarget(
+                            id = obj.optString("id", UUID.randomUUID().toString()),
+                            title = obj.optString("title", ""),
+                            targetDateEpochMs = obj.optLong("targetDateEpochMs", System.currentTimeMillis() + 86400000L * 30),
+                            targetHours = obj.optDouble("targetHours", 50.0).toFloat(),
+                            subject = obj.optString("subject", "General"),
+                            notes = obj.optString("notes", "")
+                        )
+                    )
+                }
+                _examTargets.value = list
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun persistBrainDumps() {
+        viewModelScope.launch {
+            try {
+                val array = org.json.JSONArray()
+                _brainDumpNotes.value.forEach { note ->
+                    val obj = org.json.JSONObject().apply {
+                        put("id", note.id)
+                        put("note", note.note)
+                        put("timestamp", note.timestamp)
+                        put("subject", note.subject)
+                        put("isDone", note.isDone)
+                    }
+                    array.put(obj)
+                }
+                repository.setSetting("brain_dumps_json", array.toString())
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun persistFlashcards() {
+        viewModelScope.launch {
+            try {
+                val array = org.json.JSONArray()
+                _flashcards.value.forEach { card ->
+                    val obj = org.json.JSONObject().apply {
+                        put("id", card.id)
+                        put("subject", card.subject)
+                        put("question", card.question)
+                        put("answer", card.answer)
+                        put("hint", card.hint)
+                        put("isMastered", card.isMastered)
+                        put("reviewCount", card.reviewCount)
+                        put("intervalDays", card.intervalDays)
+                        put("easeFactor", card.easeFactor.toDouble())
+                        put("nextReviewEpochMs", card.nextReviewEpochMs)
+                    }
+                    array.put(obj)
+                }
+                repository.setSetting("flashcards_json", array.toString())
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun persistExamTargets() {
+        viewModelScope.launch {
+            try {
+                val array = org.json.JSONArray()
+                _examTargets.value.forEach { target ->
+                    val obj = org.json.JSONObject().apply {
+                        put("id", target.id)
+                        put("title", target.title)
+                        put("targetDateEpochMs", target.targetDateEpochMs)
+                        put("targetHours", target.targetHours.toDouble())
+                        put("subject", target.subject)
+                        put("notes", target.notes)
+                    }
+                    array.put(obj)
+                }
+                repository.setSetting("exam_targets_json", array.toString())
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -401,24 +567,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // Brain Dump & Focus Notes Feature
-    private val _brainDumpNotes = MutableStateFlow<List<BrainDumpNote>>(
-        listOf(
-            BrainDumpNote(
-                note = "Review calculus chain rule formulas before tomorrow's test",
-                subject = "Mathematics"
-            ),
-            BrainDumpNote(
-                note = "Outline bibliography for term research paper",
-                subject = "General"
-            )
-        )
-    )
+    private val _brainDumpNotes = MutableStateFlow<List<BrainDumpNote>>(emptyList())
     val brainDumpNotes: StateFlow<List<BrainDumpNote>> = _brainDumpNotes.asStateFlow()
 
     fun addBrainDumpNote(text: String, subject: String = "General") {
         if (text.isBlank()) return
         val newNote = BrainDumpNote(note = text.trim(), subject = subject)
         _brainDumpNotes.value = listOf(newNote) + _brainDumpNotes.value
+        persistBrainDumps()
         viewModelScope.launch {
             _snackbarMessage.emit("Thought captured to Brain Dump!")
         }
@@ -428,57 +584,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _brainDumpNotes.value = _brainDumpNotes.value.map {
             if (it.id == id) it.copy(isDone = !it.isDone) else it
         }
+        persistBrainDumps()
     }
 
     fun deleteBrainDumpNote(id: String) {
         _brainDumpNotes.value = _brainDumpNotes.value.filter { it.id != id }
+        persistBrainDumps()
     }
 
     fun clearCompletedBrainDumps() {
         _brainDumpNotes.value = _brainDumpNotes.value.filter { !it.isDone }
+        persistBrainDumps()
     }
 
     // Active Recall Flashcards Feature
-    private val _flashcards = MutableStateFlow<List<FlashcardItem>>(
-        listOf(
-            FlashcardItem(
-                subject = "Mathematics",
-                question = "What is the derivative of sin(x)?",
-                answer = "cos(x)",
-                hint = "Trigonometric standard derivative"
-            ),
-            FlashcardItem(
-                subject = "Mathematics",
-                question = "What is Euler's Formula relating complex numbers and trigonometry?",
-                answer = "e^(ix) = cos(x) + i*sin(x)",
-                hint = "Connects exponential and trigonometric functions"
-            ),
-            FlashcardItem(
-                subject = "Physics",
-                question = "State Newton's Second Law of Motion.",
-                answer = "Force = mass × acceleration (F = ma)",
-                hint = "Relationship between force, mass, and acceleration"
-            ),
-            FlashcardItem(
-                subject = "Physics",
-                question = "What is the speed of light in a vacuum (c)?",
-                answer = "Approximately 3 × 10^8 m/s (299,792,458 m/s)",
-                hint = "Universal physical constant"
-            ),
-            FlashcardItem(
-                subject = "Computer Science",
-                question = "What is the time complexity of binary search on a sorted array?",
-                answer = "O(log n)",
-                hint = "Halves search space each step"
-            ),
-            FlashcardItem(
-                subject = "Chemistry",
-                question = "What is Avogadro's constant?",
-                answer = "6.022 × 10^23 particles per mole",
-                hint = "Number of units in one mole of any substance"
-            )
-        )
-    )
+    private val _flashcards = MutableStateFlow<List<FlashcardItem>>(emptyList())
     val flashcards: StateFlow<List<FlashcardItem>> = _flashcards.asStateFlow()
 
     fun addFlashcard(subject: String, question: String, answer: String, hint: String = "") {
@@ -490,6 +610,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             hint = hint.trim()
         )
         _flashcards.value = _flashcards.value + newCard
+        persistFlashcards()
         viewModelScope.launch {
             _snackbarMessage.emit("Flashcard created successfully!")
         }
@@ -499,10 +620,77 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _flashcards.value = _flashcards.value.map {
             if (it.id == id) it.copy(isMastered = !it.isMastered, reviewCount = it.reviewCount + 1) else it
         }
+        persistFlashcards()
+    }
+
+    fun gradeFlashcard(id: String, rating: SrsRating) {
+        _flashcards.value = _flashcards.value.map { card ->
+            if (card.id == id) {
+                val newReviewCount = card.reviewCount + 1
+                val newInterval = when (rating) {
+                    SrsRating.AGAIN -> 1
+                    SrsRating.HARD -> (card.intervalDays * 1.2f).toInt().coerceAtLeast(1)
+                    SrsRating.GOOD -> (card.intervalDays * card.easeFactor).toInt().coerceAtLeast(2)
+                    SrsRating.EASY -> (card.intervalDays * (card.easeFactor + 0.5f)).toInt().coerceAtLeast(4)
+                }
+                val newEase = when (rating) {
+                    SrsRating.AGAIN -> (card.easeFactor - 0.2f).coerceAtLeast(1.3f)
+                    SrsRating.HARD -> (card.easeFactor - 0.15f).coerceAtLeast(1.3f)
+                    SrsRating.GOOD -> card.easeFactor
+                    SrsRating.EASY -> (card.easeFactor + 0.15f).coerceAtMost(3.0f)
+                }
+                val isMasteredNow = card.isMastered || rating == SrsRating.EASY || (rating == SrsRating.GOOD && newReviewCount >= 3)
+                val nextReview = System.currentTimeMillis() + (newInterval.toLong() * 86400000L)
+                card.copy(
+                    reviewCount = newReviewCount,
+                    intervalDays = newInterval,
+                    easeFactor = newEase,
+                    isMastered = isMasteredNow,
+                    nextReviewEpochMs = nextReview
+                )
+            } else card
+        }
+        persistFlashcards()
     }
 
     fun deleteFlashcard(id: String) {
         _flashcards.value = _flashcards.value.filter { it.id != id }
+        persistFlashcards()
+    }
+
+    // Exam Target Planner Methods
+    fun addExamTarget(
+        title: String,
+        targetDateEpochMs: Long,
+        targetHours: Float = 50f,
+        subject: String = "General",
+        notes: String = ""
+    ) {
+        if (title.isBlank()) return
+        val newTarget = ExamTarget(
+            title = title.trim(),
+            targetDateEpochMs = targetDateEpochMs,
+            targetHours = targetHours.coerceAtLeast(1f),
+            subject = subject.ifBlank { "General" },
+            notes = notes.trim()
+        )
+        _examTargets.value = _examTargets.value + newTarget
+        persistExamTargets()
+        viewModelScope.launch {
+            _snackbarMessage.emit("Target milestone created!")
+        }
+    }
+
+    fun deleteExamTarget(id: String) {
+        _examTargets.value = _examTargets.value.filter { it.id != id }
+        persistExamTargets()
+    }
+
+    fun editExamTarget(updated: ExamTarget) {
+        _examTargets.value = _examTargets.value.map {
+            if (it.id == updated.id) updated else it
+        }
+        persistExamTargets()
     }
 
     fun generateShareableStudyReport(): String {

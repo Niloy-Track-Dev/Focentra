@@ -1,5 +1,8 @@
 package com.niloy.focentra.ui.screens
 
+import android.app.Activity
+import android.os.Build
+import android.view.WindowManager
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,15 +18,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.niloy.focentra.engine.PomodoroPhase
 import com.niloy.focentra.engine.SessionMode
 import com.niloy.focentra.engine.TimerStatus
+import com.niloy.focentra.ui.components.BrainDumpDialog
 import com.niloy.focentra.ui.components.DistractionLoggerDialog
 import com.niloy.focentra.viewmodel.MainViewModel
 
@@ -37,6 +45,35 @@ fun FullScreenFocusScreen(
     var showBrainDumpDialog by remember { mutableStateOf(false) }
     var showControls by remember { mutableStateOf(true) }
     val brainDumpNotes by viewModel.brainDumpNotes.collectAsStateWithLifecycle()
+
+    val context = LocalContext.current
+    DisposableEffect(Unit) {
+        val window = (context as? Activity)?.window
+        var originalCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT
+        if (window != null) {
+            val controller = WindowCompat.getInsetsController(window, window.decorView)
+            controller.hide(WindowInsetsCompat.Type.systemBars())
+            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                originalCutoutMode = window.attributes.layoutInDisplayCutoutMode
+                window.attributes = window.attributes.apply {
+                    layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                }
+            }
+        }
+        onDispose {
+            if (window != null) {
+                val controller = WindowCompat.getInsetsController(window, window.decorView)
+                controller.show(WindowInsetsCompat.Type.systemBars())
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    window.attributes = window.attributes.apply {
+                        layoutInDisplayCutoutMode = originalCutoutMode
+                    }
+                }
+            }
+        }
+    }
 
     val quotes = remember {
         listOf(

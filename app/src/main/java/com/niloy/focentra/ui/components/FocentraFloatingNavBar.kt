@@ -102,7 +102,7 @@ fun FocentraFloatingNavBar(
                     ambientColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
                 ),
             shape = RoundedCornerShape(32.dp),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.65f),
             tonalElevation = 6.dp,
             border = androidx.compose.foundation.BorderStroke(
                 width = 1.dp,

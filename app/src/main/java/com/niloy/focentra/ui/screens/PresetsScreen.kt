@@ -72,14 +72,13 @@ fun PresetsScreen(
         modifier = modifier.fillMaxSize(),
         floatingActionButton = {
             if (presets.isNotEmpty()) {
-                ExtendedFloatingActionButton(
+                FloatingActionButton(
                     onClick = { showCreateDialog = true },
-                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                    text = { Text("New Preset") },
                     containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "New Preset")
+                }
             }
         }
     ) { padding ->

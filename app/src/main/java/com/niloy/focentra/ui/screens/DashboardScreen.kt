@@ -12,8 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,6 +48,10 @@ fun DashboardScreen(
     val presets by viewModel.presets.collectAsStateWithLifecycle()
     val periodStats by viewModel.periodStatistics.collectAsStateWithLifecycle()
     val heatmapData by viewModel.heatmapData.collectAsStateWithLifecycle()
+    val examTargets by viewModel.examTargets.collectAsStateWithLifecycle()
+    val subjects by viewModel.subjects.collectAsStateWithLifecycle()
+
+    var showAddExamDialog by remember { mutableStateOf(false) }
 
     val dailyGoalMins = goals.find { it.periodType == "DAILY" }?.targetMinutes ?: 480
     val progressPct = if (dailyGoalMins > 0) {
@@ -68,7 +71,66 @@ fun DashboardScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
     ) {
-        // Content begins directly with Active Session or Today's Focus
+        // Dynamic Greeting & Motivational Subtitle Header
+        item {
+            val calendar = java.util.Calendar.getInstance()
+            val hour = calendar.get(java.util.Calendar.HOUR_OF_DAY)
+            val (greeting, greetingIcon, subPrompt) = when {
+                hour in 5..11 -> Triple("Good Morning", Icons.Default.WbSunny, "Ready to start your high-focus study sprint?")
+                hour in 12..16 -> Triple("Good Afternoon", Icons.Default.LightMode, "Keep your momentum going strong!")
+                hour in 17..21 -> Triple("Good Evening", Icons.Default.Bedtime, "Great time for active recall and revision.")
+                else -> Triple("Late Night Focus", Icons.Default.Nightlight, "Quiet hours for deep learning & mastery.")
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = greetingIcon,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = greeting,
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = (-0.5).sp
+                            ),
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subPrompt,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                    modifier = Modifier.clip(RoundedCornerShape(12.dp))
+                ) {
+                    Box(modifier = Modifier.padding(8.dp)) {
+                        Icon(
+                            imageVector = greetingIcon,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+        }
 
         // Active Session Banner (if running or paused)
         if (timerState.status == TimerStatus.RUNNING || timerState.status == TimerStatus.PAUSED) {
@@ -125,216 +187,356 @@ fun DashboardScreen(
             }
         }
 
-        // Hero Today's Focus Card (Clean Minimalism Hero)
+        // Exam & Target Milestone Countdown Card (NEW FEATURE)
         item {
+            ExamMilestoneCountdownSection(
+                examTargets = examTargets,
+                sessions = sessions,
+                onAddClick = { showAddExamDialog = true },
+                onStartTimer = { target ->
+                    viewModel.startQuickTimer(45, target.subject, SessionMode.POMODORO)
+                },
+                onDeleteTarget = { id -> viewModel.deleteExamTarget(id) }
+            )
+        }
+
+        // Hero Today's Focus Card (Vibrant Gradient Hero)
+        item {
+            val heroGradient = Brush.linearGradient(
+                colors = listOf(
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
+                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.8f)
+                )
+            )
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 180.dp),
                 shape = RoundedCornerShape(32.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
             ) {
-                Column(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(24.dp),
-                    verticalArrangement = Arrangement.SpaceBetween
+                        .background(heroGradient)
+                        .padding(24.dp)
                 ) {
-                    // Top Row: Title, Time & Fire Streak Badge
-                    Row(
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
+                        verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column {
-                            Text(
-                                text = "Today's Focus",
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                                color = Color.White.copy(alpha = 0.85f)
-                            )
-                            Text(
-                                text = "${String.format("%02d", todayHrs)}h ${String.format("%02d", todayRemMins)}m",
-                                style = MaterialTheme.typography.headlineLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = (-0.5).sp
-                                ),
-                                color = Color.White
-                            )
-                        }
-
-                        // Glassmorphic Fire Streak Pill
-                        Surface(
-                            shape = RoundedCornerShape(50),
-                            color = Color.White.copy(alpha = 0.2f),
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(50))
-                                .clickable { viewModel.navigateTo(NavigationTab.ACHIEVEMENTS) }
+                        // Top Row: Title, Time & Fire Streak Badge
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.Top
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.LocalFireDepartment,
-                                    contentDescription = "Streak",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(16.dp)
+                            Column {
+                                Text(
+                                    text = "Today's Focus Time",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                                    color = Color.White.copy(alpha = 0.9f)
                                 )
                                 Text(
-                                    text = "${streakInfo.currentStreak}",
-                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    text = "${String.format("%02d", todayHrs)}h ${String.format("%02d", todayRemMins)}m",
+                                    style = MaterialTheme.typography.headlineLarge.copy(
+                                        fontWeight = FontWeight.Black,
+                                        letterSpacing = (-0.5).sp
+                                    ),
                                     color = Color.White
                                 )
                             }
+
+                            // Glassmorphic Fire Streak Pill
+                            Surface(
+                                shape = RoundedCornerShape(50),
+                                color = Color.White.copy(alpha = 0.22f),
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(50))
+                                    .clickable { viewModel.navigateTo(NavigationTab.ACHIEVEMENTS) }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.LocalFireDepartment,
+                                        contentDescription = "Streak",
+                                        tint = Color(0xFFFFD166),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Text(
+                                        text = "${streakInfo.currentStreak} Days",
+                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
+                                        color = Color.White
+                                    )
+                                }
+                            }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
 
-                    // Progress Section
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = "${progressPct.toInt()}% of ${goalHrs}h ${goalRemMins}m daily goal",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                                color = Color.White.copy(alpha = 0.9f)
-                            )
-                            val remainingMins = (dailyGoalMins - todayMins).coerceAtLeast(0)
-                            Text(
-                                text = if (remainingMins > 0) "Remaining: ${remainingMins / 60}h ${remainingMins % 60}m" else "Goal achieved! 🎉",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                                color = Color.White.copy(alpha = 0.9f)
-                            )
-                        }
+                        // Progress Section
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "${progressPct.toInt()}% of ${goalHrs}h ${goalRemMins}m goal",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = Color.White.copy(alpha = 0.95f)
+                                )
+                                val remainingMins = (dailyGoalMins - todayMins).coerceAtLeast(0)
+                                Text(
+                                    text = if (remainingMins > 0) "Left: ${remainingMins / 60}h ${remainingMins % 60}m" else "Goal Achieved!",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = Color.White.copy(alpha = 0.95f)
+                                )
+                            }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
 
-                        // Custom Clean White Progress Bar
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(10.dp)
-                                .clip(RoundedCornerShape(5.dp))
-                                .background(Color.White.copy(alpha = 0.22f))
-                        ) {
+                            // Custom Clean White Progress Bar
                             Box(
                                 modifier = Modifier
-                                    .fillMaxWidth(fraction = (progressPct / 100f).coerceIn(0f, 1f))
-                                    .fillMaxHeight()
+                                    .fillMaxWidth()
+                                    .height(10.dp)
                                     .clip(RoundedCornerShape(5.dp))
-                                    .background(Color.White)
-                            )
+                                    .background(Color.White.copy(alpha = 0.25f))
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(fraction = (progressPct / 100f).coerceIn(0f, 1f))
+                                        .fillMaxHeight()
+                                        .clip(RoundedCornerShape(5.dp))
+                                        .background(Color.White)
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-        // Quick Action Grid (Countdown, Stopwatch, Pomodoro)
+        // Quick Action Grid (Countdown, Pomodoro, Stopwatch, Flashcards)
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Countdown Card
-                Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(115.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp))
-                        .clickable { viewModel.startQuickTimer(25, "General Study", SessionMode.COUNTDOWN) },
-                    shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    shadowElevation = 1.dp
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(14.dp),
-                        verticalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(38.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFFF0F2FF)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Timer,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "Quick Study Modes",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
 
-                        Column {
-                            Text(
-                                text = "Countdown",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = "25m Preset",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Countdown Card
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(105.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(20.dp))
+                            .clickable { viewModel.startQuickTimer(25, "General Study", SessionMode.COUNTDOWN) },
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 1.dp
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(12.dp),
+                            verticalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Timer,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+
+                            Column {
+                                Text(
+                                    text = "Timer (25m)",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1
+                                )
+                                Text(
+                                    text = "Standard Sprint",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
+
+                    // Pomodoro Card
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(105.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(20.dp))
+                            .clickable { viewModel.startQuickTimer(25, "General Study", SessionMode.POMODORO) },
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 1.dp
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(12.dp),
+                            verticalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(MaterialTheme.colorScheme.secondaryContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AvTimer,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+
+                            Column {
+                                Text(
+                                    text = "Pomodoro",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1
+                                )
+                                Text(
+                                    text = "25m / 5m intervals",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
+                                )
+                            }
                         }
                     }
                 }
 
-                // Stopwatch Card
-                Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(115.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp))
-                        .clickable { viewModel.startQuickTimer(0, "General Study", SessionMode.STOPWATCH) },
-                    shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    shadowElevation = 1.dp
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Column(
+                    // Stopwatch Card
+                    Surface(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(14.dp),
-                        verticalArrangement = Arrangement.SpaceBetween
+                            .weight(1f)
+                            .height(105.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(20.dp))
+                            .clickable { viewModel.startQuickTimer(0, "General Study", SessionMode.STOPWATCH) },
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 1.dp
                     ) {
-                        Box(
+                        Column(
                             modifier = Modifier
-                                .size(38.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFFFFF4ED)),
-                            contentAlignment = Alignment.Center
+                                .fillMaxSize()
+                                .padding(12.dp),
+                            verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Schedule,
-                                contentDescription = null,
-                                tint = Color(0xFFF27D26),
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
+                            Box(
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFFFFF4ED)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Schedule,
+                                    contentDescription = null,
+                                    tint = Color(0xFFF27D26),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
 
-                        Column {
-                            Text(
-                                text = "Stopwatch",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = "Open session",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Column {
+                                Text(
+                                    text = "Stopwatch",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1
+                                )
+                                Text(
+                                    text = "Open focus flow",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
+
+                    // Flashcards Card
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(105.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(20.dp))
+                            .clickable { viewModel.navigateTo(NavigationTab.FLASHCARDS) },
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 1.dp
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(12.dp),
+                            verticalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFFE8F5E9)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Style,
+                                    contentDescription = null,
+                                    tint = Color(0xFF2E7D32),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+
+                            Column {
+                                Text(
+                                    text = "Flashcards",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1
+                                )
+                                Text(
+                                    text = "Spaced Recall Deck",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
+                                )
+                            }
                         }
                     }
                 }
@@ -686,6 +888,405 @@ fun DashboardScreen(
             }
         }
     }
+
+    if (showAddExamDialog) {
+        val subjectNames = remember(subjects) {
+            val list = mutableListOf("General")
+            subjects.forEach { if (!list.contains(it.name)) list.add(it.name) }
+            list
+        }
+        AddExamTargetDialog(
+            subjects = subjectNames,
+            onDismiss = { showAddExamDialog = false },
+            onSave = { title, dateEpoch, hours, subj, notes ->
+                viewModel.addExamTarget(title, dateEpoch, hours, subj, notes)
+                showAddExamDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+fun ExamMilestoneCountdownSection(
+    examTargets: List<com.niloy.focentra.viewmodel.ExamTarget>,
+    sessions: List<StudySessionEntity>,
+    onAddClick: () -> Unit,
+    onStartTimer: (com.niloy.focentra.viewmodel.ExamTarget) -> Unit,
+    onDeleteTarget: (String) -> Unit
+) {
+    if (examTargets.isEmpty()) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onAddClick() },
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(18.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Flag,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Column {
+                        Text(
+                            text = "Target Exam & Milestone Countdown",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Set an upcoming exam & auto-calculate daily study pacing",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                IconButton(onClick = onAddClick) {
+                    Icon(
+                        imageVector = Icons.Default.AddCircleOutline,
+                        contentDescription = "Add Exam Target",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+    } else {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Exam & Goal Milestones",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                TextButton(onClick = onAddClick) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Add Exam", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                }
+            }
+
+            examTargets.forEach { target ->
+                ExamMilestoneCard(
+                    target = target,
+                    sessions = sessions,
+                    onStartTimer = { onStartTimer(target) },
+                    onDelete = { onDeleteTarget(target.id) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ExamMilestoneCard(
+    target: com.niloy.focentra.viewmodel.ExamTarget,
+    sessions: List<StudySessionEntity>,
+    onStartTimer: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val now = System.currentTimeMillis()
+    val diffMs = target.targetDateEpochMs - now
+    val daysRemaining = if (diffMs > 0) (diffMs / (1000L * 60 * 60 * 24)).toInt() else 0
+    val hoursRemaining = if (diffMs > 0) ((diffMs % (1000L * 60 * 60 * 24)) / (1000L * 60 * 60)).toInt() else 0
+
+    val relevantSessions = sessions.filter {
+        target.subject.equals("General", ignoreCase = true) || it.subject.equals(target.subject, ignoreCase = true)
+    }
+    val studiedSec = relevantSessions.sumOf { it.actualFocusedSeconds }
+    val studiedHours = studiedSec / 3600f
+    val progressPct = (studiedHours / target.targetHours.coerceAtLeast(1f) * 100f).coerceIn(0f, 100f)
+
+    val remainingHoursToStudy = (target.targetHours - studiedHours).coerceAtLeast(0f)
+    val dailyPace = if (daysRemaining > 0) remainingHoursToStudy / daysRemaining else remainingHoursToStudy
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.School,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Column {
+                        Text(
+                            text = target.title,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = target.subject + if (target.notes.isNotBlank()) " • ${target.notes}" else "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (daysRemaining <= 3) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer
+                ) {
+                    Text(
+                        text = if (daysRemaining > 0) "$daysRemaining Days Left" else "${hoursRemaining}h Left (Today!)",
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = if (daysRemaining <= 3) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            }
+
+            // Study Hours Progress Bar
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = String.format(Locale.getDefault(), "Target Progress: %.1fh / %.0fh", studiedHours, target.targetHours),
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "${progressPct.toInt()}%",
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                LinearProgressIndicator(
+                    progress = { progressPct / 100f },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            }
+
+            // Pacing recommendation badge & Quick Study Action
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Bolt,
+                            contentDescription = null,
+                            tint = Color(0xFFF59E0B),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = String.format(Locale.getDefault(), "%.1f hrs/day needed", dailyPace),
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                        Icon(
+                            imageVector = Icons.Default.DeleteOutline,
+                            contentDescription = "Delete Milestone",
+                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    FilledTonalButton(
+                        onClick = onStartTimer,
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Study", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddExamTargetDialog(
+    subjects: List<String>,
+    onDismiss: () -> Unit,
+    onSave: (title: String, targetDateEpoch: Long, targetHours: Float, subject: String, notes: String) -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+    var selectedSubject by remember { mutableStateOf(subjects.firstOrNull() ?: "General") }
+    var targetHoursText by remember { mutableStateOf("40") }
+    var daysUntilExamText by remember { mutableStateOf("30") }
+    var notes by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Flag,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Text(
+                    text = "Target Exam / Milestone",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Exam / Goal Title (e.g. Final Exam, BCS)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                OutlinedTextField(
+                    value = selectedSubject,
+                    onValueChange = { selectedSubject = it },
+                    label = { Text("Subject or Topic") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = daysUntilExamText,
+                        onValueChange = { newVal -> daysUntilExamText = newVal.filter { ch -> ch.isDigit() } },
+                        label = { Text("Days from today") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = targetHoursText,
+                        onValueChange = { newVal -> targetHoursText = newVal.filter { ch -> ch.isDigit() } },
+                        label = { Text("Target Hours") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { newVal -> notes = newVal },
+                    label = { Text("Target Syllabus / Notes") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (title.isNotBlank()) {
+                        val days = daysUntilExamText.toLongOrNull() ?: 30L
+                        val hours = targetHoursText.toFloatOrNull() ?: 40f
+                        val targetEpoch = System.currentTimeMillis() + (days * 86400000L)
+                        onSave(title, targetEpoch, hours, selectedSubject, notes)
+                    }
+                },
+                enabled = title.isNotBlank(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Set Milestone")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable

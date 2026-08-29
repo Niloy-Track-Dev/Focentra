@@ -132,7 +132,15 @@ fun HistoryScreen(
                 FilterChip(
                     selected = minRatingFilter == 4,
                     onClick = { viewModel.setHistoryMinProductivity(if (minRatingFilter == 4) 0 else 4) },
-                    label = { Text("⭐ 4+ Stars") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = if (minRatingFilter == 4) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    label = { Text("4+ Stars") },
                     shape = RoundedCornerShape(12.dp)
                 )
             }
@@ -262,11 +270,20 @@ fun HistorySessionCard(
             if (session.distractionCount > 0 || session.notes.isNotBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 if (session.distractionCount > 0) {
-                    Text(
-                        text = "⚡ ${session.distractionCount} distractions logged",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Bolt,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "${session.distractionCount} distractions logged",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
                 if (session.notes.isNotBlank()) {
                     Text(

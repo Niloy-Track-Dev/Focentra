@@ -1,7 +1,6 @@
 package com.niloy.focentra.ui.components
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -40,7 +40,7 @@ fun TimerProgressRing(
     onLogDistractionClick: () -> Unit,
     onToggleFullScreen: () -> Unit,
     modifier: Modifier = Modifier,
-    ringSize: Dp = 290.dp
+    ringSize: Dp = 295.dp
 ) {
     val isRunning = state.status == TimerStatus.RUNNING
     val isPaused = state.status == TimerStatus.PAUSED
@@ -51,16 +51,31 @@ fun TimerProgressRing(
         label = "timer_progress"
     )
 
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse_glow")
+    val pulseGlowAlpha by infiniteTransition.animateFloat(
+        initialValue = if (isRunning) 0.15f else 0.05f,
+        targetValue = if (isRunning) 0.35f else 0.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse_alpha"
+    )
+
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val secondaryColor = MaterialTheme.colorScheme.secondary
+    val tertiaryColor = MaterialTheme.colorScheme.tertiary
+
     val primaryGradient = Brush.sweepGradient(
         listOf(
-            MaterialTheme.colorScheme.primary,
-            MaterialTheme.colorScheme.secondary,
-            MaterialTheme.colorScheme.tertiary,
-            MaterialTheme.colorScheme.primary
+            primaryColor,
+            secondaryColor,
+            tertiaryColor,
+            primaryColor
         )
     )
 
-    val trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    val trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -70,16 +85,18 @@ fun TimerProgressRing(
         Surface(
             shape = RoundedCornerShape(20.dp),
             color = when {
-                isPaused -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f)
+                isPaused -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.9f)
                 state.mode == SessionMode.POMODORO && state.pomodoroPhase != PomodoroPhase.FOCUS ->
                     MaterialTheme.colorScheme.secondaryContainer
-                isRunning -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
+                isRunning -> MaterialTheme.colorScheme.primaryContainer
                 else -> MaterialTheme.colorScheme.surfaceVariant
             },
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier
+                .padding(bottom = 16.dp)
+                .shadow(elevation = 2.dp, shape = RoundedCornerShape(20.dp))
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 7.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 val statusDotColor = when {
@@ -104,7 +121,7 @@ fun TimerProgressRing(
                         }
                     }
                     state.mode == SessionMode.STOPWATCH -> "STOPWATCH ACTIVE"
-                    isRunning -> "FOCUSING"
+                    isRunning -> "FOCUSING IN THE ZONE"
                     else -> "READY"
                 }
                 Text(
@@ -118,15 +135,23 @@ fun TimerProgressRing(
             }
         }
 
-        // Circular Timer Canvas
+        // Circular Timer Canvas with Ambient Glow Aura
         Box(
             modifier = Modifier
                 .size(ringSize)
-                .padding(12.dp),
+                .padding(10.dp),
             contentAlignment = Alignment.Center
         ) {
+            // Ambient Aura
             Canvas(modifier = Modifier.fillMaxSize()) {
-                val strokeWidth = 14.dp.toPx()
+                if (isRunning) {
+                    drawCircle(
+                        color = primaryColor.copy(alpha = pulseGlowAlpha),
+                        radius = size.minDimension / 2f
+                    )
+                }
+
+                val strokeWidth = 15.dp.toPx()
                 // Track Background
                 drawCircle(
                     color = trackColor,
@@ -135,7 +160,7 @@ fun TimerProgressRing(
 
                 // Progress Arc
                 val sweepAngle = if (state.mode == SessionMode.STOPWATCH) {
-                    360f // Full active ring for stopwatch
+                    360f
                 } else {
                     (1.0f - animatedProgress) * 360f
                 }
@@ -175,20 +200,27 @@ fun TimerProgressRing(
                     style = MaterialTheme.typography.displayMedium.copy(
                         fontWeight = FontWeight.Black,
                         fontFamily = FontFamily.Monospace,
-                        letterSpacing = (-1).sp
+                        letterSpacing = (-1.5).sp
                     ),
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                Text(
-                    text = state.subject,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+                ) {
+                    Text(
+                        text = state.subject,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
 
                 if (state.topic.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = state.topic,
                         style = MaterialTheme.typography.bodySmall,
@@ -216,7 +248,7 @@ fun TimerProgressRing(
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "${state.distractionCount} distractions",
-                                style = MaterialTheme.typography.labelSmall,
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                                 color = MaterialTheme.colorScheme.error
                             )
                         }
@@ -265,7 +297,7 @@ fun TimerProgressRing(
             IconButton(
                 onClick = onCancelClick,
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(50.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
@@ -280,7 +312,7 @@ fun TimerProgressRing(
             IconButton(
                 onClick = onLogDistractionClick,
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(50.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
@@ -297,7 +329,8 @@ fun TimerProgressRing(
                     if (isRunning) onPauseClick() else onResumeClick()
                 },
                 modifier = Modifier
-                    .size(72.dp),
+                    .size(76.dp)
+                    .shadow(elevation = 8.dp, shape = CircleShape, spotColor = MaterialTheme.colorScheme.primary),
                 shape = CircleShape,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -308,7 +341,7 @@ fun TimerProgressRing(
                 Icon(
                     imageVector = if (isRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
                     contentDescription = if (isRunning) "Pause" else "Start/Resume",
-                    modifier = Modifier.size(34.dp)
+                    modifier = Modifier.size(36.dp)
                 )
             }
 
@@ -316,7 +349,7 @@ fun TimerProgressRing(
             IconButton(
                 onClick = onFinishClick,
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(50.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer)
             ) {
@@ -331,7 +364,7 @@ fun TimerProgressRing(
             IconButton(
                 onClick = onToggleFullScreen,
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(50.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {

@@ -155,6 +155,44 @@ fun SettingsScreen(
     val clipboardManager = LocalClipboardManager.current
     var importError by remember { mutableStateOf<String?>(null) }
 
+    val exportLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                try {
+                    val json = viewModel.exportJson()
+                    context.contentResolver.openOutputStream(uri)?.use { out ->
+                        out.write(json.toByteArray())
+                    }
+                    Toast.makeText(context, "Backup saved to device", Toast.LENGTH_LONG).show()
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Backup failed: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    val importLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                try {
+                    val json = context.contentResolver.openInputStream(uri)?.use { input ->
+                        input.bufferedReader().readText()
+                    }
+                    if (json != null) {
+                        importJsonText = json
+                        showImportDialog = true
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Failed to read backup file", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
     if (showImportDialog) {
         AlertDialog(
             onDismissRequest = {
@@ -801,19 +839,12 @@ fun SettingsScreen(
                     // Export JSON Card
                     ActionTile(
                         icon = Icons.Default.CloudDownload,
-                        title = "Export Full Backup (JSON)",
-                        subtitle = "Back up all sessions, subjects, presets & streaks",
+                        title = "Export Full Backup to File",
+                        subtitle = "Save a .json backup locally to your device",
                         onClick = {
-                            coroutineScope.launch {
-                                val json = viewModel.exportJson()
-                                val sendIntent = Intent().apply {
-                                    action = Intent.ACTION_SEND
-                                    putExtra(Intent.EXTRA_TEXT, json)
-                                    type = "application/json"
-                                }
-                                val shareIntent = Intent.createChooser(sendIntent, "Export Focentra JSON Backup")
-                                context.startActivity(shareIntent)
-                            }
+                            val formatter = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault())
+                            val timestamp = formatter.format(java.util.Date())
+                            exportLauncher.launch("focentra_backup_$timestamp.json")
                         }
                     )
 
@@ -839,9 +870,11 @@ fun SettingsScreen(
                     // Import JSON Card
                     ActionTile(
                         icon = Icons.Default.CloudUpload,
-                        title = "Restore Backup (JSON)",
-                        subtitle = "Restore your study records anytime seamlessly",
-                        onClick = { showImportDialog = true }
+                        title = "Restore Backup from File",
+                        subtitle = "Select a .json backup file to restore records",
+                        onClick = { 
+                            importLauncher.launch(arrayOf("application/json", "*/*"))
+                        }
                     )
                 }
             }

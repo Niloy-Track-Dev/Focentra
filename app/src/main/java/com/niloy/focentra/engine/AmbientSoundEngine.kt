@@ -16,7 +16,10 @@ enum class AmbientSoundType(val title: String, val iconName: String) {
     PINK_NOISE("Pink Noise", "Waves"),
     BINAURAL_ALPHA("Alpha Waves (10Hz)", "Psychology"),
     DEEP_BETA("Beta Focus (18Hz)", "Bolt"),
-    RAIN_DRIZZLE("Rain Stream", "WaterDrop")
+    GAMMA_40HZ("Gamma Focus (40Hz)", "ElectricBolt"),
+    RAIN_DRIZZLE("Rain Stream", "WaterDrop"),
+    CAMPFIRE("Cozy Campfire", "LocalFireDepartment"),
+    METRONOME("Study Metronome", "HourglassTop")
 }
 
 class AmbientSoundEngine private constructor() {
@@ -175,6 +178,25 @@ class AmbientSoundEngine private constructor() {
                                 }
                             }
                         }
+                        AmbientSoundType.GAMMA_40HZ -> {
+                            // 40Hz Gamma wave for maximum cognitive processing & focus
+                            val freqL = 200.0
+                            val freqR = 240.0
+                            val deltaL = 2.0 * Math.PI * freqL / sampleRate
+                            val deltaR = 2.0 * Math.PI * freqR / sampleRate
+
+                            for (i in 0 until buffer.size step 2) {
+                                val sampleL = sin(phaseLeft) * 0.20
+                                val sampleR = sin(phaseRight) * 0.20
+                                phaseLeft = (phaseLeft + deltaL) % (2.0 * Math.PI)
+                                phaseRight = (phaseRight + deltaR) % (2.0 * Math.PI)
+
+                                buffer[i] = (sampleL * Short.MAX_VALUE).toInt().toShort()
+                                if (i + 1 < buffer.size) {
+                                    buffer[i + 1] = (sampleR * Short.MAX_VALUE).toInt().toShort()
+                                }
+                            }
+                        }
                         AmbientSoundType.RAIN_DRIZZLE -> {
                             // Filtered modulated noise simulating rainfall
                             for (i in 0 until buffer.size step 2) {
@@ -184,6 +206,31 @@ class AmbientSoundEngine private constructor() {
                                 phaseLeft = (phaseLeft + 0.0003) % (2.0 * Math.PI)
                                 val rainSample = pinkB0 * mod * 0.6
                                 val shortVal = (rainSample * Short.MAX_VALUE).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+                                buffer[i] = shortVal
+                                if (i + 1 < buffer.size) buffer[i + 1] = shortVal
+                            }
+                        }
+                        AmbientSoundType.CAMPFIRE -> {
+                            // Low frequency rumble + intermittent crackle sparks
+                            for (i in 0 until buffer.size step 2) {
+                                val white = (Random.nextDouble() * 2.0 - 1.0) * 0.1
+                                pinkB0 = 0.995 * pinkB0 + white * 0.05
+                                val crackle = if (Random.nextDouble() > 0.9985) (Random.nextDouble() * 0.7) else 0.0
+                                val sample = (pinkB0 * 0.4 + crackle)
+                                val shortVal = (sample * Short.MAX_VALUE).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+                                buffer[i] = shortVal
+                                if (i + 1 < buffer.size) buffer[i + 1] = shortVal
+                            }
+                        }
+                        AmbientSoundType.METRONOME -> {
+                            // Periodic 1-second pulse tick
+                            for (i in 0 until buffer.size step 2) {
+                                phaseLeft += 1.0
+                                val tickPos = (phaseLeft % sampleRate).toInt()
+                                val sample = if (tickPos < 800) {
+                                    sin(tickPos * 0.15) * Math.exp(-tickPos / 150.0) * 0.3
+                                } else 0.0
+                                val shortVal = (sample * Short.MAX_VALUE).toInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
                                 buffer[i] = shortVal
                                 if (i + 1 < buffer.size) buffer[i + 1] = shortVal
                             }

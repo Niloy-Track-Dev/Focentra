@@ -67,57 +67,9 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         suspend fun populateInitialData(database: AppDatabase) {
-            val subjectDao = database.subjectDao()
-            val topicDao = database.topicDao()
-            val goalDao = database.goalDao()
-            val presetDao = database.presetDao()
             val achievementDao = database.achievementDao()
             val reminderDao = database.reminderDao()
             val settingDao = database.settingDao()
-
-            // Initial Subjects
-            val mathId = subjectDao.insertSubject(
-                SubjectEntity(name = "Mathematics", colorHex = "#6366F1", iconName = "Calculate", targetHours = 25f, description = "Calculus, Linear Algebra, Statistics", orderIndex = 0)
-            )
-            val progId = subjectDao.insertSubject(
-                SubjectEntity(name = "Programming", colorHex = "#10B981", iconName = "Code", targetHours = 30f, description = "Algorithms, Kotlin, Android, Systems", orderIndex = 1)
-            )
-            val physicsId = subjectDao.insertSubject(
-                SubjectEntity(name = "Physics", colorHex = "#F59E0B", iconName = "Science", targetHours = 20f, description = "Mechanics, Electromagnetism, Quantum", orderIndex = 2)
-            )
-            val chemId = subjectDao.insertSubject(
-                SubjectEntity(name = "Chemistry", colorHex = "#EC4899", iconName = "Biotech", targetHours = 15f, description = "Organic, Inorganic, Physical chemistry", orderIndex = 3)
-            )
-            val engId = subjectDao.insertSubject(
-                SubjectEntity(name = "English & Literature", colorHex = "#8B5CF6", iconName = "MenuBook", targetHours = 12f, description = "Reading, Writing, Grammar", orderIndex = 4)
-            )
-            subjectDao.insertSubject(
-                SubjectEntity(name = "General Study", colorHex = "#06B6D4", iconName = "School", targetHours = 10f, description = "General revision and research", orderIndex = 5)
-            )
-
-            // Topics
-            topicDao.insertTopic(TopicEntity(subjectId = mathId, subjectName = "Mathematics", name = "Calculus"))
-            topicDao.insertTopic(TopicEntity(subjectId = mathId, subjectName = "Mathematics", name = "Linear Algebra"))
-            topicDao.insertTopic(TopicEntity(subjectId = mathId, subjectName = "Mathematics", name = "Discrete Math"))
-            topicDao.insertTopic(TopicEntity(subjectId = progId, subjectName = "Programming", name = "Data Structures & Algorithms"))
-            topicDao.insertTopic(TopicEntity(subjectId = progId, subjectName = "Programming", name = "Android Development"))
-            topicDao.insertTopic(TopicEntity(subjectId = physicsId, subjectName = "Physics", name = "Electromagnetism"))
-            topicDao.insertTopic(TopicEntity(subjectId = physicsId, subjectName = "Physics", name = "Classical Mechanics"))
-            topicDao.insertTopic(TopicEntity(subjectId = chemId, subjectName = "Chemistry", name = "Organic Synthesis"))
-            topicDao.insertTopic(TopicEntity(subjectId = engId, subjectName = "English & Literature", name = "Essay Writing"))
-
-            // Initial Goals
-            goalDao.insertGoal(StudyGoalEntity(periodType = "DAILY", targetMinutes = 480, subjectFilter = "")) // 8 hours
-            goalDao.insertGoal(StudyGoalEntity(periodType = "WEEKLY", targetMinutes = 2400, subjectFilter = "")) // 40 hours
-            goalDao.insertGoal(StudyGoalEntity(periodType = "MONTHLY", targetMinutes = 9600, subjectFilter = "")) // 160 hours
-            goalDao.insertGoal(StudyGoalEntity(periodType = "YEARLY", targetMinutes = 90000, subjectFilter = "")) // 1500 hours
-
-            // Presets
-            presetDao.insertPreset(PresetEntity(title = "Classic Pomodoro", type = "POMODORO", durationMinutes = 25, subject = "General Study", pomodoroFocusMin = 25, pomodoroShortBreakMin = 5, pomodoroLongBreakMin = 15, pomodoroRounds = 4))
-            presetDao.insertPreset(PresetEntity(title = "Deep Work Block", type = "COUNTDOWN", durationMinutes = 90, subject = "Programming", pomodoroFocusMin = 90, tags = "#deepwork,#flow"))
-            presetDao.insertPreset(PresetEntity(title = "50/10 Study Cycle", type = "POMODORO", durationMinutes = 50, subject = "Mathematics", pomodoroFocusMin = 50, pomodoroShortBreakMin = 10, pomodoroLongBreakMin = 20, pomodoroRounds = 4))
-            presetDao.insertPreset(PresetEntity(title = "Quick Revision Sprint", type = "COUNTDOWN", durationMinutes = 15, subject = "Physics", tags = "#revision"))
-            presetDao.insertPreset(PresetEntity(title = "Free Focus Stopwatch", type = "STOPWATCH", durationMinutes = 0, subject = "General Study"))
 
             // Achievements
             val achievements = listOf(

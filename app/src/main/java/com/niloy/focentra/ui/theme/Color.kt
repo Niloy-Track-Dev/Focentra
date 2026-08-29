@@ -3,22 +3,22 @@ package com.niloy.focentra.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // Clean Minimalism Theme (Default Aesthetic)
-val CleanMinimalismPrimary = Color(0xFF425EBF) // Refined Royal Cobalt / Indigo
+val CleanMinimalismPrimary = Color(0xFF4361EE) // Vibrant Royal Indigo
 val CleanMinimalismOnPrimary = Color(0xFFFFFFFF)
-val CleanMinimalismPrimaryContainer = Color(0xFFDDE1FF) // Soft indigo pill badge
-val CleanMinimalismOnPrimaryContainer = Color(0xFF1B2E68)
-val CleanMinimalismSecondary = Color(0xFFF27D26) // Crisp Amber / Orange accent
+val CleanMinimalismPrimaryContainer = Color(0xFFEEF2FF) // Soft indigo pill badge
+val CleanMinimalismOnPrimaryContainer = Color(0xFF1E293B)
+val CleanMinimalismSecondary = Color(0xFFF72585) // Crisp Vibrant Rose / Pink
 val CleanMinimalismOnSecondary = Color(0xFFFFFFFF)
-val CleanMinimalismSecondaryContainer = Color(0xFFFFF4ED) // Soft warm peach pill
-val CleanMinimalismOnSecondaryContainer = Color(0xFF7C2D12)
-val CleanMinimalismTertiary = Color(0xFF22C55E) // Success green
-val CleanMinimalismBackground = Color(0xFFF8F9FF) // Light airy canvas
+val CleanMinimalismSecondaryContainer = Color(0xFFFFF0F5) // Soft warm rose pill
+val CleanMinimalismOnSecondaryContainer = Color(0xFF831843)
+val CleanMinimalismTertiary = Color(0xFF10B981) // Emerald Success Green
+val CleanMinimalismBackground = Color(0xFFF8FAFC) // Ultra-clean light canvas
 val CleanMinimalismSurface = Color(0xFFFFFFFF) // Pure white cards
-val CleanMinimalismSurfaceVariant = Color(0xFFF1F3FB) // Soft subtle card fill
-val CleanMinimalismTextPrimary = Color(0xFF1A1C1E) // Deep high-contrast slate
+val CleanMinimalismSurfaceVariant = Color(0xFFF1F5F9) // Subtle slate card fill
+val CleanMinimalismTextPrimary = Color(0xFF0F172A) // Deep high-contrast slate 900
 val CleanMinimalismTextSecondary = Color(0xFF64748B) // Slate 500
-val CleanMinimalismOutline = Color(0xFFEDF0F8) // Clean subtle border
-val CleanMinimalismOutlineVariant = Color(0xFFE2E8F0) // Subtle divider
+val CleanMinimalismOutline = Color(0xFFE2E8F0) // Clean subtle border
+val CleanMinimalismOutlineVariant = Color(0xFFEEF2F6) // Soft divider
 
 // Midnight Theme (AMOLED Dark)
 val MidnightBackground = Color(0xFF090A10)
