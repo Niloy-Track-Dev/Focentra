@@ -66,7 +66,7 @@ fun FlashcardsScreen(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(top = 12.dp, bottom = 100.dp)
+            contentPadding = PaddingValues(top = 12.dp, bottom = 108.dp)
         ) {
             // Header Progress Card
             item {
@@ -661,7 +661,7 @@ fun FlashcardQuizDeckDialog(
                                 Text(
                                     text = "$easyGoodCount",
                                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                                    color = Color(0xFF10B981)
+                                    color = MaterialTheme.colorScheme.tertiary
                                 )
                             }
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -845,13 +845,13 @@ fun FlashcardQuizDeckDialog(
                                 ) {
                                     Surface(
                                         shape = RoundedCornerShape(8.dp),
-                                        color = Color(0xFF10B981).copy(alpha = 0.2f)
+                                        color = MaterialTheme.colorScheme.tertiaryContainer
                                     ) {
                                         Text(
                                             text = "ANSWER / SOLUTION",
                                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                            color = Color(0xFF047857)
+                                            color = MaterialTheme.colorScheme.onTertiaryContainer
                                         )
                                     }
 
@@ -930,7 +930,7 @@ fun FlashcardQuizDeckDialog(
                                     .weight(1f)
                                     .height(52.dp),
                                 shape = RoundedCornerShape(14.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B)),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
                                 contentPadding = PaddingValues(2.dp)
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -974,7 +974,7 @@ fun FlashcardQuizDeckDialog(
                                     .weight(1f)
                                     .height(52.dp),
                                 shape = RoundedCornerShape(14.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
                                 contentPadding = PaddingValues(2.dp)
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {

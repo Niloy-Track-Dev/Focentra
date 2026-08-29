@@ -122,7 +122,7 @@ fun SubjectsScreen(
                     .padding(padding)
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
-                contentPadding = PaddingValues(top = 12.dp, bottom = 120.dp)
+                contentPadding = PaddingValues(top = 12.dp, bottom = 108.dp)
             ) {
                 items(subjects, key = { it.id }) { subject ->
                     val subTopics = topics.filter { it.subjectName.equals(subject.name, ignoreCase = true) }

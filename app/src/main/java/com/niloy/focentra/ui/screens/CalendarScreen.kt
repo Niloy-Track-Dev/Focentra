@@ -113,7 +113,7 @@ fun CalendarScreen(
             .fillMaxSize()
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(top = 12.dp, bottom = 100.dp)
+        contentPadding = PaddingValues(top = 12.dp, bottom = 108.dp)
     ) {
         // Month Navigation Header
         item {
