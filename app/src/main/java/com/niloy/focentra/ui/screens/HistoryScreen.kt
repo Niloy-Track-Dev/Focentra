@@ -159,7 +159,7 @@ fun HistoryScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
-                contentPadding = PaddingValues(top = 8.dp, bottom = 24.dp)
+                contentPadding = PaddingValues(top = 8.dp, bottom = 120.dp)
             ) {
                 items(filteredSessions, key = { it.id }) { session ->
                     HistorySessionCard(

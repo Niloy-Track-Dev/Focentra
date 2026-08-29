@@ -423,7 +423,7 @@ fun SettingsScreen(
             .fillMaxSize()
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp)
+        contentPadding = PaddingValues(top = 12.dp, bottom = 120.dp)
     ) {
         // Developer & App Banner
         item {

@@ -71,67 +71,6 @@ fun DashboardScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
     ) {
-        // Dynamic Greeting & Motivational Subtitle Header
-        item {
-            val calendar = java.util.Calendar.getInstance()
-            val hour = calendar.get(java.util.Calendar.HOUR_OF_DAY)
-            val (greeting, greetingIcon, subPrompt) = when {
-                hour in 5..11 -> Triple("Good Morning", Icons.Default.WbSunny, "Ready to start your high-focus study sprint?")
-                hour in 12..16 -> Triple("Good Afternoon", Icons.Default.LightMode, "Keep your momentum going strong!")
-                hour in 17..21 -> Triple("Good Evening", Icons.Default.Bedtime, "Great time for active recall and revision.")
-                else -> Triple("Late Night Focus", Icons.Default.Nightlight, "Quiet hours for deep learning & mastery.")
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = greetingIcon,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(22.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = greeting,
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Black,
-                                letterSpacing = (-0.5).sp
-                            ),
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = subPrompt,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
-                    modifier = Modifier.clip(RoundedCornerShape(12.dp))
-                ) {
-                    Box(modifier = Modifier.padding(8.dp)) {
-                        Icon(
-                            imageVector = greetingIcon,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
-        }
-
         // Active Session Banner (if running or paused)
         if (timerState.status == TimerStatus.RUNNING || timerState.status == TimerStatus.PAUSED) {
             item {
