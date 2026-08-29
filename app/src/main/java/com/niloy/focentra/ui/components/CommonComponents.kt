@@ -51,10 +51,7 @@ fun StatCard(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(14.dp))
-                    .background(
-                        if (iconTint == MaterialTheme.colorScheme.primary) Color(0xFFF0F2FF)
-                        else Color(0xFFFFF4ED)
-                    ),
+                    .background(iconTint.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -309,7 +306,7 @@ fun RecentSessionItem(
                         Icon(
                             imageVector = Icons.Default.Star,
                             contentDescription = null,
-                            tint = Color(0xFFF27D26),
+                            tint = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.size(12.dp)
                         )
                     }

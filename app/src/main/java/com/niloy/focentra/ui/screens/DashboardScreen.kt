@@ -69,7 +69,7 @@ fun DashboardScreen(
             .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
+        contentPadding = PaddingValues(top = 8.dp, bottom = 108.dp)
     ) {
         // Active Session Banner (if running or paused)
         if (timerState.status == TimerStatus.RUNNING || timerState.status == TimerStatus.PAUSED) {
@@ -401,13 +401,13 @@ fun DashboardScreen(
                                 modifier = Modifier
                                     .size(34.dp)
                                     .clip(RoundedCornerShape(10.dp))
-                                    .background(Color(0xFFFFF4ED)),
+                                    .background(MaterialTheme.colorScheme.tertiaryContainer),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Schedule,
                                     contentDescription = null,
-                                    tint = Color(0xFFF27D26),
+                                    tint = MaterialTheme.colorScheme.tertiary,
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
@@ -451,13 +451,13 @@ fun DashboardScreen(
                                 modifier = Modifier
                                     .size(34.dp)
                                     .clip(RoundedCornerShape(10.dp))
-                                    .background(Color(0xFFE8F5E9)),
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Style,
                                     contentDescription = null,
-                                    tint = Color(0xFF2E7D32),
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
@@ -515,14 +515,14 @@ fun DashboardScreen(
                                         .size(34.dp)
                                         .clip(RoundedCornerShape(10.dp))
                                         .background(
-                                            if (preset.type == "POMODORO") Color(0xFFF0F2FF) else Color(0xFFFFF4ED)
+                                            if (preset.type == "POMODORO") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer
                                         ),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = if (preset.type == "POMODORO") Icons.Default.AvTimer else Icons.Default.Schedule,
                                         contentDescription = null,
-                                        tint = if (preset.type == "POMODORO") MaterialTheme.colorScheme.primary else Color(0xFFF27D26),
+                                        tint = if (preset.type == "POMODORO") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
                                         modifier = Modifier.size(18.dp)
                                     )
                                 }
@@ -568,7 +568,7 @@ fun DashboardScreen(
                     value = "${periodStats.focusScore}/100",
                     subtitle = "Discipline Index",
                     icon = Icons.Default.Psychology,
-                    iconTint = Color(0xFFF27D26),
+                    iconTint = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier.weight(1f),
                     onClick = { viewModel.navigateTo(NavigationTab.ANALYTICS) }
                 )
@@ -1075,7 +1075,7 @@ fun ExamMilestoneCard(
                         Icon(
                             imageVector = Icons.Default.Bolt,
                             contentDescription = null,
-                            tint = Color(0xFFF59E0B),
+                            tint = MaterialTheme.colorScheme.tertiary,
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
@@ -1260,7 +1260,7 @@ fun MinimalRecentSessionRow(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFF1F3FB)),
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
