@@ -153,10 +153,10 @@ class MainActivity : ComponentActivity() {
                                                 NavigationTab.PRESETS -> "Study Presets"
                                                 NavigationTab.SETTINGS -> "Settings"
                                             },
-                                            style = if (isSubPage) {
+                                            style = if (isSubPage || currentTab == NavigationTab.ANALYTICS) {
                                                 MaterialTheme.typography.titleMedium.copy(
-                                                    fontWeight = FontWeight.ExtraBold,
-                                                    fontSize = 19.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 17.sp,
                                                     letterSpacing = (-0.2).sp
                                                 )
                                             } else {
