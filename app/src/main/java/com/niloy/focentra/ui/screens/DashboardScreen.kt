@@ -140,28 +140,20 @@ fun DashboardScreen(
             )
         }
 
-        // Hero Today's Focus Card (Vibrant Theme-Adaptive Gradient Hero)
+        // Hero Today's Focus Card (Solid Theme Color Hero)
         item {
-            val heroGradient = Brush.linearGradient(
-                colors = listOf(
-                    MaterialTheme.colorScheme.primary,
-                    MaterialTheme.colorScheme.secondary
-                )
-            )
-
             Card(
                 modifier = Modifier
                     .fillMaxWidth(),
                 shape = RoundedCornerShape(32.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(heroGradient)
                         .padding(24.dp)
                 ) {
                     Column(
@@ -178,7 +170,7 @@ fun DashboardScreen(
                                 Text(
                                     text = "Today's Focus Time",
                                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                                 )
                                 Text(
                                     text = "${String.format("%02d", todayHrs)}h ${String.format("%02d", todayRemMins)}m",
@@ -186,14 +178,14 @@ fun DashboardScreen(
                                         fontWeight = FontWeight.Black,
                                         letterSpacing = (-0.5).sp
                                     ),
-                                    color = MaterialTheme.colorScheme.onPrimary
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             }
 
                             // Fire Streak Pill
                             Surface(
                                 shape = RoundedCornerShape(50),
-                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f),
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(50))
                                     .clickable { viewModel.navigateTo(NavigationTab.ACHIEVEMENTS) }
@@ -206,13 +198,13 @@ fun DashboardScreen(
                                     Icon(
                                         imageVector = Icons.Default.LocalFireDepartment,
                                         contentDescription = "Streak",
-                                        tint = Color(0xFFFFD166),
+                                        tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Text(
                                         text = "${streakInfo.currentStreak} Days",
                                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
-                                        color = MaterialTheme.colorScheme.onPrimary
+                                        color = MaterialTheme.colorScheme.primary
                                     )
                                 }
                             }
@@ -229,32 +221,32 @@ fun DashboardScreen(
                                 Text(
                                     text = "${progressPct.toInt()}% of ${goalHrs}h ${goalRemMins}m goal",
                                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.95f)
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f)
                                 )
                                 val remainingMins = (dailyGoalMins - todayMins).coerceAtLeast(0)
                                 Text(
                                     text = if (remainingMins > 0) "Left: ${remainingMins / 60}h ${remainingMins % 60}m" else "Goal Achieved!",
                                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.95f)
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f)
                                 )
                             }
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            // Clean White / Theme Progress Bar
+                            // Solid Theme Progress Bar
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(10.dp)
                                     .clip(RoundedCornerShape(5.dp))
-                                    .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.25f))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
                             ) {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth(fraction = (progressPct / 100f).coerceIn(0f, 1f))
                                         .fillMaxHeight()
                                         .clip(RoundedCornerShape(5.dp))
-                                        .background(MaterialTheme.colorScheme.onPrimary)
+                                        .background(MaterialTheme.colorScheme.primary)
                                 )
                             }
                         }

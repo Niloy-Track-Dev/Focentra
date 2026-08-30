@@ -63,16 +63,6 @@ fun TimerProgressRing(
     )
 
     val primaryColor = MaterialTheme.colorScheme.primary
-    val secondaryColor = MaterialTheme.colorScheme.secondary
-
-    val primaryGradient = Brush.sweepGradient(
-        listOf(
-            primaryColor,
-            secondaryColor,
-            primaryColor
-        )
-    )
-
     val trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
 
     Column(
@@ -164,7 +154,7 @@ fun TimerProgressRing(
                 }
 
                 drawArc(
-                    brush = primaryGradient,
+                    color = primaryColor,
                     startAngle = -90f,
                     sweepAngle = sweepAngle,
                     useCenter = false,
