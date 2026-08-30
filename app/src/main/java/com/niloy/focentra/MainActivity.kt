@@ -124,59 +124,17 @@ class MainActivity : ComponentActivity() {
                             TopAppBar(
                                 title = {
                                     if (currentTab == NavigationTab.DASHBOARD) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(40.dp)
-                                                    .clip(RoundedCornerShape(12.dp))
-                                                    .background(
-                                                        brush = Brush.linearGradient(
-                                                            colors = listOf(
-                                                                MaterialTheme.colorScheme.primary,
-                                                                MaterialTheme.colorScheme.tertiary
-                                                            )
-                                                        )
-                                                    )
-                                                    .border(
-                                                        width = 1.dp,
-                                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                                                        shape = RoundedCornerShape(12.dp)
-                                                    ),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Bolt,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                                    modifier = Modifier.size(24.dp)
-                                                )
-                                            }
-                                            Spacer(modifier = Modifier.width(12.dp))
-                                            Column(modifier = Modifier.weight(1f, fill = false)) {
-                                                Text(
-                                                    text = "Focentra",
-                                                    style = MaterialTheme.typography.titleLarge.copy(
-                                                        fontWeight = FontWeight.Black,
-                                                        letterSpacing = (-0.8).sp,
-                                                        fontSize = 22.sp
-                                                    ),
-                                                    color = MaterialTheme.colorScheme.primary,
-                                                    maxLines = 1,
-                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                                )
-                                                Text(
-                                                    text = "Deep Focus & Active Recall",
-                                                    style = MaterialTheme.typography.labelSmall.copy(
-                                                        fontWeight = FontWeight.SemiBold,
-                                                        fontSize = 11.sp,
-                                                        letterSpacing = 0.1.sp
-                                                    ),
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                                                    maxLines = 1,
-                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                                )
-                                            }
-                                        }
+                                        Text(
+                                            text = "Focentra",
+                                            style = MaterialTheme.typography.titleLarge.copy(
+                                                fontWeight = FontWeight.Black,
+                                                letterSpacing = (-0.8).sp,
+                                                fontSize = 22.sp
+                                            ),
+                                            color = MaterialTheme.colorScheme.primary,
+                                            maxLines = 1,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                        )
                                     } else {
                                         val isSubPage = currentTab == NavigationTab.SUBJECTS ||
                                                 currentTab == NavigationTab.FLASHCARDS ||
