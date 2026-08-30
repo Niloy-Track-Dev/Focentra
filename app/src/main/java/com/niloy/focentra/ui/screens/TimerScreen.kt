@@ -51,6 +51,7 @@ fun TimerScreen(
 
     var showDistractionDialog by remember { mutableStateOf(false) }
     var showBrainDumpDialog by remember { mutableStateOf(false) }
+    var showCancelConfirmDialog by remember { mutableStateOf(false) }
     val brainDumpNotes by viewModel.brainDumpNotes.collectAsStateWithLifecycle()
 
     // Sync subject default if subjects loaded
@@ -82,6 +83,44 @@ fun TimerScreen(
         )
     }
 
+    if (showCancelConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showCancelConfirmDialog = false },
+            title = {
+                Text(
+                    text = "Cancel Active Session?",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to stop and cancel this study session? Progress recorded so far won't be saved as a full session.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showCancelConfirmDialog = false
+                        viewModel.timerEngine.cancelSession()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Cancel Session")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCancelConfirmDialog = false }) {
+                    Text("Keep Studying")
+                }
+            }
+        )
+    }
+
     if (showBrainDumpDialog) {
         BrainDumpDialog(
             notes = brainDumpNotes,
@@ -109,7 +148,7 @@ fun TimerScreen(
                     onPauseClick = { viewModel.timerEngine.pauseSession() },
                     onResumeClick = { viewModel.timerEngine.resumeSession() },
                     onFinishClick = { viewModel.timerEngine.finishSession(isEarly = true) },
-                    onCancelClick = { viewModel.timerEngine.cancelSession() },
+                    onCancelClick = { showCancelConfirmDialog = true },
                     onLogDistractionClick = { showDistractionDialog = true },
                     onToggleFullScreen = { viewModel.setFullScreenFocus(true) }
                 )
