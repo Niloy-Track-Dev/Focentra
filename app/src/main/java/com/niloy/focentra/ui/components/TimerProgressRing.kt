@@ -64,13 +64,11 @@ fun TimerProgressRing(
 
     val primaryColor = MaterialTheme.colorScheme.primary
     val secondaryColor = MaterialTheme.colorScheme.secondary
-    val tertiaryColor = MaterialTheme.colorScheme.tertiary
 
     val primaryGradient = Brush.sweepGradient(
         listOf(
             primaryColor,
             secondaryColor,
-            tertiaryColor,
             primaryColor
         )
     )
