@@ -250,6 +250,7 @@ fun FlashcardsScreen(
             contentColor = MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
                 .padding(end = 16.dp, bottom = 16.dp)
         ) {
             Icon(Icons.Default.Add, contentDescription = "Add Card")

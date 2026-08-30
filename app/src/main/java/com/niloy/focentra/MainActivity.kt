@@ -152,23 +152,28 @@ class MainActivity : ComponentActivity() {
                                                 )
                                             }
                                             Spacer(modifier = Modifier.width(12.dp))
-                                            Column {
+                                            Column(modifier = Modifier.weight(1f, fill = false)) {
                                                 Text(
                                                     text = "Focentra",
                                                     style = MaterialTheme.typography.titleLarge.copy(
                                                         fontWeight = FontWeight.Black,
                                                         letterSpacing = (-0.8).sp,
-                                                        fontSize = 24.sp
+                                                        fontSize = 22.sp
                                                     ),
-                                                    color = MaterialTheme.colorScheme.primary
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    maxLines = 1,
+                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                                 )
                                                 Text(
                                                     text = "Deep Focus & Active Recall",
                                                     style = MaterialTheme.typography.labelSmall.copy(
                                                         fontWeight = FontWeight.SemiBold,
-                                                        letterSpacing = 0.2.sp
+                                                        fontSize = 11.sp,
+                                                        letterSpacing = 0.1.sp
                                                     ),
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                                                    maxLines = 1,
+                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                                 )
                                             }
                                         }

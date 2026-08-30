@@ -99,7 +99,8 @@ fun SubjectsScreen(
                 FloatingActionButton(
                     onClick = { showCreateDialog = true },
                     containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.navigationBarsPadding()
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "New Subject")
                 }
