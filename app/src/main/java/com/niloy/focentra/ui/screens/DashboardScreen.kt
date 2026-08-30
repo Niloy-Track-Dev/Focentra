@@ -52,6 +52,7 @@ fun DashboardScreen(
     val subjects by viewModel.subjects.collectAsStateWithLifecycle()
 
     var showAddExamDialog by remember { mutableStateOf(false) }
+    var pendingQuickTimerMode by remember { mutableStateOf<Pair<SessionMode, Int>?>(null) }
 
     val dailyGoalMins = goals.find { it.periodType == "DAILY" }?.targetMinutes ?: 480
     val progressPct = if (dailyGoalMins > 0) {
@@ -282,7 +283,7 @@ fun DashboardScreen(
                             .height(105.dp)
                             .clip(RoundedCornerShape(20.dp))
                             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(20.dp))
-                            .clickable { viewModel.startQuickTimer(25, "General Study", SessionMode.COUNTDOWN) },
+                            .clickable { pendingQuickTimerMode = Pair(SessionMode.COUNTDOWN, 25) },
                         shape = RoundedCornerShape(20.dp),
                         color = MaterialTheme.colorScheme.surface,
                         shadowElevation = 1.dp
@@ -332,7 +333,7 @@ fun DashboardScreen(
                             .height(105.dp)
                             .clip(RoundedCornerShape(20.dp))
                             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(20.dp))
-                            .clickable { viewModel.startQuickTimer(25, "General Study", SessionMode.POMODORO) },
+                            .clickable { pendingQuickTimerMode = Pair(SessionMode.POMODORO, 25) },
                         shape = RoundedCornerShape(20.dp),
                         color = MaterialTheme.colorScheme.surface,
                         shadowElevation = 1.dp
@@ -387,7 +388,7 @@ fun DashboardScreen(
                             .height(105.dp)
                             .clip(RoundedCornerShape(20.dp))
                             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(20.dp))
-                            .clickable { viewModel.startQuickTimer(0, "General Study", SessionMode.STOPWATCH) },
+                            .clickable { pendingQuickTimerMode = Pair(SessionMode.STOPWATCH, 0) },
                         shape = RoundedCornerShape(20.dp),
                         color = MaterialTheme.colorScheme.surface,
                         shadowElevation = 1.dp
@@ -844,6 +845,95 @@ fun DashboardScreen(
             }
         )
     }
+
+    pendingQuickTimerMode?.let { (mode, defaultMins) ->
+        val subjectNames = remember(subjects) {
+            val list = mutableListOf("General Study")
+            subjects.forEach { if (!list.contains(it.name)) list.add(it.name) }
+            list
+        }
+        QuickTimerSubjectDialog(
+            subjects = subjectNames,
+            mode = mode,
+            onDismiss = { pendingQuickTimerMode = null },
+            onStart = { selectedSubj ->
+                viewModel.startQuickTimer(defaultMins, selectedSubj, mode)
+                pendingQuickTimerMode = null
+            }
+        )
+    }
+}
+
+@Composable
+fun QuickTimerSubjectDialog(
+    subjects: List<String>,
+    mode: SessionMode,
+    onDismiss: () -> Unit,
+    onStart: (subject: String) -> Unit
+) {
+    var selectedSubject by remember { mutableStateOf(subjects.firstOrNull() ?: "General Study") }
+    var customSubject by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Start ${mode.name.lowercase().replaceFirstChar { it.uppercase() }} Session",
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "Select a subject for this session:",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(subjects) { subj ->
+                        FilterChip(
+                            selected = selectedSubject == subj,
+                            onClick = { selectedSubject = subj },
+                            label = { Text(subj) },
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    }
+                }
+
+                OutlinedTextField(
+                    value = customSubject,
+                    onValueChange = {
+                        customSubject = it
+                        if (it.isNotBlank()) selectedSubject = it
+                    },
+                    label = { Text("Or enter custom subject") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val finalSubject = customSubject.ifBlank { selectedSubject }
+                    onStart(finalSubject)
+                },
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Start Now")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable
