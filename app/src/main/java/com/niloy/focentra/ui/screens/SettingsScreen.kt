@@ -431,11 +431,11 @@ fun SettingsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { showDeveloperDialog = true },
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                 border = androidx.compose.foundation.BorderStroke(
                     1.dp,
                     MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f)
@@ -444,7 +444,7 @@ fun SettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(18.dp),
+                        .padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -454,7 +454,7 @@ fun SettingsScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(52.dp)
+                                .size(44.dp)
                                 .clip(CircleShape)
                                 .background(
                                     Brush.linearGradient(
@@ -468,14 +468,14 @@ fun SettingsScreen(
                         ) {
                             Text(
                                 text = "NM",
-                                style = MaterialTheme.typography.titleLarge.copy(
+                                style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
                                 )
                             )
                         }
 
-                        Spacer(modifier = Modifier.width(14.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
 
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -500,7 +500,6 @@ fun SettingsScreen(
                                     )
                                 }
                             }
-                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = "Software Developer & Creator",
                                 style = MaterialTheme.typography.bodySmall,
@@ -1384,22 +1383,22 @@ fun DeveloperInfoDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 4.dp),
-            shape = RoundedCornerShape(28.dp),
+            shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(22.dp),
+                    .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Avatar Badge
                 Box(
                     modifier = Modifier
-                        .size(72.dp)
+                        .size(56.dp)
                         .clip(CircleShape)
                         .background(
                             Brush.linearGradient(
@@ -1413,53 +1412,53 @@ fun DeveloperInfoDialog(
                 ) {
                     Text(
                         text = "NM",
-                        style = MaterialTheme.typography.headlineMedium.copy(
+                        style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
                     text = "Niloy Mitra",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = 2.dp)
                 ) {
                     Text(
                         text = "Software Developer & Creator",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // Bio & About Focentra Card
                 Card(
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
-                        modifier = Modifier.padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
                             text = "Focentra is designed to provide students and lifelong learners with a private, distraction-free, and customizable study environment.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            lineHeight = 18.sp
+                            lineHeight = 16.sp
                         )
                         Text(
                             text = "100% Offline-First • Room SQLite • Material 3 • Kotlin",
@@ -1469,7 +1468,7 @@ fun DeveloperInfoDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
                     text = "CONNECT & CONTACT",
@@ -1478,14 +1477,14 @@ fun DeveloperInfoDialog(
                         letterSpacing = 1.sp
                     ),
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.align(Alignment.Start).padding(start = 4.dp, bottom = 2.dp)
+                    modifier = Modifier.align(Alignment.Start).padding(start = 2.dp, bottom = 2.dp)
                 )
 
                 // Gmail Contact Button
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .clickable {
                             try {
                                 val intent = Intent(Intent.ACTION_SENDTO).apply {
@@ -1498,21 +1497,21 @@ fun DeveloperInfoDialog(
                                 Toast.makeText(context, "Email copied to clipboard!", Toast.LENGTH_SHORT).show()
                             }
                         },
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                     border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 modifier = Modifier
-                                    .size(34.dp)
+                                    .size(30.dp)
                                     .clip(CircleShape)
                                     .background(MaterialTheme.colorScheme.error.copy(alpha = 0.12f)),
                                 contentAlignment = Alignment.Center
@@ -1521,7 +1520,7 @@ fun DeveloperInfoDialog(
                                     imageVector = Icons.Default.Email,
                                     contentDescription = "Email",
                                     tint = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
                             Spacer(modifier = Modifier.width(10.dp))
@@ -1542,18 +1541,18 @@ fun DeveloperInfoDialog(
                             imageVector = Icons.Default.OpenInNew,
                             contentDescription = "Open",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(14.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 // GitHub Button
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .clickable {
                             try {
                                 val intent = Intent(
@@ -1566,21 +1565,21 @@ fun DeveloperInfoDialog(
                                 Toast.makeText(context, "GitHub URL copied!", Toast.LENGTH_SHORT).show()
                             }
                         },
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                     border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 modifier = Modifier
-                                    .size(34.dp)
+                                    .size(30.dp)
                                     .clip(CircleShape)
                                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
                                 contentAlignment = Alignment.Center
@@ -1589,7 +1588,7 @@ fun DeveloperInfoDialog(
                                     imageVector = Icons.Default.Code,
                                     contentDescription = "GitHub",
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
                             Spacer(modifier = Modifier.width(10.dp))
@@ -1610,12 +1609,12 @@ fun DeveloperInfoDialog(
                             imageVector = Icons.Default.OpenInNew,
                             contentDescription = "Open",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(14.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
                     text = "“Learn. Build. Improve. Repeat.”",
@@ -1627,9 +1626,9 @@ fun DeveloperInfoDialog(
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                Button(
+                FilledTonalButton(
                     onClick = onDismiss,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()

@@ -140,115 +140,111 @@ fun DashboardScreen(
             )
         }
 
-        // Hero Today's Focus Card (Solid Theme Color Hero)
+        // Today's Focus Time Card (Styled matching Quick Study Modes)
         item {
-            Card(
+            Surface(
                 modifier = Modifier
-                    .fillMaxWidth(),
-                shape = RoundedCornerShape(32.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(20.dp)),
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 1.dp
             ) {
-                Box(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(24.dp)
+                        .padding(16.dp)
                 ) {
-                    Column(
+                    // Top Row: Title, Time & Fire Streak Badge
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Top Row: Title, Time & Fire Streak Badge
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.Top
+                        Column {
+                            Text(
+                                text = "Today's Focus Time",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "${String.format("%02d", todayHrs)}h ${String.format("%02d", todayRemMins)}m",
+                                style = MaterialTheme.typography.headlineMedium.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = (-0.5).sp
+                                ),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        // Fire Streak Pill
+                        Surface(
+                            shape = RoundedCornerShape(50),
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .clickable { viewModel.navigateTo(NavigationTab.ACHIEVEMENTS) }
                         ) {
-                            Column {
-                                Text(
-                                    text = "Today's Focus Time",
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.LocalFireDepartment,
+                                    contentDescription = "Streak",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
                                 )
                                 Text(
-                                    text = "${String.format("%02d", todayHrs)}h ${String.format("%02d", todayRemMins)}m",
-                                    style = MaterialTheme.typography.headlineLarge.copy(
-                                        fontWeight = FontWeight.Black,
-                                        letterSpacing = (-0.5).sp
-                                    ),
+                                    text = "${streakInfo.currentStreak} Days",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             }
+                        }
+                    }
 
-                            // Fire Streak Pill
-                            Surface(
-                                shape = RoundedCornerShape(50),
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(50))
-                                    .clickable { viewModel.navigateTo(NavigationTab.ACHIEVEMENTS) }
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.LocalFireDepartment,
-                                        contentDescription = "Streak",
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Text(
-                                        text = "${streakInfo.currentStreak} Days",
-                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Black),
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Progress Section
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "${progressPct.toInt()}% of ${goalHrs}h ${goalRemMins}m goal",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            val remainingMins = (dailyGoalMins - todayMins).coerceAtLeast(0)
+                            Text(
+                                text = if (remainingMins > 0) "Left: ${remainingMins / 60}h ${remainingMins % 60}m" else "Goal Achieved!",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
 
-                        // Progress Section
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = "${progressPct.toInt()}% of ${goalHrs}h ${goalRemMins}m goal",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f)
-                                )
-                                val remainingMins = (dailyGoalMins - todayMins).coerceAtLeast(0)
-                                Text(
-                                    text = if (remainingMins > 0) "Left: ${remainingMins / 60}h ${remainingMins % 60}m" else "Goal Achieved!",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f)
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            // Solid Theme Progress Bar
+                        // Solid Theme Progress Bar
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                        ) {
                             Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(10.dp)
-                                    .clip(RoundedCornerShape(5.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth(fraction = (progressPct / 100f).coerceIn(0f, 1f))
-                                        .fillMaxHeight()
-                                        .clip(RoundedCornerShape(5.dp))
-                                        .background(MaterialTheme.colorScheme.primary)
-                                )
-                            }
+                                    .fillMaxWidth(fraction = (progressPct / 100f).coerceIn(0f, 1f))
+                                    .fillMaxHeight()
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(MaterialTheme.colorScheme.primary)
+                            )
                         }
                     }
                 }
