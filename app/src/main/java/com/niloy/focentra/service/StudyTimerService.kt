@@ -194,7 +194,7 @@ class StudyTimerService : Service() {
             .setContentTitle(headerTitle)
             .setContentText(timeText)
             .setSubText(statusLabel)
-            .setSmallIcon(android.R.drawable.ic_media_play)
+            .setSmallIcon(com.niloy.focentra.R.drawable.ic_notification)
             .setContentIntent(openAppPendingIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
