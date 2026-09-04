@@ -23,8 +23,6 @@
 ---
 
 </div>
-
-<div align="center">
   
 ## 📖 Table of Contents
 - [💡 Why Focentra?](#-why-focentra)
@@ -53,7 +51,6 @@
 - [📄 License](#-license)
 - [👨‍💻 Author & Developer](#-author--developer)
 - [📬 Contact & Community](#-contact--community)
-</div>
 ---
 
 ## 💡 Why Focentra?
