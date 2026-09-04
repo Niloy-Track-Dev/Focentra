@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⏱️ Focentra
+# ⏱️Focentra
 
 ### *Distraction-Free Offline Study Timer & Deep Work Analytics for Android*
 
@@ -24,6 +24,8 @@
 
 </div>
 
+<div align="center">
+  
 ## 📖 Table of Contents
 - [💡 Why Focentra?](#-why-focentra)
 - [🚀 Key Features](#-key-features)
@@ -51,7 +53,7 @@
 - [📄 License](#-license)
 - [👨‍💻 Author & Developer](#-author--developer)
 - [📬 Contact & Community](#-contact--community)
-
+</div>
 ---
 
 ## 💡 Why Focentra?
