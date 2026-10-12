@@ -164,7 +164,9 @@ class MainActivity : ComponentActivity() {
                                                     fontWeight = FontWeight.Bold,
                                                     letterSpacing = (-0.3).sp
                                                 )
-                                            }
+                                            },
+                                            maxLines = 1,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                         )
                                     }
                                 },
