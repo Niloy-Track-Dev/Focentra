@@ -130,27 +130,7 @@ fun SubjectsScreen(
         )
     }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        floatingActionButton = {
-            if (subjects.isNotEmpty()) {
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = isFabVisible,
-                    enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) + androidx.compose.animation.fadeIn(),
-                    exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) + androidx.compose.animation.fadeOut()
-                ) {
-                    FloatingActionButton(
-                        onClick = { showCreateDialog = true },
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.navigationBarsPadding()
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "New Subject")
-                    }
-                }
-            }
-        }
-    ) { padding ->
+    Box(modifier = modifier.fillMaxSize()) {
         if (subjects.isEmpty()) {
             EmptyStateView(
                 icon = Icons.Default.School,
@@ -158,13 +138,12 @@ fun SubjectsScreen(
                 description = "Create your study subjects and topics to organize your focus.",
                 actionButtonText = "Create Subject",
                 onActionClick = { showCreateDialog = true },
-                modifier = Modifier.padding(padding)
+                modifier = Modifier.fillMaxSize()
             )
         } else {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
                 contentPadding = PaddingValues(top = 12.dp, bottom = 108.dp)
@@ -186,6 +165,26 @@ fun SubjectsScreen(
                         onDeleteTopic = { topic -> topicToDelete = topic },
                         onDeleteSubjectClick = { subjectToDelete = subject }
                     )
+                }
+            }
+        }
+
+        if (subjects.isNotEmpty()) {
+            androidx.compose.animation.AnimatedVisibility(
+                visible = isFabVisible,
+                enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) + androidx.compose.animation.fadeIn(),
+                exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) + androidx.compose.animation.fadeOut(),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .navigationBarsPadding()
+                    .padding(end = 16.dp, bottom = 12.dp)
+            ) {
+                FloatingActionButton(
+                    onClick = { showCreateDialog = true },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "New Subject")
                 }
             }
         }

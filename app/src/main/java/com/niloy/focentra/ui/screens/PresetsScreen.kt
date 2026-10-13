@@ -69,27 +69,7 @@ fun PresetsScreen(
         )
     }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        floatingActionButton = {
-            if (presets.isNotEmpty()) {
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = isFabVisible,
-                    enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) + androidx.compose.animation.fadeIn(),
-                    exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) + androidx.compose.animation.fadeOut()
-                ) {
-                    FloatingActionButton(
-                        onClick = { showCreateDialog = true },
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.navigationBarsPadding()
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "New Preset")
-                    }
-                }
-            }
-        }
-    ) { padding ->
+    Box(modifier = modifier.fillMaxSize()) {
         if (presets.isEmpty()) {
             EmptyStateView(
                 icon = Icons.Default.BookmarkBorder,
@@ -97,16 +77,15 @@ fun PresetsScreen(
                 description = "Save your favorite timer configurations for one-tap starting.",
                 actionButtonText = "Create Preset",
                 onActionClick = { showCreateDialog = true },
-                modifier = Modifier.padding(padding)
+                modifier = Modifier.fillMaxSize()
             )
         } else {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(top = 12.dp, bottom = 108.dp)
+                contentPadding = PaddingValues(top = 12.dp, bottom = 120.dp)
             ) {
                 items(presets, key = { it.id }) { preset ->
                     PresetCard(
@@ -114,6 +93,26 @@ fun PresetsScreen(
                         onStartClick = { viewModel.startTimerWithPreset(preset) },
                         onDeleteClick = { presetToDelete = preset }
                     )
+                }
+            }
+        }
+
+        if (presets.isNotEmpty()) {
+            androidx.compose.animation.AnimatedVisibility(
+                visible = isFabVisible,
+                enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) + androidx.compose.animation.fadeIn(),
+                exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) + androidx.compose.animation.fadeOut(),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .navigationBarsPadding()
+                    .padding(end = 16.dp, bottom = 86.dp)
+            ) {
+                FloatingActionButton(
+                    onClick = { showCreateDialog = true },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "New Preset")
                 }
             }
         }
