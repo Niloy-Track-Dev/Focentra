@@ -267,10 +267,11 @@ class StudyRepository(private val database: AppDatabase, private val context: Co
         }
     }
 
-    // JSON Export / Import
+    // JSON Export / Import v2 (Full App State Backup)
     suspend fun exportDataJson(): String = withContext(Dispatchers.IO) {
         val root = JSONObject()
-        root.put("version", 1)
+        root.put("app", "Focentra")
+        root.put("version", 2)
         root.put("exportedAt", System.currentTimeMillis())
 
         val sessionsArray = JSONArray()
@@ -313,6 +314,17 @@ class StudyRepository(private val database: AppDatabase, private val context: Co
         }
         root.put("subjects", subjectsArray)
 
+        val topicsArray = JSONArray()
+        database.topicDao().getAllTopics().forEach { t ->
+            val obj = JSONObject()
+            obj.put("id", t.id)
+            obj.put("subjectId", t.subjectId)
+            obj.put("subjectName", t.subjectName)
+            obj.put("name", t.name)
+            topicsArray.put(obj)
+        }
+        root.put("topics", topicsArray)
+
         val presetsArray = JSONArray()
         database.presetDao().getAllPresets().forEach { p ->
             val obj = JSONObject()
@@ -327,6 +339,39 @@ class StudyRepository(private val database: AppDatabase, private val context: Co
             presetsArray.put(obj)
         }
         root.put("presets", presetsArray)
+
+        val goalsArray = JSONArray()
+        database.goalDao().getAllGoals().forEach { g ->
+            val obj = JSONObject()
+            obj.put("periodType", g.periodType)
+            obj.put("targetMinutes", g.targetMinutes)
+            goalsArray.put(obj)
+        }
+        root.put("goals", goalsArray)
+
+        val remindersArray = JSONArray()
+        database.reminderDao().getAllReminders().forEach { r ->
+            val obj = JSONObject()
+            obj.put("title", r.title)
+            obj.put("hour", r.hour)
+            obj.put("minute", r.minute)
+            obj.put("daysOfWeek", r.daysOfWeek)
+            obj.put("enabled", r.enabled)
+            obj.put("message", r.message)
+            remindersArray.put(obj)
+        }
+        root.put("reminders", remindersArray)
+
+        // Include Flashcards and Exam Targets stored in settings
+        val flashcardsJson = getSetting("flashcards_json", "")
+        if (flashcardsJson.isNotBlank()) {
+            root.put("flashcards", JSONArray(flashcardsJson))
+        }
+
+        val examTargetsJson = getSetting("exam_targets_json", "")
+        if (examTargetsJson.isNotBlank()) {
+            root.put("examTargets", JSONArray(examTargetsJson))
+        }
 
         root.toString(2)
     }
@@ -395,7 +440,7 @@ class StudyRepository(private val database: AppDatabase, private val context: Co
                     sessionList.add(parseSessionObject(root))
                 }
 
-                // Also restore subjects if present
+                // Restore subjects if present
                 if (root.has("subjects")) {
                     val subjectsArray = root.getJSONArray("subjects")
                     for (i in 0 until subjectsArray.length()) {
@@ -415,7 +460,26 @@ class StudyRepository(private val database: AppDatabase, private val context: Co
                     }
                 }
 
-                // Also restore presets if present
+                // Restore topics if present
+                if (root.has("topics")) {
+                    val topicsArray = root.getJSONArray("topics")
+                    for (i in 0 until topicsArray.length()) {
+                        val obj = topicsArray.getJSONObject(i)
+                        val tName = obj.optString("name", "")
+                        val sName = obj.optString("subjectName", "General")
+                        if (tName.isNotBlank()) {
+                            database.topicDao().insertTopic(
+                                TopicEntity(
+                                    subjectId = obj.optLong("subjectId", 0L),
+                                    subjectName = sName,
+                                    name = tName
+                                )
+                            )
+                        }
+                    }
+                }
+
+                // Restore presets if present
                 if (root.has("presets")) {
                     val presetsArray = root.getJSONArray("presets")
                     for (i in 0 until presetsArray.length()) {
@@ -437,6 +501,59 @@ class StudyRepository(private val database: AppDatabase, private val context: Co
                         }
                     }
                 }
+
+                // Restore goals if present
+                if (root.has("goals")) {
+                    val goalsArray = root.getJSONArray("goals")
+                    for (i in 0 until goalsArray.length()) {
+                        val obj = goalsArray.getJSONObject(i)
+                        val periodType = obj.optString("periodType", "")
+                        if (periodType.isNotBlank()) {
+                            database.goalDao().insertGoal(
+                                StudyGoalEntity(
+                                    periodType = periodType,
+                                    targetMinutes = obj.optInt("targetMinutes", 480)
+                                )
+                            )
+                        }
+                    }
+                }
+
+                // Restore reminders if present
+                if (root.has("reminders")) {
+                    val remindersArray = root.getJSONArray("reminders")
+                    for (i in 0 until remindersArray.length()) {
+                        val obj = remindersArray.getJSONObject(i)
+                        val title = obj.optString("title", "")
+                        if (title.isNotBlank()) {
+                            database.reminderDao().insertReminder(
+                                ReminderEntity(
+                                    title = title,
+                                    hour = obj.optInt("hour", 9),
+                                    minute = obj.optInt("minute", 0),
+                                    daysOfWeek = obj.optString("daysOfWeek", "MON,TUE,WED,THU,FRI,SAT,SUN"),
+                                    enabled = obj.optBoolean("enabled", true),
+                                    message = obj.optString("message", "Time for focus study session")
+                                )
+                            )
+                        }
+                    }
+                }
+
+                // Restore flashcards if present
+                if (root.has("flashcards")) {
+                    database.settingDao().setSetting(
+                        com.niloy.focentra.data.local.entity.SettingEntity("flashcards_json", root.getJSONArray("flashcards").toString())
+                    )
+                }
+
+                // Restore exam targets if present
+                if (root.has("examTargets")) {
+                    database.settingDao().setSetting(
+                        com.niloy.focentra.data.local.entity.SettingEntity("exam_targets_json", root.getJSONArray("examTargets").toString())
+                    )
+                }
+
             } else if (trimmed.startsWith("[")) {
                 // Array of sessions
                 val sessionsArray = JSONArray(trimmed)
