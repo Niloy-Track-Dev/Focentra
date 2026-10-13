@@ -603,7 +603,7 @@ fun TimerScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(108.dp))
+                Spacer(modifier = Modifier.height(120.dp))
             }
         }
     }
