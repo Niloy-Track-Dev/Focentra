@@ -253,7 +253,7 @@ fun FlashcardsScreen(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .navigationBarsPadding()
-                .padding(end = 16.dp, bottom = 16.dp)
+                .padding(end = 16.dp, bottom = 12.dp)
         ) {
             FloatingActionButton(
                 onClick = { showAddDialog = true },
