@@ -30,7 +30,32 @@ fun BrainDumpDialog(
     onClearCompleted: () -> Unit
 ) {
     var newThoughtText by remember { mutableStateOf("") }
+    var noteToDelete by remember { mutableStateOf<BrainDumpNote?>(null) }
     val df = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()) }
+
+    if (noteToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { noteToDelete = null },
+            title = { Text("Delete Brain Dump Note?") },
+            text = { Text("Are you sure you want to delete «${noteToDelete!!.note}»?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDeleteNote(noteToDelete!!.id)
+                        noteToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { noteToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -141,7 +166,7 @@ fun BrainDumpDialog(
                                         )
                                     }
                                     IconButton(
-                                        onClick = { onDeleteNote(note.id) },
+                                        onClick = { noteToDelete = note },
                                         modifier = Modifier.size(28.dp)
                                     ) {
                                         Icon(

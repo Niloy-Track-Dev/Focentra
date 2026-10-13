@@ -286,10 +286,10 @@ class MainActivity : ComponentActivity() {
                                     NavigationTab.ANALYTICS -> AnalyticsScreen(viewModel = viewModel)
                                     NavigationTab.CALENDAR -> CalendarScreen(viewModel = viewModel)
                                     NavigationTab.HISTORY -> HistoryScreen(viewModel = viewModel)
-                                    NavigationTab.SUBJECTS -> SubjectsScreen(viewModel = viewModel)
-                                    NavigationTab.FLASHCARDS -> FlashcardsScreen(viewModel = viewModel)
+                                    NavigationTab.SUBJECTS -> SubjectsScreen(viewModel = viewModel, isFabVisible = isBottomBarVisible.value)
+                                    NavigationTab.FLASHCARDS -> FlashcardsScreen(viewModel = viewModel, isFabVisible = isBottomBarVisible.value)
                                     NavigationTab.ACHIEVEMENTS -> AchievementsScreen(viewModel = viewModel)
-                                    NavigationTab.PRESETS -> PresetsScreen(viewModel = viewModel)
+                                    NavigationTab.PRESETS -> PresetsScreen(viewModel = viewModel, isFabVisible = isBottomBarVisible.value)
                                     NavigationTab.SETTINGS -> SettingsScreen(viewModel = viewModel)
                                 }
                             }
