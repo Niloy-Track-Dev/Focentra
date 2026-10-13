@@ -52,6 +52,7 @@ fun DashboardScreen(
     val subjects by viewModel.subjects.collectAsStateWithLifecycle()
 
     var showAddExamDialog by remember { mutableStateOf(false) }
+    var targetToDelete by remember { mutableStateOf<com.niloy.focentra.viewmodel.ExamTarget?>(null) }
     var pendingQuickTimerMode by remember { mutableStateOf<Pair<SessionMode, Int>?>(null) }
 
     val dailyGoalMins = goals.find { it.periodType == "DAILY" }?.targetMinutes ?: 480
@@ -136,7 +137,9 @@ fun DashboardScreen(
                 onStartTimer = { target ->
                     viewModel.startQuickTimer(45, target.subject, SessionMode.POMODORO)
                 },
-                onDeleteTarget = { id -> viewModel.deleteExamTarget(id) }
+                onDeleteTarget = { id ->
+                    targetToDelete = examTargets.find { it.id == id }
+                }
             )
         }
 
@@ -830,6 +833,30 @@ fun DashboardScreen(
             onSave = { title, dateEpoch, hours, subj, notes ->
                 viewModel.addExamTarget(title, dateEpoch, hours, subj, notes)
                 showAddExamDialog = false
+            }
+        )
+    }
+
+    if (targetToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { targetToDelete = null },
+            title = { Text("Delete Exam Milestone?") },
+            text = { Text("Are you sure you want to delete «${targetToDelete!!.title}»? This action cannot be undone.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteExamTarget(targetToDelete!!.id)
+                        targetToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { targetToDelete = null }) {
+                    Text("Cancel")
+                }
             }
         )
     }

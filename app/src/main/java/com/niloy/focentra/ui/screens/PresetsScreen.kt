@@ -25,6 +25,7 @@ import com.niloy.focentra.viewmodel.MainViewModel
 @Composable
 fun PresetsScreen(
     viewModel: MainViewModel,
+    isFabVisible: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val presets by viewModel.presets.collectAsStateWithLifecycle()
@@ -72,13 +73,19 @@ fun PresetsScreen(
         modifier = modifier.fillMaxSize(),
         floatingActionButton = {
             if (presets.isNotEmpty()) {
-                FloatingActionButton(
-                    onClick = { showCreateDialog = true },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.navigationBarsPadding()
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = isFabVisible,
+                    enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) + androidx.compose.animation.fadeIn(),
+                    exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) + androidx.compose.animation.fadeOut()
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "New Preset")
+                    FloatingActionButton(
+                        onClick = { showCreateDialog = true },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.navigationBarsPadding()
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "New Preset")
+                    }
                 }
             }
         }

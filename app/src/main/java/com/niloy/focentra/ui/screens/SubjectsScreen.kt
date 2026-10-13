@@ -31,6 +31,7 @@ import com.niloy.focentra.viewmodel.MainViewModel
 @Composable
 fun SubjectsScreen(
     viewModel: MainViewModel,
+    isFabVisible: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val subjects by viewModel.subjects.collectAsStateWithLifecycle()
@@ -38,8 +39,10 @@ fun SubjectsScreen(
     val sessions by viewModel.sessions.collectAsStateWithLifecycle()
 
     var showCreateDialog by remember { mutableStateOf(false) }
+    var subjectToEdit by remember { mutableStateOf<SubjectEntity?>(null) }
     var subjectToAddTopic by remember { mutableStateOf<SubjectEntity?>(null) }
     var subjectToDelete by remember { mutableStateOf<SubjectEntity?>(null) }
+    var topicToDelete by remember { mutableStateOf<TopicEntity?>(null) }
 
     // Map total study time per subject
     val studyMinsBySubject = remember(sessions) {
@@ -53,6 +56,41 @@ fun SubjectsScreen(
             onCreate = { name, colorHex, icon, targetHrs, desc ->
                 viewModel.createSubject(name, colorHex, icon, targetHrs, desc)
                 showCreateDialog = false
+            }
+        )
+    }
+
+    if (subjectToEdit != null) {
+        EditSubjectDialog(
+            subject = subjectToEdit!!,
+            onDismiss = { subjectToEdit = null },
+            onUpdate = { updatedSubject ->
+                viewModel.updateSubject(updatedSubject)
+                subjectToEdit = null
+            }
+        )
+    }
+
+    if (topicToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { topicToDelete = null },
+            title = { Text("Delete Topic?") },
+            text = { Text("Are you sure you want to delete topic «${topicToDelete!!.name}»?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteTopic(topicToDelete!!)
+                        topicToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { topicToDelete = null }) {
+                    Text("Cancel")
+                }
             }
         )
     }
@@ -96,13 +134,19 @@ fun SubjectsScreen(
         modifier = modifier.fillMaxSize(),
         floatingActionButton = {
             if (subjects.isNotEmpty()) {
-                FloatingActionButton(
-                    onClick = { showCreateDialog = true },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.navigationBarsPadding()
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = isFabVisible,
+                    enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) + androidx.compose.animation.fadeIn(),
+                    exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) + androidx.compose.animation.fadeOut()
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "New Subject")
+                    FloatingActionButton(
+                        onClick = { showCreateDialog = true },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.navigationBarsPadding()
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "New Subject")
+                    }
                 }
             }
         }
@@ -137,8 +181,9 @@ fun SubjectsScreen(
                         topics = subTopics,
                         studiedMins = studiedMins,
                         progress = progress,
+                        onEditSubjectClick = { subjectToEdit = subject },
                         onAddTopicClick = { subjectToAddTopic = subject },
-                        onDeleteTopic = { topic -> viewModel.deleteTopic(topic) },
+                        onDeleteTopic = { topic -> topicToDelete = topic },
                         onDeleteSubjectClick = { subjectToDelete = subject }
                     )
                 }
@@ -153,6 +198,7 @@ fun SubjectDetailCard(
     topics: List<TopicEntity>,
     studiedMins: Long,
     progress: Float,
+    onEditSubjectClick: () -> Unit,
     onAddTopicClick: () -> Unit,
     onDeleteTopic: (TopicEntity) -> Unit,
     onDeleteSubjectClick: () -> Unit,
@@ -207,13 +253,23 @@ fun SubjectDetailCard(
                     }
                 }
 
-                IconButton(onClick = onDeleteSubjectClick, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        imageVector = Icons.Default.DeleteOutline,
-                        contentDescription = "Delete",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        modifier = Modifier.size(18.dp)
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onEditSubjectClick, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Subject",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    IconButton(onClick = onDeleteSubjectClick, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            imageVector = Icons.Default.DeleteOutline,
+                            contentDescription = "Delete",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
 
@@ -379,6 +435,92 @@ fun CreateSubjectDialog(
                 }
             ) {
                 Text("Create")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
+}
+
+@Composable
+fun EditSubjectDialog(
+    subject: SubjectEntity,
+    onDismiss: () -> Unit,
+    onUpdate: (SubjectEntity) -> Unit
+) {
+    var name by remember { mutableStateOf(subject.name) }
+    var desc by remember { mutableStateOf(subject.description) }
+    var targetHours by remember { mutableStateOf(subject.targetHours.toInt().toString()) }
+    var selectedColor by remember { mutableStateOf(subject.colorHex) }
+    var selectedIcon by remember { mutableStateOf(subject.iconName) }
+
+    val colors = listOf("#6366F1", "#10B981", "#F59E0B", "#EC4899", "#8B5CF6", "#06B6D4", "#EF4444", "#3B82F6", "#14B8A6")
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Subject") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Subject Name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                OutlinedTextField(
+                    value = desc,
+                    onValueChange = { desc = it },
+                    label = { Text("Description") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                OutlinedTextField(
+                    value = targetHours,
+                    onValueChange = { targetHours = it },
+                    label = { Text("Target Study Hours") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                Text("Color Theme", style = MaterialTheme.typography.labelSmall)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    colors.forEach { c ->
+                        val isSelected = selectedColor == c
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clip(CircleShape)
+                                .background(parseColorHex(c))
+                                .then(
+                                    if (isSelected) Modifier.border(2.dp, Color.White, CircleShape) else Modifier
+                                )
+                                .clickable { selectedColor = c }
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (name.isNotBlank()) {
+                        onUpdate(
+                            subject.copy(
+                                name = name,
+                                description = desc,
+                                targetHours = targetHours.toFloatOrNull() ?: subject.targetHours,
+                                colorHex = selectedColor,
+                                iconName = selectedIcon
+                            )
+                        )
+                    }
+                }
+            ) {
+                Text("Save Changes")
             }
         },
         dismissButton = {

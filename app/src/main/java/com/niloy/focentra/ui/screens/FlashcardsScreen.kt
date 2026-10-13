@@ -31,6 +31,7 @@ import com.niloy.focentra.viewmodel.MainViewModel
 @Composable
 fun FlashcardsScreen(
     viewModel: MainViewModel,
+    isFabVisible: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val flashcards by viewModel.flashcards.collectAsStateWithLifecycle()
@@ -40,6 +41,7 @@ fun FlashcardsScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var showQuizDialog by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+    var cardToDelete by remember { mutableStateOf<FlashcardItem?>(null) }
 
     val subjectNames = remember(subjects, flashcards) {
         val list = mutableListOf("All")
@@ -238,23 +240,53 @@ fun FlashcardsScreen(
                     Flashcard3DItem(
                         card = card,
                         onToggleMastered = { viewModel.toggleFlashcardMastered(card.id) },
-                        onDelete = { viewModel.deleteFlashcard(card.id) }
+                        onDelete = { cardToDelete = card }
                     )
                 }
             }
         }
         
-        FloatingActionButton(
-            onClick = { showAddDialog = true },
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
+        androidx.compose.animation.AnimatedVisibility(
+            visible = isFabVisible,
+            enter = androidx.compose.animation.slideInVertically(initialOffsetY = { it }) + androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.slideOutVertically(targetOffsetY = { it }) + androidx.compose.animation.fadeOut(),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .navigationBarsPadding()
                 .padding(end = 16.dp, bottom = 16.dp)
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Add Card")
+            FloatingActionButton(
+                onClick = { showAddDialog = true },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Card")
+            }
         }
+    }
+
+    if (cardToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { cardToDelete = null },
+            title = { Text("Delete Flashcard?") },
+            text = { Text("Are you sure you want to delete this flashcard: «${cardToDelete!!.question}»?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteFlashcard(cardToDelete!!.id)
+                        cardToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { cardToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     if (showAddDialog) {

@@ -68,6 +68,7 @@ fun SettingsScreen(
     var showDaynexaDisconnectDialog by remember { mutableStateOf(false) }
     var importJsonText by remember { mutableStateOf("") }
     var importReplace by remember { mutableStateOf(false) }
+    var reminderToDelete by remember { mutableStateOf<ReminderEntity?>(null) }
 
     val dailyGoal = goals.find { it.periodType == "DAILY" }?.targetMinutes ?: 480
     val weeklyGoal = goals.find { it.periodType == "WEEKLY" }?.targetMinutes ?: 2400
@@ -138,6 +139,30 @@ fun SettingsScreen(
             onSave = { newMins ->
                 viewModel.updateGoalTarget(periodType, newMins)
                 showGoalEditDialog = null
+            }
+        )
+    }
+
+    if (reminderToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { reminderToDelete = null },
+            title = { Text("Delete Reminder?") },
+            text = { Text("Are you sure you want to delete reminder «${reminderToDelete!!.title}»?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteReminder(reminderToDelete!!)
+                        reminderToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { reminderToDelete = null }) {
+                    Text("Cancel")
+                }
             }
         )
     }
@@ -789,7 +814,7 @@ fun SettingsScreen(
                                         onCheckedChange = { viewModel.toggleReminder(reminder) }
                                     )
                                     IconButton(
-                                        onClick = { viewModel.deleteReminder(reminder) },
+                                        onClick = { reminderToDelete = reminder },
                                         modifier = Modifier.size(36.dp)
                                     ) {
                                         Icon(

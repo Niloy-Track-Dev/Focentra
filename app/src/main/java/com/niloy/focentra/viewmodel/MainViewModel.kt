@@ -447,6 +447,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun updateSubject(subject: SubjectEntity) {
+        viewModelScope.launch {
+            repository.updateSubject(subject)
+            _snackbarMessage.emit("Subject «${subject.name}» updated.")
+        }
+    }
+
     fun deleteSubject(subject: SubjectEntity) {
         viewModelScope.launch {
             repository.deleteSubject(subject)
