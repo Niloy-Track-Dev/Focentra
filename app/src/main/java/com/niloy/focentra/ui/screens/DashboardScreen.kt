@@ -434,14 +434,14 @@ fun DashboardScreen(
                         }
                     }
 
-                    // Flashcards Card
+                    // Study Presets Card
                     Surface(
                         modifier = Modifier
                             .weight(1f)
                             .height(105.dp)
                             .clip(RoundedCornerShape(20.dp))
                             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(20.dp))
-                            .clickable { viewModel.navigateTo(NavigationTab.FLASHCARDS) },
+                            .clickable { viewModel.navigateTo(NavigationTab.PRESETS) },
                         shape = RoundedCornerShape(20.dp),
                         color = MaterialTheme.colorScheme.surface,
                         shadowElevation = 1.dp
@@ -460,7 +460,7 @@ fun DashboardScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Style,
+                                    imageVector = Icons.Default.BookmarkBorder,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(18.dp)
@@ -469,13 +469,13 @@ fun DashboardScreen(
 
                             Column {
                                 Text(
-                                    text = "Flashcards",
+                                    text = "Presets",
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                     color = MaterialTheme.colorScheme.onSurface,
                                     maxLines = 1
                                 )
                                 Text(
-                                    text = "Spaced Recall Deck",
+                                    text = "Study Routines",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1
@@ -635,7 +635,7 @@ fun DashboardScreen(
             }
         }
 
-        // Quick Active Tools Row (Brain Dump & Recall Flashcards)
+        // Quick Active Tools Row (Brain Dump & Subjects)
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -644,7 +644,7 @@ fun DashboardScreen(
                 Card(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable { viewModel.navigateTo(NavigationTab.FLASHCARDS) },
+                        .clickable { viewModel.navigateTo(NavigationTab.SUBJECTS) },
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
@@ -666,7 +666,7 @@ fun DashboardScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Style,
+                                imageVector = Icons.Default.School,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
                                 modifier = Modifier.size(20.dp)
@@ -674,12 +674,12 @@ fun DashboardScreen(
                         }
                         Column {
                             Text(
-                                text = "Flashcards",
+                                text = "Subjects",
                                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Active Recall",
+                                text = "Manage Topics",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -1563,6 +1563,10 @@ fun AddExamTargetDialog(
     var daysUntilExamText by remember { mutableStateOf("30") }
     var notes by remember { mutableStateOf("") }
 
+    val TITLE_LIMIT = 50
+    val SUBJECT_LIMIT = 30
+    val NOTES_LIMIT = 200
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -1591,8 +1595,15 @@ fun AddExamTargetDialog(
             ) {
                 OutlinedTextField(
                     value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Exam / Goal Title (e.g. Final Exam, BCS)") },
+                    onValueChange = { title = it.take(TITLE_LIMIT) },
+                    label = { Text("Exam / Goal Title") },
+                    placeholder = { Text("e.g. BCS Preliminary Exam") },
+                    supportingText = {
+                        Text(
+                            text = "${title.length}/$TITLE_LIMIT",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
@@ -1600,8 +1611,14 @@ fun AddExamTargetDialog(
 
                 OutlinedTextField(
                     value = selectedSubject,
-                    onValueChange = { selectedSubject = it },
-                    label = { Text("Subject or Topic") },
+                    onValueChange = { selectedSubject = it.take(SUBJECT_LIMIT) },
+                    label = { Text("Subject or Category") },
+                    supportingText = {
+                        Text(
+                            text = "${selectedSubject.length}/$SUBJECT_LIMIT",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
@@ -1614,7 +1631,7 @@ fun AddExamTargetDialog(
                     OutlinedTextField(
                         value = daysUntilExamText,
                         onValueChange = { newVal -> daysUntilExamText = newVal.filter { ch -> ch.isDigit() } },
-                        label = { Text("Days from today") },
+                        label = { Text("Days Left") },
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp)
@@ -1632,9 +1649,14 @@ fun AddExamTargetDialog(
 
                 OutlinedTextField(
                     value = notes,
-                    onValueChange = { newVal -> notes = newVal },
-                    label = { Text("Target Syllabus / Notes") },
-                    singleLine = true,
+                    onValueChange = { newVal -> notes = newVal.take(NOTES_LIMIT) },
+                    label = { Text("Syllabus / Notes") },
+                    supportingText = {
+                        Text(
+                            text = "${notes.length}/$NOTES_LIMIT",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )

@@ -16,6 +16,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.4.0] - 2026-08-28
+
+### Added
+- **Manual Study Data Input System**: Added manual session entry dialog on TimerScreen to log subject, topic, duration, productivity rating, category, and notes directly.
+- **Strict 4-Option Import-Export System**:
+  - JSON Export (File)
+  - JSON Import (File)
+  - CSV Text Export (Share/Copy)
+  - CSV Text Import (Paste/Import)
+- **Large File Streaming & Performance Optimization**: Refactored JSON Export/Import and CSV Import to use `JsonWriter`, `JsonReader`, and chunked 500-record Room DB batch operations on `Dispatchers.IO` to process large files smoothly without OOM or UI freezing.
+- **Study Preset Edit Capability**: Enabled editing existing presets with prefilled settings in `PresetsScreen`.
+- **Character Limits & Details Popup**:
+  - Added strict character limits and character counter indicators for Exam Goals & Milestones (Title max 50, Subject max 30, Notes max 200) and Study Presets (Title max 50, Topic max 40).
+  - Added clean popup detail dialogs (`PresetDetailDialog` & `ExamMilestoneDetailDialog`) to display full untruncated notes and info cleanly.
+
+### Removed
+- **Flashcards System Completely**: Removed `FlashcardsScreen.kt`, navigation tab, dashboard cards, and ViewModel logic as requested.
+- **All Themes Except Midnight Dark Theme**: Enforced Midnight Dark Theme as the sole default theme and removed theme preview selection cards from Settings.
+- **Click Ripple Shadow Effects**: Disabled global click ripple feedback across the UI via Material 3 `LocalRippleConfiguration`.
+
+### Changed
+- **Version Bump**: Updated `versionCode` to `13` and `versionName` to `3.4.0`.
+
+---
+
 ## [1.4.0] - 2026-08-28
 
 ### Added

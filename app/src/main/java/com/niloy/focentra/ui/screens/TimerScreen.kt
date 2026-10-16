@@ -55,6 +55,7 @@ fun TimerScreen(
 
     var showDistractionDialog by remember { mutableStateOf(false) }
     var showBrainDumpDialog by remember { mutableStateOf(false) }
+    var showManualDataInputDialog by remember { mutableStateOf(false) }
     var showCancelConfirmDialog by remember { mutableStateOf(false) }
     val brainDumpNotes by viewModel.brainDumpNotes.collectAsStateWithLifecycle()
 
@@ -133,6 +134,23 @@ fun TimerScreen(
             onToggleDone = { id -> viewModel.toggleBrainDumpDone(id) },
             onDeleteNote = { id -> viewModel.deleteBrainDumpNote(id) },
             onClearCompleted = { viewModel.clearCompletedBrainDumps() }
+        )
+    }
+
+    if (showManualDataInputDialog) {
+        com.niloy.focentra.ui.components.ManualStudyDataDialog(
+            subjects = subjects.map { it.name },
+            onDismiss = { showManualDataInputDialog = false },
+            onSave = { subject, topic, durMin, category, notes, rating ->
+                viewModel.addManualSession(
+                    subject = subject,
+                    topic = topic,
+                    durationMinutes = durMin,
+                    category = category,
+                    notes = notes,
+                    rating = rating
+                )
+            }
         )
     }
 
@@ -553,7 +571,7 @@ fun TimerScreen(
                     }
                 }
 
-                // Quick Study Tools (Brain Dump & Recall Flashcards)
+                // Quick Study Tools (Brain Dump & Manual Input)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -573,17 +591,17 @@ fun TimerScreen(
                     }
 
                     OutlinedButton(
-                        onClick = { viewModel.navigateTo(com.niloy.focentra.viewmodel.NavigationTab.FLASHCARDS) },
+                        onClick = { showManualDataInputDialog = true },
                         modifier = Modifier.weight(1f).height(46.dp),
                         shape = RoundedCornerShape(14.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Style,
+                            imageVector = Icons.Default.EditNote,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Flashcards", maxLines = 1)
+                        Text("Study Data Input", maxLines = 1)
                     }
                 }
 

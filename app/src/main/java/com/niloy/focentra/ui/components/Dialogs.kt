@@ -342,6 +342,182 @@ fun SessionCompletionDialog(
 }
 
 @Composable
+fun ManualStudyDataDialog(
+    subjects: List<String>,
+    onDismiss: () -> Unit,
+    onSave: (subject: String, topic: String, durationMinutes: Int, category: String, notes: String, rating: Int) -> Unit
+) {
+    var subject by remember { mutableStateOf(subjects.firstOrNull() ?: "General") }
+    var customSubject by remember { mutableStateOf("") }
+    var useCustomSubject by remember { mutableStateOf(subjects.isEmpty()) }
+    var topic by remember { mutableStateOf("") }
+    var durationMinutesStr by remember { mutableStateOf("30") }
+    var category by remember { mutableStateOf("Study") }
+    var notes by remember { mutableStateOf("") }
+    var rating by remember { mutableIntStateOf(4) }
+
+    val categories = listOf("Study", "Exam Prep", "Assignment", "Revision", "Research")
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.EditNote,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(26.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Log Study Data",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = "Manually record a completed study session into your analytics",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                // Subject Selector / Input
+                if (!useCustomSubject && subjects.isNotEmpty()) {
+                    Text(
+                        text = "Subject",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        subjects.take(4).forEach { sub ->
+                            FilterChip(
+                                selected = subject == sub,
+                                onClick = { subject = sub },
+                                label = { Text(sub, maxLines = 1) }
+                            )
+                        }
+                    }
+                    TextButton(onClick = { useCustomSubject = true }) {
+                        Text("+ Custom Subject")
+                    }
+                } else {
+                    OutlinedTextField(
+                        value = customSubject,
+                        onValueChange = { customSubject = it },
+                        label = { Text("Subject Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        singleLine = true
+                    )
+                    if (subjects.isNotEmpty()) {
+                        TextButton(onClick = { useCustomSubject = false }) {
+                            Text("Select existing subject")
+                        }
+                    }
+                }
+
+                // Topic Input
+                OutlinedTextField(
+                    value = topic,
+                    onValueChange = { topic = it },
+                    label = { Text("Topic / Focus Area") },
+                    placeholder = { Text("e.g. Chapter 3 Calculus") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    singleLine = true
+                )
+
+                // Duration Input
+                OutlinedTextField(
+                    value = durationMinutesStr,
+                    onValueChange = { durationMinutesStr = it.filter { char -> char.isDigit() } },
+                    label = { Text("Duration (minutes)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    singleLine = true
+                )
+
+                // Category Chips
+                Text(
+                    text = "Category",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    categories.forEach { cat ->
+                        FilterChip(
+                            selected = category == cat,
+                            onClick = { category = cat },
+                            label = { Text(cat, maxLines = 1) }
+                        )
+                    }
+                }
+
+                // Rating Stars
+                Text(
+                    text = "Productivity Rating: $rating / 5",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    for (i in 1..5) {
+                        IconButton(onClick = { rating = i }, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                imageVector = if (i <= rating) Icons.Default.Star else Icons.Default.StarBorder,
+                                contentDescription = "$i Stars",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+
+                // Notes Input
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text("Notes / Key Accomplishments") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    maxLines = 3
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val finalSubject = if (useCustomSubject) customSubject.ifBlank { "General" } else subject
+                    val durMin = durationMinutesStr.toIntOrNull() ?: 30
+                    if (durMin > 0) {
+                        onSave(finalSubject, topic, durMin, category, notes, rating)
+                        onDismiss()
+                    }
+                },
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text("Save Study Data")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
 fun EditSessionDialog(
     session: StudySessionEntity,
     subjects: List<String>,
