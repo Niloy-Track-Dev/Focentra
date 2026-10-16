@@ -32,15 +32,47 @@ fun PresetsScreen(
     val subjects by viewModel.subjects.collectAsStateWithLifecycle()
 
     var showCreateDialog by remember { mutableStateOf(false) }
+    var presetToEdit by remember { mutableStateOf<PresetEntity?>(null) }
+    var presetDetailToShow by remember { mutableStateOf<PresetEntity?>(null) }
     var presetToDelete by remember { mutableStateOf<PresetEntity?>(null) }
 
     if (showCreateDialog) {
-        CreatePresetDialog(
+        PresetEditDialog(
+            existingPreset = null,
             subjects = subjects.map { it.name },
             onDismiss = { showCreateDialog = false },
             onSave = { newPreset ->
                 viewModel.savePreset(newPreset)
                 showCreateDialog = false
+            }
+        )
+    }
+
+    if (presetDetailToShow != null) {
+        PresetDetailDialog(
+            preset = presetDetailToShow!!,
+            onDismiss = { presetDetailToShow = null },
+            onStart = {
+                val p = presetDetailToShow!!
+                presetDetailToShow = null
+                viewModel.startTimerWithPreset(p)
+            },
+            onEdit = {
+                val p = presetDetailToShow!!
+                presetDetailToShow = null
+                presetToEdit = p
+            }
+        )
+    }
+
+    if (presetToEdit != null) {
+        PresetEditDialog(
+            existingPreset = presetToEdit,
+            subjects = subjects.map { it.name },
+            onDismiss = { presetToEdit = null },
+            onSave = { updatedPreset ->
+                viewModel.savePreset(updatedPreset)
+                presetToEdit = null
             }
         )
     }
@@ -91,7 +123,9 @@ fun PresetsScreen(
                     PresetCard(
                         preset = preset,
                         onStartClick = { viewModel.startTimerWithPreset(preset) },
-                        onDeleteClick = { presetToDelete = preset }
+                        onEditClick = { presetToEdit = preset },
+                        onDeleteClick = { presetToDelete = preset },
+                        onCardClick = { presetDetailToShow = preset }
                     )
                 }
             }
@@ -123,11 +157,16 @@ fun PresetsScreen(
 fun PresetCard(
     preset: PresetEntity,
     onStartClick: () -> Unit,
+    onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
+    onCardClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .clickable { onCardClick() },
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
@@ -190,6 +229,15 @@ fun PresetCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.End
             ) {
+                IconButton(onClick = onEditClick, modifier = Modifier.size(34.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(2.dp))
                 IconButton(onClick = onDeleteClick, modifier = Modifier.size(34.dp)) {
                     Icon(
                         imageVector = Icons.Default.DeleteOutline,
@@ -216,31 +264,156 @@ fun PresetCard(
 }
 
 @Composable
-fun CreatePresetDialog(
+fun PresetDetailDialog(
+    preset: PresetEntity,
+    onDismiss: () -> Unit,
+    onStart: () -> Unit,
+    onEdit: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Icon(
+                    imageVector = if (preset.type == "POMODORO") Icons.Default.AvTimer else Icons.Default.Timer,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Text(
+                    text = preset.title,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                )
+            }
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = "Mode: ${preset.type}",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "Subject: ${preset.subject}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        if (preset.topic.isNotBlank()) {
+                            Text(
+                                text = "Topic: ${preset.topic}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "Timer Configuration",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        if (preset.type == "POMODORO") {
+                            Text(
+                                text = "• Focus Time: ${preset.pomodoroFocusMin} minutes\n• Short Break: ${preset.pomodoroShortBreakMin} minutes\n• Long Break: ${preset.pomodoroLongBreakMin} minutes\n• Total Rounds: ${preset.pomodoroRounds}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        } else {
+                            Text(
+                                text = "• Duration: ${preset.durationMinutes} minutes",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onStart,
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Start Timer")
+            }
+        },
+        dismissButton = {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = onEdit) {
+                    Text("Edit")
+                }
+                TextButton(onClick = onDismiss) {
+                    Text("Close")
+                }
+            }
+        }
+    )
+}
+
+@Composable
+fun PresetEditDialog(
+    existingPreset: PresetEntity?,
     subjects: List<String>,
     onDismiss: () -> Unit,
     onSave: (PresetEntity) -> Unit
 ) {
-    var title by remember { mutableStateOf("") }
-    var selectedType by remember { mutableStateOf("POMODORO") }
-    var selectedSubject by remember { mutableStateOf(subjects.firstOrNull() ?: "General Study") }
-    var topic by remember { mutableStateOf("") }
-    var durationMinutes by remember { mutableStateOf("25") }
-    var pomodoroFocusMin by remember { mutableStateOf("25") }
-    var pomodoroShortBreakMin by remember { mutableStateOf("5") }
-    var pomodoroLongBreakMin by remember { mutableStateOf("15") }
-    var pomodoroRounds by remember { mutableStateOf("4") }
+    var title by remember { mutableStateOf(existingPreset?.title ?: "") }
+    var selectedType by remember { mutableStateOf(existingPreset?.type ?: "POMODORO") }
+    var selectedSubject by remember { mutableStateOf(existingPreset?.subject ?: (subjects.firstOrNull() ?: "General Study")) }
+    var topic by remember { mutableStateOf(existingPreset?.topic ?: "") }
+    var durationMinutes by remember { mutableStateOf((existingPreset?.durationMinutes ?: 25).toString()) }
+    var pomodoroFocusMin by remember { mutableStateOf((existingPreset?.pomodoroFocusMin ?: 25).toString()) }
+    var pomodoroShortBreakMin by remember { mutableStateOf((existingPreset?.pomodoroShortBreakMin ?: 5).toString()) }
+    var pomodoroLongBreakMin by remember { mutableStateOf((existingPreset?.pomodoroLongBreakMin ?: 15).toString()) }
+    var pomodoroRounds by remember { mutableStateOf((existingPreset?.pomodoroRounds ?: 4).toString()) }
+
+    val TITLE_LIMIT = 50
+    val TOPIC_LIMIT = 40
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Create Study Preset") },
+        title = { Text(if (existingPreset != null) "Edit Study Preset" else "Create Study Preset") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
                     value = title,
-                    onValueChange = { title = it },
+                    onValueChange = { title = it.take(TITLE_LIMIT) },
                     label = { Text("Preset Title") },
                     placeholder = { Text("e.g. Deep Math Sprint") },
+                    supportingText = {
+                        Text(
+                            text = "${title.length}/$TITLE_LIMIT",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    },
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp)
                 )
@@ -317,8 +490,15 @@ fun CreatePresetDialog(
 
                 OutlinedTextField(
                     value = topic,
-                    onValueChange = { topic = it },
+                    onValueChange = { topic = it.take(TOPIC_LIMIT) },
                     label = { Text("Topic (Optional)") },
+                    supportingText = {
+                        Text(
+                            text = "${topic.length}/$TOPIC_LIMIT",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    },
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp)
                 )
@@ -330,6 +510,7 @@ fun CreatePresetDialog(
                     if (title.isNotBlank()) {
                         onSave(
                             PresetEntity(
+                                id = existingPreset?.id ?: 0L,
                                 title = title,
                                 type = selectedType,
                                 subject = selectedSubject,

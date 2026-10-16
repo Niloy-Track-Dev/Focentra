@@ -1,34 +1,14 @@
 package com.niloy.focentra.ui.theme
 
 import android.app.Activity
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
-
-private val CleanMinimalismColorScheme = lightColorScheme(
-    primary = CleanMinimalismPrimary,
-    onPrimary = CleanMinimalismOnPrimary,
-    primaryContainer = CleanMinimalismPrimaryContainer,
-    onPrimaryContainer = CleanMinimalismOnPrimaryContainer,
-    secondary = CleanMinimalismSecondary,
-    onSecondary = CleanMinimalismOnSecondary,
-    secondaryContainer = CleanMinimalismSecondaryContainer,
-    onSecondaryContainer = CleanMinimalismOnSecondaryContainer,
-    tertiary = CleanMinimalismTertiary,
-    background = CleanMinimalismBackground,
-    onBackground = CleanMinimalismTextPrimary,
-    surface = CleanMinimalismSurface,
-    onSurface = CleanMinimalismTextPrimary,
-    surfaceVariant = CleanMinimalismSurfaceVariant,
-    onSurfaceVariant = CleanMinimalismTextSecondary,
-    outline = CleanMinimalismOutline,
-    outlineVariant = CleanMinimalismOutlineVariant
-)
 
 private val MidnightColorScheme = darkColorScheme(
     primary = MidnightPrimary,
@@ -50,148 +30,15 @@ private val MidnightColorScheme = darkColorScheme(
     outlineVariant = Color(0xFF1E293B)
 )
 
-private val OceanColorScheme = darkColorScheme(
-    primary = OceanPrimary,
-    onPrimary = Color(0xFF030712),
-    primaryContainer = Color(0xFF0077B6),
-    secondary = OceanSecondary,
-    tertiary = OceanTertiary,
-    background = OceanBackground,
-    onBackground = Color(0xFFF0F9FF),
-    surface = OceanSurface,
-    onSurface = Color(0xFFF0F9FF),
-    surfaceVariant = OceanSurfaceVariant,
-    onSurfaceVariant = Color(0xFF94A3B8),
-    outline = Color(0xFF334E68)
-)
-
-private val ForestColorScheme = darkColorScheme(
-    primary = ForestPrimary,
-    onPrimary = Color(0xFF052E16),
-    primaryContainer = Color(0xFF2D6A4F),
-    secondary = ForestSecondary,
-    tertiary = ForestTertiary,
-    background = ForestBackground,
-    onBackground = Color(0xFFF0FDF4),
-    surface = ForestSurface,
-    onSurface = Color(0xFFF0FDF4),
-    surfaceVariant = ForestSurfaceVariant,
-    onSurfaceVariant = Color(0xFF86EFAC),
-    outline = Color(0xFF2D6A4F)
-)
-
-private val SunsetColorScheme = darkColorScheme(
-    primary = SunsetPrimary,
-    onPrimary = Color(0xFF451A03),
-    primaryContainer = Color(0xFF7C2D12),
-    secondary = SunsetSecondary,
-    tertiary = SunsetTertiary,
-    background = SunsetBackground,
-    onBackground = Color(0xFFFFF7ED),
-    surface = SunsetSurface,
-    onSurface = Color(0xFFFFF7ED),
-    surfaceVariant = SunsetSurfaceVariant,
-    onSurfaceVariant = Color(0xFFFDBA74),
-    outline = Color(0xFF7C2D12)
-)
-
-private val CyberpunkColorScheme = darkColorScheme(
-    primary = CyberpunkPrimary,
-    onPrimary = Color(0xFF0D0221),
-    primaryContainer = Color(0xFF2E175A),
-    onPrimaryContainer = Color(0xFF00F5D4),
-    secondary = CyberpunkSecondary,
-    onSecondary = Color(0xFFFFFFFF),
-    tertiary = CyberpunkTertiary,
-    background = CyberpunkBackground,
-    onBackground = Color(0xFFF0E6FF),
-    surface = CyberpunkSurface,
-    onSurface = Color(0xFFF0E6FF),
-    surfaceVariant = CyberpunkSurfaceVariant,
-    onSurfaceVariant = Color(0xFFD8B4FE),
-    outline = Color(0xFF7B2CBF)
-)
-
-private val MatchaColorScheme = lightColorScheme(
-    primary = MatchaPrimary,
-    onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFD8E6D3),
-    onPrimaryContainer = Color(0xFF1B281B),
-    secondary = MatchaSecondary,
-    onSecondary = Color(0xFFFFFFFF),
-    tertiary = MatchaTertiary,
-    background = MatchaBackground,
-    onBackground = MatchaTextPrimary,
-    surface = MatchaSurface,
-    onSurface = MatchaTextPrimary,
-    surfaceVariant = MatchaSurfaceVariant,
-    onSurfaceVariant = MatchaTextSecondary,
-    outline = Color(0xFFC4D5BF),
-    outlineVariant = Color(0xFFDDE6DA)
-)
-
-private val NeumorphismColorScheme = lightColorScheme(
-    primary = Color(0xFF4F46E5),
-    onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFC7D2FE),
-    onPrimaryContainer = Color(0xFF1E1B4B),
-    secondary = Color(0xFF6366F1),
-    onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFFE0E7FF),
-    onSecondaryContainer = Color(0xFF312E81),
-    tertiary = Color(0xFF0EA5E9),
-    background = Color(0xFFE2E8F0),
-    onBackground = Color(0xFF0F172A),
-    surface = Color(0xFFEDF2F7),
-    onSurface = Color(0xFF0F172A),
-    surfaceVariant = Color(0xFFCBD5E1),
-    onSurfaceVariant = Color(0xFF334155),
-    outline = Color(0xFF94A3B8),
-    outlineVariant = Color(0xFFCBD5E1)
-)
-
-private val GlassmorphismColorScheme = darkColorScheme(
-    primary = Color(0xFF38BDF8),
-    onPrimary = Color(0xFF0284C7),
-    primaryContainer = Color(0xFF0369A1),
-    onPrimaryContainer = Color(0xFFE0F2FE),
-    secondary = Color(0xFF818CF8),
-    onSecondary = Color(0xFF312E81),
-    secondaryContainer = Color(0xFF3730A3),
-    onSecondaryContainer = Color(0xFFE0E7FF),
-    tertiary = Color(0xFF2DD4BF),
-    background = Color(0xFF070A12),
-    onBackground = Color(0xFFF8FAFC),
-    surface = Color(0xFF111827),
-    onSurface = Color(0xFFF8FAFC),
-    surfaceVariant = Color(0xFF1F2937),
-    onSurfaceVariant = Color(0xFFCBD5E1),
-    outline = Color(0xFF374151),
-    outlineVariant = Color(0xFF1F2937)
-)
-
-private val ModernLightColorScheme = CleanMinimalismColorScheme
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FocentraTheme(
     themeName: String = "midnight",
     darkTheme: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when (themeName.lowercase()) {
-        "midnight" -> MidnightColorScheme
-        "ocean" -> OceanColorScheme
-        "forest" -> ForestColorScheme
-        "sunset" -> SunsetColorScheme
-        "cyberpunk" -> CyberpunkColorScheme
-        "matcha" -> MatchaColorScheme
-        "neumorphism", "neumorphic" -> NeumorphismColorScheme
-        "glassmorphism", "glassmorphic", "glass" -> GlassmorphismColorScheme
-        "light", "clean_minimalism", "minimalism", "minimal" -> CleanMinimalismColorScheme
-        else -> MidnightColorScheme
-    }
-
-    val isLight = colorScheme == CleanMinimalismColorScheme || colorScheme == MatchaColorScheme || colorScheme == NeumorphismColorScheme
+    val colorScheme = MidnightColorScheme
+    val isLight = false
 
     val view = LocalView.current
     if (!view.isInEditMode) {
@@ -206,9 +53,13 @@ fun FocentraTheme(
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    CompositionLocalProvider(
+        LocalRippleConfiguration provides null
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 }

@@ -39,12 +39,6 @@ import com.niloy.focentra.ui.components.SectionHeader
 import com.niloy.focentra.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
 
-data class ThemeOption(
-    val id: String,
-    val name: String,
-    val description: String,
-    val previewColors: List<Color>
-)
 
 @Composable
 fun SettingsScreen(
@@ -77,64 +71,6 @@ fun SettingsScreen(
     val weeklyGoal = goals.find { it.periodType == "WEEKLY" }?.targetMinutes ?: 2400
     val monthlyGoal = goals.find { it.periodType == "MONTHLY" }?.targetMinutes ?: 9600
 
-    val themeOptions = remember {
-        listOf(
-            ThemeOption(
-                id = "clean_minimalism",
-                name = "Clean Light",
-                description = "Modern crisp indigo",
-                previewColors = listOf(Color(0xFF4F46E5), Color(0xFF818CF8), Color(0xFFF8FAFC))
-            ),
-            ThemeOption(
-                id = "midnight",
-                name = "Midnight Dark",
-                description = "AMOLED deep focus",
-                previewColors = listOf(Color(0xFF6366F1), Color(0xFF38BDF8), Color(0xFF0B0E14))
-            ),
-            ThemeOption(
-                id = "ocean",
-                name = "Ocean Blue",
-                description = "Calm azure vibes",
-                previewColors = listOf(Color(0xFF0284C7), Color(0xFF38BDF8), Color(0xFF0C1929))
-            ),
-            ThemeOption(
-                id = "forest",
-                name = "Forest Emerald",
-                description = "Natural botanical green",
-                previewColors = listOf(Color(0xFF059669), Color(0xFF34D399), Color(0xFF061A14))
-            ),
-            ThemeOption(
-                id = "sunset",
-                name = "Sunset Amber",
-                description = "Warm energetic amber",
-                previewColors = listOf(Color(0xFFD97706), Color(0xFFFBBF24), Color(0xFF1C1309))
-            ),
-            ThemeOption(
-                id = "cyberpunk",
-                name = "Cyberpunk Neon",
-                description = "Electric glow & cyan",
-                previewColors = listOf(Color(0xFF00F5D4), Color(0xFFFF007F), Color(0xFF0D0221))
-            ),
-            ThemeOption(
-                id = "matcha",
-                name = "Matcha Latte",
-                description = "Serene sage & warm light",
-                previewColors = listOf(Color(0xFF436B48), Color(0xFF8DA378), Color(0xFFF4F7F2))
-            ),
-            ThemeOption(
-                id = "neumorphism",
-                name = "Neumorphism",
-                description = "Soft dual light depth",
-                previewColors = listOf(Color(0xFF6C63FF), Color(0xFF48426D), Color(0xFFE0E5EC))
-            ),
-            ThemeOption(
-                id = "glassmorphism",
-                name = "Glassmorphism",
-                description = "Frosted translucent glass",
-                previewColors = listOf(Color(0xFF38BDF8), Color(0xFF818CF8), Color(0xFF0F172A))
-            )
-        )
-    }
 
     if (showGoalEditDialog != null) {
         val periodType = showGoalEditDialog!!
@@ -624,113 +560,6 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(top = 12.dp, bottom = 120.dp)
     ) {
-        // Section 1: Themes & Appearance
-        item {
-            Text(
-                text = "APPEARANCE & THEMES",
-                style = MaterialTheme.typography.labelMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                ),
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
-            )
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Visual Aesthetic",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Choose your favorite interface tone and accents",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(themeOptions) { option ->
-                            val isSelected = currentTheme.equals(option.id, ignoreCase = true) ||
-                                    (option.id == "clean_minimalism" && currentTheme.equals("light", ignoreCase = true))
-
-                            Surface(
-                                modifier = Modifier
-                                    .width(130.dp)
-                                    .clickable { viewModel.setTheme(option.id) },
-                                shape = RoundedCornerShape(16.dp),
-                                color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                border = androidx.compose.foundation.BorderStroke(
-                                    width = if (isSelected) 2.dp else 1.dp,
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                                )
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(12.dp),
-                                    horizontalAlignment = Alignment.Start
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        // Color Swatches
-                                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                            option.previewColors.forEach { c ->
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(14.dp)
-                                                        .clip(CircleShape)
-                                                        .background(c)
-                                                        .border(0.5.dp, Color.White.copy(alpha = 0.5f), CircleShape)
-                                                )
-                                            }
-                                        }
-
-                                        if (isSelected) {
-                                            Icon(
-                                                imageVector = Icons.Default.CheckCircle,
-                                                contentDescription = "Selected",
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(10.dp))
-
-                                    Text(
-                                        text = option.name,
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        maxLines = 1
-                                    )
-                                    Text(
-                                        text = option.description,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
 
         // Section 2: Study Goals
         item {
@@ -942,11 +771,11 @@ fun SettingsScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Export JSON Card
+                    // Option 1: JSON Export
                     ActionTile(
                         icon = Icons.Default.CloudDownload,
-                        title = "Export Full Backup to File",
-                        subtitle = "Save a .json backup locally to your device",
+                        title = "JSON Export",
+                        subtitle = "Save full .json backup file locally",
                         onClick = {
                             val formatter = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault())
                             val timestamp = formatter.format(java.util.Date())
@@ -954,11 +783,21 @@ fun SettingsScreen(
                         }
                     )
 
-                    // Export CSV Card
+                    // Option 2: JSON Import
+                    ActionTile(
+                        icon = Icons.Default.CloudUpload,
+                        title = "JSON Import",
+                        subtitle = "Restore database from a .json backup file",
+                        onClick = {
+                            importLauncher.launch(arrayOf("application/json", "*/*"))
+                        }
+                    )
+
+                    // Option 3: CSV Text Export
                     ActionTile(
                         icon = Icons.Default.TableChart,
-                        title = "Export Sessions (CSV Spreadsheet)",
-                        subtitle = "Compatible with Excel, Google Sheets & Notion",
+                        title = "CSV Text Export",
+                        subtitle = "Export study sessions as CSV text to share or copy",
                         onClick = {
                             coroutineScope.launch {
                                 val csv = viewModel.exportCsv()
@@ -973,31 +812,11 @@ fun SettingsScreen(
                         }
                     )
 
-                    // Import JSON Card
-                    ActionTile(
-                        icon = Icons.Default.CloudUpload,
-                        title = "Restore Backup from JSON File",
-                        subtitle = "Select a .json backup file to restore records",
-                        onClick = { 
-                            importLauncher.launch(arrayOf("application/json", "*/*"))
-                        }
-                    )
-
-                    // Import CSV File Card
-                    ActionTile(
-                        icon = Icons.Default.FileUpload,
-                        title = "Import Sessions from CSV File",
-                        subtitle = "Select a .csv file to import study sessions",
-                        onClick = {
-                            importCsvLauncher.launch(arrayOf("text/csv", "text/comma-separated-values", "*/*"))
-                        }
-                    )
-
-                    // Import CSV Text Card
+                    // Option 4: CSV Text Import
                     ActionTile(
                         icon = Icons.Default.EditNote,
-                        title = "Import Sessions from CSV Text",
-                        subtitle = "Paste raw CSV data or text directly",
+                        title = "CSV Text Import",
+                        subtitle = "Paste raw CSV text directly to import sessions",
                         onClick = {
                             showCsvTextImportDialog = true
                         }
@@ -1012,7 +831,7 @@ fun SettingsScreen(
                     ActionTile(
                         icon = Icons.Default.DeleteForever,
                         title = "Clear All App Data",
-                        subtitle = "Wipe database, sessions, flashcards and restore default settings",
+                        subtitle = "Wipe database, sessions and restore default settings",
                         onClick = {
                             showClearAllDataDialog = true
                         }
@@ -1177,7 +996,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Focentra v1.4.0 uses on-device Room SQLite database. Your study sessions, personal records, and goals never leave your device.",
+                        text = "Focentra v3.4.0 uses on-device Room SQLite database. Your study sessions, personal records, and goals never leave your device.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center

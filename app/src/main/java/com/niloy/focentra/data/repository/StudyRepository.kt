@@ -387,9 +387,113 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
     }
 
     suspend fun exportDataJsonStream(outputStream: java.io.OutputStream) = withContext(Dispatchers.IO) {
-        outputStream.bufferedWriter(Charsets.UTF_8).use { writer ->
-            writer.write(exportDataJson())
-            writer.flush()
+        val writer = android.util.JsonWriter(outputStream.bufferedWriter(Charsets.UTF_8))
+        writer.use { jWriter ->
+            jWriter.beginObject()
+            jWriter.name("app").value("Focentra")
+            jWriter.name("version").value(2)
+            jWriter.name("exportedAt").value(System.currentTimeMillis())
+
+            jWriter.name("sessions")
+            jWriter.beginArray()
+            database.sessionDao().getAllSessions().forEach { s ->
+                jWriter.beginObject()
+                jWriter.name("id").value(s.id)
+                jWriter.name("startTime").value(s.startTime)
+                jWriter.name("endTime").value(s.endTime)
+                jWriter.name("durationSeconds").value(s.durationSeconds)
+                jWriter.name("actualFocusedSeconds").value(s.actualFocusedSeconds)
+                jWriter.name("pausedSeconds").value(s.pausedSeconds)
+                jWriter.name("sessionType").value(s.sessionType)
+                jWriter.name("subject").value(s.subject)
+                jWriter.name("topic").value(s.topic)
+                jWriter.name("category").value(s.category)
+                jWriter.name("goal").value(s.goal)
+                jWriter.name("notes").value(s.notes)
+                jWriter.name("tags").value(s.tags)
+                jWriter.name("productivityRating").value(s.productivityRating)
+                jWriter.name("distractionCount").value(s.distractionCount)
+                jWriter.name("distractionDetails").value(s.distractionDetails)
+                jWriter.name("mood").value(s.mood)
+                jWriter.name("energyLevel").value(s.energyLevel)
+                jWriter.name("location").value(s.location)
+                jWriter.name("completionStatus").value(s.completionStatus)
+                jWriter.endObject()
+            }
+            jWriter.endArray()
+
+            jWriter.name("subjects")
+            jWriter.beginArray()
+            database.subjectDao().getAllSubjects().forEach { s ->
+                jWriter.beginObject()
+                jWriter.name("id").value(s.id)
+                jWriter.name("name").value(s.name)
+                jWriter.name("colorHex").value(s.colorHex)
+                jWriter.name("iconName").value(s.iconName)
+                jWriter.name("targetHours").value(s.targetHours.toDouble())
+                jWriter.name("description").value(s.description)
+                jWriter.endObject()
+            }
+            jWriter.endArray()
+
+            jWriter.name("topics")
+            jWriter.beginArray()
+            database.topicDao().getAllTopics().forEach { t ->
+                jWriter.beginObject()
+                jWriter.name("id").value(t.id)
+                jWriter.name("subjectId").value(t.subjectId)
+                jWriter.name("subjectName").value(t.subjectName)
+                jWriter.name("name").value(t.name)
+                jWriter.endObject()
+            }
+            jWriter.endArray()
+
+            jWriter.name("presets")
+            jWriter.beginArray()
+            database.presetDao().getAllPresets().forEach { p ->
+                jWriter.beginObject()
+                jWriter.name("title").value(p.title)
+                jWriter.name("type").value(p.type)
+                jWriter.name("durationMinutes").value(p.durationMinutes)
+                jWriter.name("subject").value(p.subject)
+                jWriter.name("pomodoroFocusMin").value(p.pomodoroFocusMin)
+                jWriter.name("pomodoroShortBreakMin").value(p.pomodoroShortBreakMin)
+                jWriter.name("pomodoroLongBreakMin").value(p.pomodoroLongBreakMin)
+                jWriter.name("pomodoroRounds").value(p.pomodoroRounds)
+                jWriter.endObject()
+            }
+            jWriter.endArray()
+
+            jWriter.name("goals")
+            jWriter.beginArray()
+            database.goalDao().getAllGoals().forEach { g ->
+                jWriter.beginObject()
+                jWriter.name("periodType").value(g.periodType)
+                jWriter.name("targetMinutes").value(g.targetMinutes)
+                jWriter.endObject()
+            }
+            jWriter.endArray()
+
+            jWriter.name("reminders")
+            jWriter.beginArray()
+            database.reminderDao().getAllReminders().forEach { r ->
+                jWriter.beginObject()
+                jWriter.name("title").value(r.title)
+                jWriter.name("hour").value(r.hour)
+                jWriter.name("minute").value(r.minute)
+                jWriter.name("daysOfWeek").value(r.daysOfWeek)
+                jWriter.name("enabled").value(r.enabled)
+                jWriter.name("message").value(r.message)
+                jWriter.endObject()
+            }
+            jWriter.endArray()
+
+            val examTargetsJson = getSetting("exam_targets_json", "")
+            if (examTargetsJson.isNotBlank()) {
+                jWriter.name("examTargets").value(examTargetsJson)
+            }
+
+            jWriter.endObject()
         }
     }
 

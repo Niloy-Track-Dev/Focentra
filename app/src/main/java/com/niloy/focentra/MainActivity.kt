@@ -132,7 +132,6 @@ class MainActivity : ComponentActivity() {
                                         )
                                     } else {
                                         val isSubPage = currentTab == NavigationTab.SUBJECTS ||
-                                                currentTab == NavigationTab.FLASHCARDS ||
                                                 currentTab == NavigationTab.ACHIEVEMENTS
 
                                         Text(
@@ -143,7 +142,6 @@ class MainActivity : ComponentActivity() {
                                                 NavigationTab.CALENDAR -> "Study Calendar"
                                                 NavigationTab.HISTORY -> "Session History"
                                                 NavigationTab.SUBJECTS -> "Subjects & Topics"
-                                                NavigationTab.FLASHCARDS -> "Active Recall Cards"
                                                 NavigationTab.ACHIEVEMENTS -> "Achievements"
                                                 NavigationTab.PRESETS -> "Study Presets"
                                                 NavigationTab.SETTINGS -> "Settings"
@@ -190,15 +188,6 @@ class MainActivity : ComponentActivity() {
                                             currentTab == NavigationTab.PRESETS
 
                                     if (isMainScreen) {
-                                        // Flashcards Quick Access Icon
-                                        IconButton(onClick = { viewModel.navigateTo(NavigationTab.FLASHCARDS) }) {
-                                            Icon(
-                                                imageVector = Icons.Default.Style,
-                                                contentDescription = "Flashcards",
-                                                tint = if (currentTab == NavigationTab.FLASHCARDS) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-
                                         // Subjects Quick Access Icon
                                         IconButton(onClick = { viewModel.navigateTo(NavigationTab.SUBJECTS) }) {
                                             Icon(
@@ -231,14 +220,6 @@ class MainActivity : ComponentActivity() {
                                         expanded = showMenu,
                                         onDismissRequest = { showMenu = false }
                                     ) {
-                                        DropdownMenuItem(
-                                            text = { Text("Active Recall Flashcards") },
-                                            leadingIcon = { Icon(Icons.Default.Style, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                                            onClick = {
-                                                showMenu = false
-                                                viewModel.navigateTo(NavigationTab.FLASHCARDS)
-                                            }
-                                        )
                                         DropdownMenuItem(
                                             text = { Text("Study Presets") },
                                             leadingIcon = { Icon(Icons.Default.BookmarkBorder, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
@@ -282,15 +263,13 @@ class MainActivity : ComponentActivity() {
                                     NavigationTab.CALENDAR -> CalendarScreen(viewModel = viewModel)
                                     NavigationTab.HISTORY -> HistoryScreen(viewModel = viewModel)
                                     NavigationTab.SUBJECTS -> SubjectsScreen(viewModel = viewModel, isFabVisible = isBottomBarVisible.value)
-                                    NavigationTab.FLASHCARDS -> FlashcardsScreen(viewModel = viewModel, isFabVisible = isBottomBarVisible.value)
                                     NavigationTab.ACHIEVEMENTS -> AchievementsScreen(viewModel = viewModel)
                                     NavigationTab.PRESETS -> PresetsScreen(viewModel = viewModel, isFabVisible = isBottomBarVisible.value)
                                     NavigationTab.SETTINGS -> SettingsScreen(viewModel = viewModel)
                                 }
                             }
 
-                            val shouldShowBottomBar = currentTab != NavigationTab.FLASHCARDS &&
-                                    currentTab != NavigationTab.SUBJECTS &&
+                            val shouldShowBottomBar = currentTab != NavigationTab.SUBJECTS &&
                                     currentTab != NavigationTab.ACHIEVEMENTS
 
                             AnimatedVisibility(
