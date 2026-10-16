@@ -373,7 +373,14 @@ class StudyRepository(private val database: AppDatabase, private val context: Co
             root.put("examTargets", JSONArray(examTargetsJson))
         }
 
-        root.toString(2)
+        root.toString()
+    }
+
+    suspend fun exportDataJsonStream(outputStream: java.io.OutputStream) = withContext(Dispatchers.IO) {
+        outputStream.bufferedWriter(Charsets.UTF_8).use { writer ->
+            writer.write(exportDataJson())
+            writer.flush()
+        }
     }
 
     suspend fun exportSessionsCsv(): String = withContext(Dispatchers.IO) {
@@ -566,10 +573,23 @@ class StudyRepository(private val database: AppDatabase, private val context: Co
             }
 
             if (sessionList.isNotEmpty()) {
-                database.sessionDao().insertSessions(sessionList)
+                // Chunk batch insertions to prevent SQLite transaction limits and memory spikes
+                sessionList.chunked(500).forEach { chunk ->
+                    database.sessionDao().insertSessions(chunk)
+                }
             }
             checkAndUnlockAchievements()
             true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun importDataJsonStream(inputStream: java.io.InputStream, replaceExisting: Boolean): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val content = inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+            importDataJson(content, replaceExisting)
         } catch (e: Exception) {
             e.printStackTrace()
             false

@@ -135,7 +135,7 @@ fun DashboardScreen(
                 sessions = sessions,
                 onAddClick = { showAddExamDialog = true },
                 onStartTimer = { target ->
-                    viewModel.startQuickTimer(45, target.subject, SessionMode.POMODORO)
+                    viewModel.navigateTo(NavigationTab.TIMER)
                 },
                 onDeleteTarget = { id ->
                     targetToDelete = examTargets.find { it.id == id }
@@ -1119,16 +1119,12 @@ fun ExamMilestoneCard(
                         Text(
                             text = target.title,
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = target.subject + if (target.notes.isNotBlank()) " • ${target.notes}" else "",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
