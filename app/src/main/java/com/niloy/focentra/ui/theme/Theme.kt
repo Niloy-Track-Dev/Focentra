@@ -130,6 +130,38 @@ private val MatchaColorScheme = lightColorScheme(
     outlineVariant = Color(0xFFDDE6DA)
 )
 
+private val NeumorphismColorScheme = lightColorScheme(
+    primary = Color(0xFF6C63FF),
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFFE2E0FF),
+    onPrimaryContainer = Color(0xFF1D1868),
+    secondary = Color(0xFF48426D),
+    background = Color(0xFFE0E5EC),
+    onBackground = Color(0xFF2D3748),
+    surface = Color(0xFFE0E5EC),
+    onSurface = Color(0xFF2D3748),
+    surfaceVariant = Color(0xFFD1D9E6),
+    onSurfaceVariant = Color(0xFF4A5568),
+    outline = Color(0xFFB8C2D1),
+    outlineVariant = Color(0xFFA3B1C6)
+)
+
+private val GlassmorphismColorScheme = darkColorScheme(
+    primary = Color(0xFF38BDF8),
+    onPrimary = Color(0xFF0C4A6E),
+    primaryContainer = Color(0xFF0284C7),
+    onPrimaryContainer = Color(0xFFE0F2FE),
+    secondary = Color(0xFF818CF8),
+    background = Color(0xFF0F172A),
+    onBackground = Color(0xFFF8FAFC),
+    surface = Color(0xFF1E293B),
+    onSurface = Color(0xFFF8FAFC),
+    surfaceVariant = Color(0xFF334155),
+    onSurfaceVariant = Color(0xFFCBD5E1),
+    outline = Color(0xFF475569),
+    outlineVariant = Color(0xFF334155)
+)
+
 private val ModernLightColorScheme = CleanMinimalismColorScheme
 
 @Composable
@@ -145,11 +177,13 @@ fun FocentraTheme(
         "sunset" -> SunsetColorScheme
         "cyberpunk" -> CyberpunkColorScheme
         "matcha" -> MatchaColorScheme
+        "neumorphism", "neumorphic" -> NeumorphismColorScheme
+        "glassmorphism", "glassmorphic", "glass" -> GlassmorphismColorScheme
         "light", "clean_minimalism", "minimalism", "minimal" -> CleanMinimalismColorScheme
         else -> MidnightColorScheme
     }
 
-    val isLight = colorScheme == CleanMinimalismColorScheme || colorScheme == MatchaColorScheme
+    val isLight = colorScheme == CleanMinimalismColorScheme || colorScheme == MatchaColorScheme || colorScheme == NeumorphismColorScheme
 
     val view = LocalView.current
     if (!view.isInEditMode) {

@@ -89,6 +89,10 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
         checkAndUnlockAchievements()
     }
 
+    suspend fun clearAllSessions() = withContext(Dispatchers.IO) {
+        database.sessionDao().clearAllSessions()
+    }
+
     suspend fun getSessionById(id: Long): StudySessionEntity? = withContext(Dispatchers.IO) {
         database.sessionDao().getSessionById(id)
     }

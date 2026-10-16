@@ -1,8 +1,12 @@
 package com.niloy.focentra.ui.screens
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -132,7 +136,32 @@ fun TimerScreen(
         )
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    // Lightweight Breathing Gradient Background Animation
+    val infiniteTransition = rememberInfiniteTransition(label = "TimerBreathingGradient")
+    val animAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.08f,
+        targetValue = 0.18f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(4000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "BreathingAlpha"
+    )
+
+    val ambientColor1 = MaterialTheme.colorScheme.primary.copy(alpha = animAlpha)
+    val ambientColor2 = MaterialTheme.colorScheme.secondary.copy(alpha = animAlpha * 0.7f)
+    val ambientBg = MaterialTheme.colorScheme.background
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(
+                Brush.radialGradient(
+                    colors = listOf(ambientColor1, ambientColor2, ambientBg),
+                    radius = 1200f
+                )
+            )
+    ) {
         if (timerState.status == TimerStatus.RUNNING || timerState.status == TimerStatus.PAUSED) {
             // Active Timer View
             Column(
