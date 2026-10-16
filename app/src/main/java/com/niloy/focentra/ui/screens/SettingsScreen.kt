@@ -691,8 +691,14 @@ fun SettingsScreen(
                                         shape = RoundedCornerShape(12.dp),
                                         color = if (reminder.enabled) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
                                     ) {
+                                        val h12 = when {
+                                            reminder.hour == 0 -> 12
+                                            reminder.hour > 12 -> reminder.hour - 12
+                                            else -> reminder.hour
+                                        }
+                                        val amPm = if (reminder.hour >= 12) "PM" else "AM"
                                         Text(
-                                            text = "${String.format("%02d", reminder.hour)}:${String.format("%02d", reminder.minute)}",
+                                            text = "${String.format("%02d", h12)}:${String.format("%02d", reminder.minute)} $amPm",
                                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                             color = if (reminder.enabled) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
@@ -996,7 +1002,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Focentra v3.4.0 uses on-device Room SQLite database. Your study sessions, personal records, and goals never leave your device.",
+                        text = "Focentra v3.5.0 uses on-device Room SQLite database. Your study sessions, personal records, and goals never leave your device.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -1253,8 +1259,9 @@ fun AddReminderDialog(
     onSave: (ReminderEntity) -> Unit
 ) {
     var label by remember { mutableStateOf("Deep Study Session") }
-    var hour by remember { mutableStateOf("19") }
+    var hour12 by remember { mutableStateOf("07") }
     var minute by remember { mutableStateOf("00") }
+    var isPm by remember { mutableStateOf(true) }
     var selectedFrequency by remember { mutableStateOf("Every day") }
 
     AlertDialog(
@@ -1269,11 +1276,11 @@ fun AddReminderDialog(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
-                        value = hour,
-                        onValueChange = { hour = it },
-                        label = { Text("Hour (0-23)") },
+                        value = hour12,
+                        onValueChange = { hour12 = it },
+                        label = { Text("Hour (1-12)") },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp)
                     )
@@ -1283,6 +1290,18 @@ fun AddReminderDialog(
                         label = { Text("Minute (0-59)") },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp)
+                    )
+                    FilterChip(
+                        selected = !isPm,
+                        onClick = { isPm = false },
+                        label = { Text("AM") },
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    FilterChip(
+                        selected = isPm,
+                        onClick = { isPm = true },
+                        label = { Text("PM") },
+                        shape = RoundedCornerShape(8.dp)
                     )
                 }
 
@@ -1305,8 +1324,13 @@ fun AddReminderDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val h = hour.toIntOrNull()?.coerceIn(0, 23) ?: 19
-                    val m = minute.toIntOrNull()?.coerceIn(0, 59) ?: 0
+                    val parsedH12 = (hour12.toIntOrNull() ?: 7).coerceIn(1, 12)
+                    val m = (minute.toIntOrNull() ?: 0).coerceIn(0, 59)
+                    val h24 = when {
+                        isPm && parsedH12 < 12 -> parsedH12 + 12
+                        !isPm && parsedH12 == 12 -> 0
+                        else -> parsedH12
+                    }
                     val days = when (selectedFrequency) {
                         "Weekdays" -> "Mon,Tue,Wed,Thu,Fri"
                         "Weekends" -> "Sat,Sun"
@@ -1315,7 +1339,7 @@ fun AddReminderDialog(
                     onSave(
                         ReminderEntity(
                             title = label.ifBlank { "Study Session" },
-                            hour = h,
+                            hour = h24,
                             minute = m,
                             daysOfWeek = days
                         )
