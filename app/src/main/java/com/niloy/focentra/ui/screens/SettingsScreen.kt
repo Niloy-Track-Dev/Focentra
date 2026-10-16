@@ -119,6 +119,18 @@ fun SettingsScreen(
                 name = "Matcha Latte",
                 description = "Serene sage & warm light",
                 previewColors = listOf(Color(0xFF436B48), Color(0xFF8DA378), Color(0xFFF4F7F2))
+            ),
+            ThemeOption(
+                id = "neumorphism",
+                name = "Neumorphism",
+                description = "Soft dual light depth",
+                previewColors = listOf(Color(0xFF6C63FF), Color(0xFF48426D), Color(0xFFE0E5EC))
+            ),
+            ThemeOption(
+                id = "glassmorphism",
+                name = "Glassmorphism",
+                description = "Frosted translucent glass",
+                previewColors = listOf(Color(0xFF38BDF8), Color(0xFF818CF8), Color(0xFF0F172A))
             )
         )
     }
@@ -260,44 +272,25 @@ fun SettingsScreen(
             title = { Text("Import Sessions from CSV Text") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = "Paste raw CSV formatted rows below. Expected header/format: ID,Start Time,End Time,Total Duration (s),Focused Duration (s),Paused Duration (s),Type,Subject,Topic,Productivity,Distractions,Mood,Energy,Notes",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        TextButton(
-                            onClick = {
-                                val clip = clipboardManager.getText()?.text
-                                if (!clip.isNullOrBlank()) {
-                                    importCsvText = clip
-                                    csvError = null
-                                }
-                            },
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
-                        ) {
-                            Icon(Icons.Default.ContentPaste, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Paste from Clipboard", style = MaterialTheme.typography.labelMedium)
-                        }
-                    }
-
                     OutlinedTextField(
                         value = importCsvText,
                         onValueChange = {
                             importCsvText = it
                             csvError = null
                         },
-                        label = { Text("CSV Text Content") },
+                        label = { Text("CSV Text Area") },
+                        placeholder = { Text("Paste CSV contents here...") },
                         isError = csvError != null,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(150.dp),
+                            .height(160.dp),
                         shape = RoundedCornerShape(12.dp)
                     )
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = importReplace, onCheckedChange = { importReplace = it })
+                        Text("Replace all content", style = MaterialTheme.typography.bodySmall)
+                    }
 
                     if (csvError != null) {
                         Text(
@@ -312,7 +305,7 @@ fun SettingsScreen(
                 Button(
                     onClick = {
                         if (importCsvText.isBlank()) {
-                            csvError = "Please paste CSV text content"
+                            csvError = "Please enter or paste CSV content"
                             return@Button
                         }
                         isImporting = true
@@ -320,6 +313,9 @@ fun SettingsScreen(
                         showCsvTextImportDialog = false
                         coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
                             try {
+                                if (importReplace) {
+                                    viewModel.repository.clearAllSessions()
+                                }
                                 val inputStream = importCsvText.byteInputStream(Charsets.UTF_8)
                                 val success = viewModel.repository.importSessionsCsvStream(inputStream)
                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
@@ -360,44 +356,25 @@ fun SettingsScreen(
             title = { Text("Import Data Backup (JSON)") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = "Paste your JSON backup text below to restore sessions, subjects, and study history.",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        TextButton(
-                            onClick = {
-                                val clip = clipboardManager.getText()?.text
-                                if (!clip.isNullOrBlank()) {
-                                    importJsonText = clip
-                                    importError = null
-                                }
-                            },
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
-                        ) {
-                            Icon(Icons.Default.ContentPaste, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Paste from Clipboard", style = MaterialTheme.typography.labelMedium)
-                        }
-                    }
-
                     OutlinedTextField(
                         value = importJsonText,
                         onValueChange = {
                             importJsonText = it
                             importError = null
                         },
-                        label = { Text("JSON Backup Content") },
+                        label = { Text("JSON Text Area") },
+                        placeholder = { Text("Paste JSON backup content here...") },
                         isError = importError != null,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(140.dp),
+                            .height(160.dp),
                         shape = RoundedCornerShape(12.dp)
                     )
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = importReplace, onCheckedChange = { importReplace = it })
+                        Text("Replace all content", style = MaterialTheme.typography.bodySmall)
+                    }
 
                     if (importError != null) {
                         Text(
@@ -405,11 +382,6 @@ fun SettingsScreen(
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.error
                         )
-                    }
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = importReplace, onCheckedChange = { importReplace = it })
-                        Text("Replace existing database (Clear all current data)", style = MaterialTheme.typography.bodySmall)
                     }
                 }
             },
