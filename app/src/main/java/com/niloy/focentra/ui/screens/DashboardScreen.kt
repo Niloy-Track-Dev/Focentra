@@ -135,6 +135,11 @@ fun DashboardScreen(
                 sessions = sessions,
                 onAddClick = { showAddExamDialog = true },
                 onStartTimer = { target ->
+                    viewModel.timerEngine.configureSession(
+                        mode = SessionMode.STOPWATCH,
+                        subject = target.subject
+                    )
+                    viewModel.timerEngine.startSession()
                     viewModel.navigateTo(NavigationTab.TIMER)
                 },
                 onDeleteTarget = { id ->
@@ -1042,12 +1047,31 @@ fun ExamMilestoneCountdownSection(
             }
 
             examTargets.forEach { target ->
+                var showDetailDialog by remember { mutableStateOf(false) }
+
                 ExamMilestoneCard(
                     target = target,
                     sessions = sessions,
                     onStartTimer = { onStartTimer(target) },
-                    onDelete = { onDeleteTarget(target.id) }
+                    onDelete = { onDeleteTarget(target.id) },
+                    onCardClick = { showDetailDialog = true }
                 )
+
+                if (showDetailDialog) {
+                    ExamMilestoneDetailDialog(
+                        target = target,
+                        sessions = sessions,
+                        onDismiss = { showDetailDialog = false },
+                        onStartTimer = {
+                            showDetailDialog = false
+                            onStartTimer(target)
+                        },
+                        onDelete = {
+                            showDetailDialog = false
+                            onDeleteTarget(target.id)
+                        }
+                    )
+                }
             }
         }
     }
@@ -1058,7 +1082,8 @@ fun ExamMilestoneCard(
     target: com.niloy.focentra.viewmodel.ExamTarget,
     sessions: List<StudySessionEntity>,
     onStartTimer: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onCardClick: () -> Unit
 ) {
     val now = System.currentTimeMillis()
     val diffMs = target.targetDateEpochMs - now
@@ -1076,7 +1101,9 @@ fun ExamMilestoneCard(
     val dailyPace = if (daysRemaining > 0) remainingHoursToStudy / daysRemaining else remainingHoursToStudy
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCardClick() },
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -1230,6 +1257,204 @@ fun ExamMilestoneCard(
             }
         }
     }
+}
+
+@Composable
+fun ExamMilestoneDetailDialog(
+    target: com.niloy.focentra.viewmodel.ExamTarget,
+    sessions: List<StudySessionEntity>,
+    onDismiss: () -> Unit,
+    onStartTimer: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val now = System.currentTimeMillis()
+    val diffMs = target.targetDateEpochMs - now
+    val daysRemaining = if (diffMs > 0) (diffMs / (1000L * 60 * 60 * 24)).toInt() else 0
+    val hoursRemaining = if (diffMs > 0) ((diffMs % (1000L * 60 * 60 * 24)) / (1000L * 60 * 60)).toInt() else 0
+
+    val relevantSessions = sessions.filter {
+        target.subject.equals("General", ignoreCase = true) || it.subject.equals(target.subject, ignoreCase = true)
+    }
+    val studiedSec = relevantSessions.sumOf { it.actualFocusedSeconds }
+    val studiedHours = studiedSec / 3600f
+    val progressPct = (studiedHours / target.targetHours.coerceAtLeast(1f) * 100f).coerceIn(0f, 100f)
+
+    val remainingHoursToStudy = (target.targetHours - studiedHours).coerceAtLeast(0f)
+    val dailyPace = if (daysRemaining > 0) remainingHoursToStudy / daysRemaining else remainingHoursToStudy
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Flag,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = target.title,
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (daysRemaining <= 3) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer
+                ) {
+                    Text(
+                        text = if (daysRemaining > 0) "$daysRemaining Days Left" else "${hoursRemaining}h Left",
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = if (daysRemaining <= 3) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = "Subject / Topic",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = target.subject,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                if (target.notes.isNotBlank()) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = "Syllabus & Details / Notes",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 200.dp)
+                            ) {
+                                LazyColumn {
+                                    item {
+                                        Text(
+                                            text = target.notes,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = String.format(Locale.getDefault(), "Target Progress: %.1fh / %.0fh", studiedHours, target.targetHours),
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "${progressPct.toInt()}%",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    LinearProgressIndicator(
+                        progress = { progressPct / 100f },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp)),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Bolt,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = String.format(Locale.getDefault(), "Daily Pace Needed: %.1f hrs/day", dailyPace),
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onStartTimer,
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Start Stopwatch")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDelete,
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            ) {
+                Text("Delete")
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

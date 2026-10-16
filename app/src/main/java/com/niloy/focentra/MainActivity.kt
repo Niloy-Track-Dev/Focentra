@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -99,6 +100,13 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+            }
+
+            // Handle phone back button for all sub-screens
+            if (currentTab != NavigationTab.DASHBOARD) {
+                BackHandler {
+                    viewModel.navigateTo(NavigationTab.DASHBOARD)
+                }
             }
 
             FocentraTheme(themeName = currentTheme) {
