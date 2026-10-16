@@ -47,27 +47,37 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           STORE_PASSWORD_SECRET: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD_SECRET: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS_SECRET: ${{ secrets.KEY_ALIAS }}
         run: |
           if [ -n "$KEYSTORE_BASE64" ]; then
             echo "Decoding provided KEYSTORE_BASE64 secret..."
-            echo "$KEYSTORE_BASE64" | base64 --decode > my-upload-key.jks
-            echo "STORE_PASS=${STORE_PASSWORD_SECRET:-android}" >> $GITHUB_ENV
-            echo "KEY_PASS=${KEY_PASSWORD_SECRET:-android}" >> $GITHUB_ENV
+            echo "$KEYSTORE_BASE64" | base64 --decode > release-keystore.jks
+            echo "KEYSTORE_FILE=$(pwd)/release-keystore.jks" >> $GITHUB_ENV
+            echo "STORE_PASS=${STORE_PASSWORD_SECRET:-focentra123456}" >> $GITHUB_ENV
+            echo "KEY_PASS=${KEY_PASSWORD_SECRET:-focentra123456}" >> $GITHUB_ENV
+            echo "KEY_ALIAS_ENV=${KEY_ALIAS_SECRET:-focentra}" >> $GITHUB_ENV
+          elif [ -f release-keystore.jks ]; then
+            echo "Using repo root release-keystore.jks..."
+            echo "KEYSTORE_FILE=$(pwd)/release-keystore.jks" >> $GITHUB_ENV
+            echo "STORE_PASS=${STORE_PASSWORD_SECRET:-focentra123456}" >> $GITHUB_ENV
+            echo "KEY_PASS=${KEY_PASSWORD_SECRET:-focentra123456}" >> $GITHUB_ENV
+            echo "KEY_ALIAS_ENV=${KEY_ALIAS_SECRET:-focentra}" >> $GITHUB_ENV
           else
-            echo "No KEYSTORE_BASE64 secret provided. Auto-generating a release signing keystore on the fly..."
+            echo "No keystore secret provided. Auto-generating release-keystore.jks..."
             keytool -genkeypair -v \
-              -keystore my-upload-key.jks \
-              -alias upload \
+              -keystore release-keystore.jks \
+              -alias focentra \
               -keyalg RSA \
               -keysize 2048 \
               -validity 10000 \
-              -storepass android \
-              -keypass android \
+              -storepass focentra123456 \
+              -keypass focentra123456 \
               -dname "CN=Focentra, OU=App, O=Niloy, L=Dhaka, S=Dhaka, C=BD"
-            echo "STORE_PASS=android" >> $GITHUB_ENV
-            echo "KEY_PASS=android" >> $GITHUB_ENV
+            echo "KEYSTORE_FILE=$(pwd)/release-keystore.jks" >> $GITHUB_ENV
+            echo "STORE_PASS=focentra123456" >> $GITHUB_ENV
+            echo "KEY_PASS=focentra123456" >> $GITHUB_ENV
+            echo "KEY_ALIAS_ENV=focentra" >> $GITHUB_ENV
           fi
-          echo "Keystore is ready at $(pwd)/my-upload-key.jks"
 
       - name: Recreate .env file
         env:
@@ -83,11 +93,12 @@ jobs:
 
       - name: Build Release APK
         env:
-          KEYSTORE_PATH: ${{ github.workspace }}/my-upload-key.jks
+          KEYSTORE_PATH: ${{ env.KEYSTORE_FILE }}
           STORE_PASSWORD: ${{ env.STORE_PASS }}
           KEY_PASSWORD: ${{ env.KEY_PASS }}
+          KEY_ALIAS: ${{ env.KEY_ALIAS_ENV }}
         run: |
-          gradle assembleRelease --no-daemon --stacktrace
+          ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Extract App Version Name
         id: get_version
