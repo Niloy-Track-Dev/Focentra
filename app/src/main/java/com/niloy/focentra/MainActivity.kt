@@ -56,8 +56,6 @@ class MainActivity : ComponentActivity() {
             val isFullScreenFocus by viewModel.isFullScreenFocus.collectAsStateWithLifecycle()
             val timerState by viewModel.timerEngine.uiState.collectAsStateWithLifecycle()
 
-            val snackbarHostState = remember { SnackbarHostState() }
-
             val isBottomBarVisible = remember { mutableStateOf(true) }
             val nestedScrollConnection = remember {
                 object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
@@ -101,16 +99,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                viewModel.snackbarMessage.collectLatest { msg ->
-                    val result = snackbarHostState.showSnackbar(
-                        message = msg,
-                        actionLabel = if (msg.contains("deleted", ignoreCase = true)) "Undo" else null,
-                        duration = SnackbarDuration.Short
-                    )
-                    if (result == SnackbarResult.ActionPerformed) {
-                        viewModel.undoDeleteSession()
-                    }
-                }
             }
 
             FocentraTheme(themeName = currentTheme) {
@@ -119,7 +107,6 @@ class MainActivity : ComponentActivity() {
                 } else {
                     Scaffold(
                         modifier = Modifier.fillMaxSize().nestedScroll(nestedScrollConnection),
-                        snackbarHost = { SnackbarHost(snackbarHostState) },
                         topBar = {
                             TopAppBar(
                                 title = {

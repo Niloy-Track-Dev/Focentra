@@ -17,8 +17,9 @@ import org.json.JSONObject
 import java.io.File
 import java.util.Calendar
 
-class StudyRepository(private val database: AppDatabase, private val context: Context) {
+class StudyRepository(private val database: AppDatabase, context: Context) {
     
+    private val appContext = context.applicationContext
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     val allSessions: Flow<List<StudySessionEntity>> = database.sessionDao().getAllSessionsFlow()
@@ -69,7 +70,7 @@ class StudyRepository(private val database: AppDatabase, private val context: Co
                     // 3. SECURE BROADCAST: Use permission protection
                     // Only apps that declare com.focentra.permission.READ_SESSIONS in their manifest can receive this.
                     // This prevents data leakage to unauthorized apps.
-                    context.sendBroadcast(intent, "com.focentra.permission.READ_SESSIONS")
+                    appContext.sendBroadcast(intent, "com.focentra.permission.READ_SESSIONS")
                 }
             } catch (e: Exception) {
                 // Silently fail integration broadcasts to avoid breaking core app flow
