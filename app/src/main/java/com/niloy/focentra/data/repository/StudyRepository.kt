@@ -589,8 +589,209 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
 
     suspend fun importDataJsonStream(inputStream: java.io.InputStream, replaceExisting: Boolean): Boolean = withContext(Dispatchers.IO) {
         try {
-            val content = inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-            importDataJson(content, replaceExisting)
+            if (replaceExisting) {
+                database.sessionDao().clearAllSessions()
+            }
+
+            val reader = android.util.JsonReader(inputStream.bufferedReader(Charsets.UTF_8))
+            val sessionList = mutableListOf<StudySessionEntity>()
+
+            fun readSessionObject(jReader: android.util.JsonReader): StudySessionEntity {
+                var sTime = System.currentTimeMillis()
+                var dur = 1500L
+                var actDur = 1500L
+                var eTime = 0L
+                var sType = "COUNTDOWN"
+                var subj = "General"
+                var top = ""
+                var cat = "Study"
+                var gl = ""
+                var nts = ""
+                var tgs = ""
+                var prod = 4
+                var distCount = 0
+                var distDetails = ""
+                var md = "GOOD"
+                var energy = "HIGH"
+                var loc = "Desk"
+                var compStatus = "COMPLETED"
+
+                jReader.beginObject()
+                while (jReader.hasNext()) {
+                    when (jReader.nextName()) {
+                        "startTime" -> sTime = jReader.nextLong()
+                        "durationSeconds" -> dur = jReader.nextLong()
+                        "actualFocusedSeconds" -> actDur = jReader.nextLong()
+                        "endTime" -> eTime = jReader.nextLong()
+                        "sessionType" -> sType = jReader.nextString()
+                        "subject" -> subj = jReader.nextString()
+                        "topic" -> top = jReader.nextString()
+                        "category" -> cat = jReader.nextString()
+                        "goal" -> gl = jReader.nextString()
+                        "notes" -> nts = jReader.nextString()
+                        "tags" -> tgs = jReader.nextString()
+                        "productivityRating" -> prod = jReader.nextInt().coerceIn(1, 5)
+                        "distractionCount" -> distCount = jReader.nextInt()
+                        "distractionDetails" -> distDetails = jReader.nextString()
+                        "mood" -> md = jReader.nextString()
+                        "energyLevel" -> energy = jReader.nextString()
+                        "location" -> loc = jReader.nextString()
+                        "completionStatus" -> compStatus = jReader.nextString()
+                        else -> jReader.skipValue()
+                    }
+                }
+                jReader.endObject()
+
+                if (eTime == 0L) eTime = sTime + (actDur * 1000L)
+
+                return StudySessionEntity(
+                    startTime = sTime,
+                    endTime = eTime,
+                    durationSeconds = dur,
+                    actualFocusedSeconds = actDur,
+                    pausedSeconds = 0L,
+                    sessionType = sType,
+                    subject = subj,
+                    topic = top,
+                    category = cat,
+                    goal = gl,
+                    notes = nts,
+                    tags = tgs,
+                    productivityRating = prod,
+                    distractionCount = distCount,
+                    distractionDetails = distDetails,
+                    mood = md,
+                    energyLevel = energy,
+                    location = loc,
+                    completionStatus = compStatus
+                )
+            }
+
+            reader.beginObject()
+            while (reader.hasNext()) {
+                val name = reader.nextName()
+                if (name == "sessions") {
+                    reader.beginArray()
+                    while (reader.hasNext()) {
+                        val session = readSessionObject(reader)
+                        sessionList.add(session)
+                        if (sessionList.size >= 500) {
+                            database.sessionDao().insertSessions(sessionList)
+                            sessionList.clear()
+                        }
+                    }
+                    reader.endArray()
+                } else {
+                    reader.skipValue()
+                }
+            }
+            reader.endObject()
+
+            if (sessionList.isNotEmpty()) {
+                database.sessionDao().insertSessions(sessionList)
+            }
+            checkAndUnlockAchievements()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Fallback for simple/other JSON formats
+            try {
+                val content = inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                importDataJson(content, replaceExisting)
+            } catch (e2: Exception) {
+                e2.printStackTrace()
+                false
+            }
+        }
+    }
+
+    suspend fun importSessionsCsvStream(inputStream: java.io.InputStream): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val reader = inputStream.bufferedReader(Charsets.UTF_8)
+            val lines = reader.readLines()
+            if (lines.isEmpty()) return@withContext false
+
+            val sessionList = mutableListOf<StudySessionEntity>()
+            // Header skipped or checked
+            val dataLines = if (lines.first().contains("Start Time", ignoreCase = true) || lines.first().contains("Subject", ignoreCase = true)) {
+                lines.drop(1)
+            } else {
+                lines
+            }
+
+            fun parseCsvLine(line: String): List<String> {
+                val result = mutableListOf<String>()
+                val cur = StringBuilder()
+                var inQuotes = false
+                for (ch in line) {
+                    if (ch == '"') {
+                        inQuotes = !inQuotes
+                    } else if (ch == ',' && !inQuotes) {
+                        result.add(cur.toString().trim())
+                        cur.clear()
+                    } else {
+                        cur.append(ch)
+                    }
+                }
+                result.add(cur.toString().trim())
+                return result
+            }
+
+            for (line in dataLines) {
+                if (line.isBlank()) continue
+                val parts = parseCsvLine(line)
+                if (parts.size >= 8) {
+                    // Standard columns: ID,Start Time,End Time,Total Duration (s),Focused Duration (s),Paused Duration (s),Type,Subject,Topic,Productivity,Distractions,Mood,Energy,Notes
+                    val sTime = parts.getOrNull(1)?.toLongOrNull() ?: System.currentTimeMillis()
+                    val eTime = parts.getOrNull(2)?.toLongOrNull() ?: System.currentTimeMillis()
+                    val totalDur = parts.getOrNull(3)?.toLongOrNull() ?: 1500L
+                    val focusedDur = parts.getOrNull(4)?.toLongOrNull() ?: totalDur
+                    val pausedDur = parts.getOrNull(5)?.toLongOrNull() ?: 0L
+                    val sType = parts.getOrNull(6)?.ifBlank { "COUNTDOWN" } ?: "COUNTDOWN"
+                    val subj = parts.getOrNull(7)?.ifBlank { "General" } ?: "General"
+                    val top = parts.getOrNull(8) ?: ""
+                    val prod = parts.getOrNull(9)?.toIntOrNull()?.coerceIn(1, 5) ?: 4
+                    val distCount = parts.getOrNull(10)?.toIntOrNull() ?: 0
+                    val md = parts.getOrNull(11) ?: "GOOD"
+                    val energy = parts.getOrNull(12) ?: "HIGH"
+                    val nts = parts.getOrNull(13) ?: ""
+
+                    sessionList.add(
+                        StudySessionEntity(
+                            startTime = sTime,
+                            endTime = eTime,
+                            durationSeconds = totalDur,
+                            actualFocusedSeconds = focusedDur,
+                            pausedSeconds = pausedDur,
+                            sessionType = sType,
+                            subject = subj,
+                            topic = top,
+                            category = "Study",
+                            goal = "",
+                            notes = nts,
+                            tags = "",
+                            productivityRating = prod,
+                            distractionCount = distCount,
+                            distractionDetails = "",
+                            mood = md,
+                            energyLevel = energy,
+                            location = "Desk",
+                            completionStatus = "COMPLETED"
+                        )
+                    )
+
+                    if (sessionList.size >= 500) {
+                        database.sessionDao().insertSessions(sessionList)
+                        sessionList.clear()
+                    }
+                }
+            }
+
+            if (sessionList.isNotEmpty()) {
+                database.sessionDao().insertSessions(sessionList)
+            }
+            checkAndUnlockAchievements()
+            true
         } catch (e: Exception) {
             e.printStackTrace()
             false

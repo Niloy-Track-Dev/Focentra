@@ -67,6 +67,8 @@ fun SettingsScreen(
     var importJsonText by remember { mutableStateOf("") }
     var importReplace by remember { mutableStateOf(false) }
     var reminderToDelete by remember { mutableStateOf<ReminderEntity?>(null) }
+    var isImporting by remember { mutableStateOf(false) }
+    var importStatusMessage by remember { mutableStateOf<String?>(null) }
 
     val dailyGoal = goals.find { it.periodType == "DAILY" }?.targetMinutes ?: 480
     val weeklyGoal = goals.find { it.periodType == "WEEKLY" }?.targetMinutes ?: 2400
@@ -194,14 +196,53 @@ fun SettingsScreen(
         androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
     ) { uri ->
         if (uri != null) {
+            isImporting = true
+            importStatusMessage = "Importing JSON file, please wait..."
             coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
                 try {
                     val stream = context.contentResolver.openInputStream(uri)
-                    if (stream != null) {
+                    val success = if (stream != null) {
                         viewModel.repository.importDataJsonStream(stream, false)
+                    } else false
+
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        isImporting = false
+                        importStatusMessage = if (success) "JSON Import completed successfully!" else "JSON Import failed. Please check file format."
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        isImporting = false
+                        importStatusMessage = "JSON Import failed: ${e.message}"
+                    }
+                }
+            }
+        }
+    }
+
+    val importCsvLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            isImporting = true
+            importStatusMessage = "Importing CSV file, please wait..."
+            coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                try {
+                    val stream = context.contentResolver.openInputStream(uri)
+                    val success = if (stream != null) {
+                        viewModel.repository.importSessionsCsvStream(stream)
+                    } else false
+
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        isImporting = false
+                        importStatusMessage = if (success) "CSV Import completed successfully!" else "CSV Import failed."
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        isImporting = false
+                        importStatusMessage = "CSV Import failed: ${e.message}"
+                    }
                 }
             }
         }
@@ -384,6 +425,31 @@ fun SettingsScreen(
             dismissButton = {
                 TextButton(onClick = { showDaynexaConsentDialog = false }) {
                     Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (importStatusMessage != null) {
+        AlertDialog(
+            onDismissRequest = { if (!isImporting) importStatusMessage = null },
+            title = { Text(if (isImporting) "Importing Data..." else "Import Status") },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (isImporting) {
+                        CircularProgressIndicator(modifier = Modifier.size(36.dp))
+                    }
+                    Text(text = importStatusMessage ?: "")
+                }
+            },
+            confirmButton = {
+                if (!isImporting) {
+                    Button(onClick = { importStatusMessage = null }) {
+                        Text("OK")
+                    }
                 }
             }
         )
@@ -791,10 +857,20 @@ fun SettingsScreen(
                     // Import JSON Card
                     ActionTile(
                         icon = Icons.Default.CloudUpload,
-                        title = "Restore Backup from File",
+                        title = "Restore Backup from JSON File",
                         subtitle = "Select a .json backup file to restore records",
                         onClick = { 
                             importLauncher.launch(arrayOf("application/json", "*/*"))
+                        }
+                    )
+
+                    // Import CSV Card
+                    ActionTile(
+                        icon = Icons.Default.FileUpload,
+                        title = "Import Sessions from CSV File",
+                        subtitle = "Select a .csv file to import study sessions",
+                        onClick = {
+                            importCsvLauncher.launch(arrayOf("text/csv", "text/comma-separated-values", "*/*"))
                         }
                     )
                 }
