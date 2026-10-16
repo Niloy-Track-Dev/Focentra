@@ -14,21 +14,21 @@ android {
     applicationId = "com.niloy.focentra"
     minSdk = 24
     targetSdk = 36
-    versionCode = 11
-    versionName = "3.2.0"
+    versionCode = 12
+    versionName = "3.3.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
   signingConfigs {
     create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
+      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/release-keystore.jks"
       val ksFile = file(keystorePath)
       if (ksFile.exists()) {
         storeFile = ksFile
-        storePassword = System.getenv("STORE_PASSWORD") ?: "android"
-        keyAlias = System.getenv("KEY_ALIAS") ?: "upload"
-        keyPassword = System.getenv("KEY_PASSWORD") ?: "android"
+        storePassword = System.getenv("STORE_PASSWORD") ?: "focentra123456"
+        keyAlias = System.getenv("KEY_ALIAS") ?: "focentra"
+        keyPassword = System.getenv("KEY_PASSWORD") ?: "focentra123456"
       } else {
         storeFile = file("${rootDir}/debug.keystore")
         storePassword = "android"

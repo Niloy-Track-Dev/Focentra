@@ -93,6 +93,11 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
         database.sessionDao().clearAllSessions()
     }
 
+    suspend fun clearAllAppData() = withContext(Dispatchers.IO) {
+        database.clearAllTables()
+        AppDatabase.populateInitialData(database)
+    }
+
     suspend fun getSessionById(id: Long): StudySessionEntity? = withContext(Dispatchers.IO) {
         database.sessionDao().getSessionById(id)
     }

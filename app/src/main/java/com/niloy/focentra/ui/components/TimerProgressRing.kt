@@ -112,13 +112,19 @@ fun TimerProgressRing(
                     isRunning -> "FOCUSING IN THE ZONE"
                     else -> "READY"
                 }
+                val textColor = when {
+                    isPaused -> MaterialTheme.colorScheme.onErrorContainer
+                    state.mode == SessionMode.POMODORO && state.pomodoroPhase != PomodoroPhase.FOCUS -> MaterialTheme.colorScheme.onSecondaryContainer
+                    isRunning -> MaterialTheme.colorScheme.onPrimaryContainer
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                }
                 Text(
                     text = badgeText,
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
                     ),
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = textColor
                 )
             }
         }
@@ -196,23 +202,29 @@ fun TimerProgressRing(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                    modifier = Modifier.padding(horizontal = 24.dp)
                 ) {
                     Text(
                         text = state.subject,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
                 }
 
                 if (state.topic.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = state.topic,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 24.dp)
                     )
                 }
 

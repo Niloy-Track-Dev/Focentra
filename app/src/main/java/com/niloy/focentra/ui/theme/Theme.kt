@@ -131,35 +131,43 @@ private val MatchaColorScheme = lightColorScheme(
 )
 
 private val NeumorphismColorScheme = lightColorScheme(
-    primary = Color(0xFF6C63FF),
+    primary = Color(0xFF4F46E5),
     onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFE2E0FF),
-    onPrimaryContainer = Color(0xFF1D1868),
-    secondary = Color(0xFF48426D),
-    background = Color(0xFFE0E5EC),
-    onBackground = Color(0xFF2D3748),
-    surface = Color(0xFFE0E5EC),
-    onSurface = Color(0xFF2D3748),
-    surfaceVariant = Color(0xFFD1D9E6),
-    onSurfaceVariant = Color(0xFF4A5568),
-    outline = Color(0xFFB8C2D1),
-    outlineVariant = Color(0xFFA3B1C6)
+    primaryContainer = Color(0xFFC7D2FE),
+    onPrimaryContainer = Color(0xFF1E1B4B),
+    secondary = Color(0xFF6366F1),
+    onSecondary = Color(0xFFFFFFFF),
+    secondaryContainer = Color(0xFFE0E7FF),
+    onSecondaryContainer = Color(0xFF312E81),
+    tertiary = Color(0xFF0EA5E9),
+    background = Color(0xFFE2E8F0),
+    onBackground = Color(0xFF0F172A),
+    surface = Color(0xFFEDF2F7),
+    onSurface = Color(0xFF0F172A),
+    surfaceVariant = Color(0xFFCBD5E1),
+    onSurfaceVariant = Color(0xFF334155),
+    outline = Color(0xFF94A3B8),
+    outlineVariant = Color(0xFFCBD5E1)
 )
 
 private val GlassmorphismColorScheme = darkColorScheme(
     primary = Color(0xFF38BDF8),
-    onPrimary = Color(0xFF0C4A6E),
-    primaryContainer = Color(0xFF0284C7),
+    onPrimary = Color(0xFF0284C7),
+    primaryContainer = Color(0xFF0369A1),
     onPrimaryContainer = Color(0xFFE0F2FE),
     secondary = Color(0xFF818CF8),
-    background = Color(0xFF0F172A),
+    onSecondary = Color(0xFF312E81),
+    secondaryContainer = Color(0xFF3730A3),
+    onSecondaryContainer = Color(0xFFE0E7FF),
+    tertiary = Color(0xFF2DD4BF),
+    background = Color(0xFF070A12),
     onBackground = Color(0xFFF8FAFC),
-    surface = Color(0xFF1E293B),
+    surface = Color(0xFF111827),
     onSurface = Color(0xFFF8FAFC),
-    surfaceVariant = Color(0xFF334155),
+    surfaceVariant = Color(0xFF1F2937),
     onSurfaceVariant = Color(0xFFCBD5E1),
-    outline = Color(0xFF475569),
-    outlineVariant = Color(0xFF334155)
+    outline = Color(0xFF374151),
+    outlineVariant = Color(0xFF1F2937)
 )
 
 private val ModernLightColorScheme = CleanMinimalismColorScheme
