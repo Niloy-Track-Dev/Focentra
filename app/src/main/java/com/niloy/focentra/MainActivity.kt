@@ -270,7 +270,8 @@ class MainActivity : ComponentActivity() {
                             }
 
                             val shouldShowBottomBar = currentTab != NavigationTab.SUBJECTS &&
-                                    currentTab != NavigationTab.ACHIEVEMENTS
+                                    currentTab != NavigationTab.ACHIEVEMENTS &&
+                                    currentTab != NavigationTab.PRESETS
 
                             AnimatedVisibility(
                                 visible = isBottomBarVisible.value && shouldShowBottomBar,

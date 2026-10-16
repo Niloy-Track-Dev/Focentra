@@ -16,6 +16,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.5.0] - 2026-08-28
+
+### Added
+- **Full App 12-Hour Time Format**: Standardized all date and time displays, reminder alarms, and history logs to 12-hour AM/PM format. Added AM/PM toggle selector to study reminder dialogs.
+- **Redesigned Exam Goals & Milestones Detail Popup**:
+  - Re-organized layout cleanly separating title, subject/topic, syllabus/description, progress bar, daily pace, and target date.
+  - Added full **Edit Option** via `EditExamTargetDialog` allowing editing of Title, Subject, Target Hours, Days Left, and Syllabus/Notes directly from popup and milestone cards.
+- **Sub-Screen Navigation Bar Fix**: Hidden floating bottom navigation bar on Study Presets screen (`NavigationTab.PRESETS`) to clean up sub-screen layout.
+- **Enhanced APK Signing**: Explicitly enabled v1 and v2 signature schemes in release/debug build configurations to eliminate package installer legitimacy warnings.
+
+### Changed
+- **Version Bump**: Incremented `versionCode` to `14` and `versionName` to `3.5.0`.
+
+---
+
 ## [3.4.0] - 2026-08-28
 
 ### Added

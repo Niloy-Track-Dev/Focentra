@@ -59,6 +59,7 @@ fun DashboardScreen(
     val subjects by viewModel.subjects.collectAsStateWithLifecycle()
 
     var showAddExamDialog by remember { mutableStateOf(false) }
+    var targetToEdit by remember { mutableStateOf<com.niloy.focentra.viewmodel.ExamTarget?>(null) }
     var targetToDelete by remember { mutableStateOf<com.niloy.focentra.viewmodel.ExamTarget?>(null) }
     var pendingQuickTimerMode by remember { mutableStateOf<Pair<SessionMode, Int>?>(null) }
 
@@ -141,6 +142,7 @@ fun DashboardScreen(
                 examTargets = examTargets,
                 sessions = sessions,
                 onAddClick = { showAddExamDialog = true },
+                onEditTarget = { target -> targetToEdit = target },
                 onStartTimer = { target ->
                     viewModel.timerEngine.configureSession(
                         mode = SessionMode.STOPWATCH,
@@ -849,6 +851,23 @@ fun DashboardScreen(
         )
     }
 
+    if (targetToEdit != null) {
+        val subjectNames = remember(subjects) {
+            val list = mutableListOf("General")
+            subjects.forEach { if (!list.contains(it.name)) list.add(it.name) }
+            list
+        }
+        EditExamTargetDialog(
+            target = targetToEdit!!,
+            subjects = subjectNames,
+            onDismiss = { targetToEdit = null },
+            onSave = { updatedTarget ->
+                viewModel.editExamTarget(updatedTarget)
+                targetToEdit = null
+            }
+        )
+    }
+
     if (targetToDelete != null) {
         AlertDialog(
             onDismissRequest = { targetToDelete = null },
@@ -968,6 +987,7 @@ fun ExamMilestoneCountdownSection(
     examTargets: List<com.niloy.focentra.viewmodel.ExamTarget>,
     sessions: List<StudySessionEntity>,
     onAddClick: () -> Unit,
+    onEditTarget: (com.niloy.focentra.viewmodel.ExamTarget) -> Unit,
     onStartTimer: (com.niloy.focentra.viewmodel.ExamTarget) -> Unit,
     onDeleteTarget: (String) -> Unit
 ) {
@@ -1060,6 +1080,7 @@ fun ExamMilestoneCountdownSection(
                     target = target,
                     sessions = sessions,
                     onStartTimer = { onStartTimer(target) },
+                    onEdit = { onEditTarget(target) },
                     onDelete = { onDeleteTarget(target.id) },
                     onCardClick = { showDetailDialog = true }
                 )
@@ -1072,6 +1093,10 @@ fun ExamMilestoneCountdownSection(
                         onStartTimer = {
                             showDetailDialog = false
                             onStartTimer(target)
+                        },
+                        onEdit = {
+                            showDetailDialog = false
+                            onEditTarget(target)
                         },
                         onDelete = {
                             showDetailDialog = false
@@ -1089,6 +1114,7 @@ fun ExamMilestoneCard(
     target: com.niloy.focentra.viewmodel.ExamTarget,
     sessions: List<StudySessionEntity>,
     onStartTimer: () -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
     onCardClick: () -> Unit
 ) {
@@ -1267,15 +1293,24 @@ fun ExamMilestoneCard(
                 }
 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Milestone",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
                     IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
                         Icon(
                             imageVector = Icons.Default.DeleteOutline,
                             contentDescription = "Delete Milestone",
                             tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
 
@@ -1300,6 +1335,7 @@ fun ExamMilestoneDetailDialog(
     sessions: List<StudySessionEntity>,
     onDismiss: () -> Unit,
     onStartTimer: () -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     val now = System.currentTimeMillis()
@@ -1317,6 +1353,8 @@ fun ExamMilestoneDetailDialog(
     val remainingHoursToStudy = (target.targetHours - studiedHours).coerceAtLeast(0f)
     val dailyPace = if (daysRemaining > 0) remainingHoursToStudy / daysRemaining else remainingHoursToStudy
 
+    val targetDateFormat = SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(target.targetDateEpochMs))
+
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             modifier = Modifier
@@ -1333,7 +1371,7 @@ fun ExamMilestoneDetailDialog(
                     .fillMaxWidth()
                     .padding(20.dp)
             ) {
-                // Header Row
+                // Clean Header Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1352,7 +1390,7 @@ fun ExamMilestoneDetailDialog(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.School,
+                                imageVector = Icons.Default.Flag,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(22.dp)
@@ -1361,11 +1399,14 @@ fun ExamMilestoneDetailDialog(
 
                         Text(
                             text = target.title,
-                            style = MaterialTheme.typography.titleLarge.copy(
+                            style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
-                                lineHeight = 26.sp
+                                fontSize = 18.sp,
+                                lineHeight = 24.sp
                             ),
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
 
@@ -1382,7 +1423,7 @@ fun ExamMilestoneDetailDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Scrollable Body Content for Long Details
                 Column(
@@ -1390,9 +1431,9 @@ fun ExamMilestoneDetailDialog(
                         .weight(1f, fill = false)
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Subject Card
+                    // Subject / Category Card
                     Surface(
                         shape = RoundedCornerShape(16.dp),
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
@@ -1400,11 +1441,11 @@ fun ExamMilestoneDetailDialog(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(
-                            modifier = Modifier.padding(14.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Text(
-                                text = "Subject / Topic",
+                                text = "Subject / Category",
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -1416,7 +1457,7 @@ fun ExamMilestoneDetailDialog(
                         }
                     }
 
-                    // Syllabus & Notes Card
+                    // Syllabus & Description / Notes Card
                     if (target.notes.isNotBlank()) {
                         Surface(
                             shape = RoundedCornerShape(16.dp),
@@ -1425,11 +1466,11 @@ fun ExamMilestoneDetailDialog(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(
-                                modifier = Modifier.padding(14.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                                modifier = Modifier.padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Text(
-                                    text = "Syllabus / Notes",
+                                    text = "Syllabus / Description",
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                     color = MaterialTheme.colorScheme.primary
                                 )
@@ -1437,18 +1478,18 @@ fun ExamMilestoneDetailDialog(
                                     text = target.notes,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurface,
-                                    lineHeight = 22.sp
+                                    lineHeight = 20.sp
                                 )
                             }
                         }
                     }
 
-                    // Target Progress Section
+                    // Target Date & Progress Section
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
-                            .padding(14.dp),
+                            .padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Row(
@@ -1457,8 +1498,8 @@ fun ExamMilestoneDetailDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = String.format(Locale.getDefault(), "Target Progress: %.1fh / %.0fh", studiedHours, target.targetHours),
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                                text = "Target Date: $targetDateFormat",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
@@ -1472,10 +1513,16 @@ fun ExamMilestoneDetailDialog(
                             progress = { progressPct / 100f },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(10.dp)
-                                .clip(RoundedCornerShape(5.dp)),
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp)),
                             color = MaterialTheme.colorScheme.primary,
                             trackColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+
+                        Text(
+                            text = String.format(Locale.getDefault(), "Focused: %.1f hrs / Target: %.0f hrs", studiedHours, target.targetHours),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -1486,7 +1533,7 @@ fun ExamMilestoneDetailDialog(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
@@ -1494,7 +1541,7 @@ fun ExamMilestoneDetailDialog(
                                 imageVector = Icons.Default.Bolt,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                             Text(
                                 text = String.format(Locale.getDefault(), "Daily Pace Needed: %.1f hrs/day", dailyPace),
@@ -1507,17 +1554,15 @@ fun ExamMilestoneDetailDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Spacer(modifier = Modifier.height(20.dp))
-
                 // Bottom Action Buttons cleanly arranged
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(
                         onClick = onDelete,
-                        modifier = Modifier.size(44.dp)
+                        modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
@@ -1526,28 +1571,186 @@ fun ExamMilestoneDetailDialog(
                         )
                     }
 
+                    IconButton(
+                        onClick = onEdit,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Milestone",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
                     Spacer(modifier = Modifier.weight(1f))
 
                     OutlinedButton(
                         onClick = onDismiss,
-                        shape = RoundedCornerShape(14.dp)
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Text("Close")
                     }
 
                     Button(
                         onClick = onStartTimer,
-                        shape = RoundedCornerShape(14.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                     ) {
                         Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Start Stopwatch", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Study", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                     }
                 }
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditExamTargetDialog(
+    target: com.niloy.focentra.viewmodel.ExamTarget,
+    subjects: List<String>,
+    onDismiss: () -> Unit,
+    onSave: (com.niloy.focentra.viewmodel.ExamTarget) -> Unit
+) {
+    var title by remember { mutableStateOf(target.title) }
+    var selectedSubject by remember { mutableStateOf(target.subject) }
+    var targetHoursText by remember { mutableStateOf(target.targetHours.toInt().toString()) }
+    val now = System.currentTimeMillis()
+    val diffMs = (target.targetDateEpochMs - now).coerceAtLeast(0L)
+    val initialDays = (diffMs / (1000L * 60 * 60 * 24)).coerceAtLeast(1L).toString()
+    var daysUntilExamText by remember { mutableStateOf(initialDays) }
+    var notes by remember { mutableStateOf(target.notes) }
+
+    val TITLE_LIMIT = 50
+    val SUBJECT_LIMIT = 30
+    val NOTES_LIMIT = 200
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Text(
+                    text = "Edit Exam / Milestone",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it.take(TITLE_LIMIT) },
+                    label = { Text("Exam / Goal Title") },
+                    supportingText = {
+                        Text(
+                            text = "${title.length}/$TITLE_LIMIT",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                OutlinedTextField(
+                    value = selectedSubject,
+                    onValueChange = { selectedSubject = it.take(SUBJECT_LIMIT) },
+                    label = { Text("Subject or Category") },
+                    supportingText = {
+                        Text(
+                            text = "${selectedSubject.length}/$SUBJECT_LIMIT",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = daysUntilExamText,
+                        onValueChange = { newVal -> daysUntilExamText = newVal.filter { ch -> ch.isDigit() } },
+                        label = { Text("Days Left") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = targetHoursText,
+                        onValueChange = { newVal -> targetHoursText = newVal.filter { ch -> ch.isDigit() } },
+                        label = { Text("Target Hours") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { newVal -> notes = newVal.take(NOTES_LIMIT) },
+                    label = { Text("Syllabus / Notes") },
+                    supportingText = {
+                        Text(
+                            text = "${notes.length}/$NOTES_LIMIT",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (title.isNotBlank()) {
+                        val days = daysUntilExamText.toLongOrNull() ?: 30L
+                        val hours = targetHoursText.toFloatOrNull() ?: 40f
+                        val targetEpoch = System.currentTimeMillis() + (days * 86400000L)
+                        onSave(
+                            target.copy(
+                                title = title,
+                                targetDateEpochMs = targetEpoch,
+                                targetHours = hours,
+                                subject = selectedSubject,
+                                notes = notes
+                            )
+                        )
+                    }
+                },
+                enabled = title.isNotBlank(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Save Changes")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
