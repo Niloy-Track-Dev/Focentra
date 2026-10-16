@@ -62,9 +62,11 @@ fun SettingsScreen(
     var showGoalEditDialog by remember { mutableStateOf<String?>(null) }
     var showAddReminderDialog by remember { mutableStateOf(false) }
     var showImportDialog by remember { mutableStateOf(false) }
+    var showCsvTextImportDialog by remember { mutableStateOf(false) }
     var showDaynexaConsentDialog by remember { mutableStateOf(false) }
     var showDaynexaDisconnectDialog by remember { mutableStateOf(false) }
     var importJsonText by remember { mutableStateOf("") }
+    var importCsvText by remember { mutableStateOf("") }
     var importReplace by remember { mutableStateOf(false) }
     var reminderToDelete by remember { mutableStateOf<ReminderEntity?>(null) }
     var isImporting by remember { mutableStateOf(false) }
@@ -246,6 +248,107 @@ fun SettingsScreen(
                 }
             }
         }
+    }
+
+    if (showCsvTextImportDialog) {
+        var csvError by remember { mutableStateOf<String?>(null) }
+        AlertDialog(
+            onDismissRequest = {
+                showCsvTextImportDialog = false
+                csvError = null
+            },
+            title = { Text("Import Sessions from CSV Text") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Paste raw CSV formatted rows below. Expected header/format: ID,Start Time,End Time,Total Duration (s),Focused Duration (s),Paused Duration (s),Type,Subject,Topic,Productivity,Distractions,Mood,Energy,Notes",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(
+                            onClick = {
+                                val clip = clipboardManager.getText()?.text
+                                if (!clip.isNullOrBlank()) {
+                                    importCsvText = clip
+                                    csvError = null
+                                }
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                        ) {
+                            Icon(Icons.Default.ContentPaste, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Paste from Clipboard", style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = importCsvText,
+                        onValueChange = {
+                            importCsvText = it
+                            csvError = null
+                        },
+                        label = { Text("CSV Text Content") },
+                        isError = csvError != null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(150.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    if (csvError != null) {
+                        Text(
+                            text = csvError ?: "",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (importCsvText.isBlank()) {
+                            csvError = "Please paste CSV text content"
+                            return@Button
+                        }
+                        isImporting = true
+                        importStatusMessage = "Importing CSV text, please wait..."
+                        showCsvTextImportDialog = false
+                        coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            try {
+                                val inputStream = importCsvText.byteInputStream(Charsets.UTF_8)
+                                val success = viewModel.repository.importSessionsCsvStream(inputStream)
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                    isImporting = false
+                                    importStatusMessage = if (success) "CSV Text Import completed successfully!" else "CSV Text Import failed. Please check formatting."
+                                    importCsvText = ""
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                    isImporting = false
+                                    importStatusMessage = "CSV Text Import failed: ${e.message}"
+                                }
+                            }
+                        }
+                    },
+                    enabled = importCsvText.isNotBlank(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Import CSV")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showCsvTextImportDialog = false
+                    csvError = null
+                }) { Text("Cancel") }
+            }
+        )
     }
 
     if (showImportDialog) {
@@ -864,13 +967,23 @@ fun SettingsScreen(
                         }
                     )
 
-                    // Import CSV Card
+                    // Import CSV File Card
                     ActionTile(
                         icon = Icons.Default.FileUpload,
                         title = "Import Sessions from CSV File",
                         subtitle = "Select a .csv file to import study sessions",
                         onClick = {
                             importCsvLauncher.launch(arrayOf("text/csv", "text/comma-separated-values", "*/*"))
+                        }
+                    )
+
+                    // Import CSV Text Card
+                    ActionTile(
+                        icon = Icons.Default.EditNote,
+                        title = "Import Sessions from CSV Text",
+                        subtitle = "Paste raw CSV data or text directly",
+                        onClick = {
+                            showCsvTextImportDialog = true
                         }
                     )
                 }
