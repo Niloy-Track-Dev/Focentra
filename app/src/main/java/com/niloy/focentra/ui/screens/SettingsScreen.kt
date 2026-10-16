@@ -65,6 +65,7 @@ fun SettingsScreen(
     var showCsvTextImportDialog by remember { mutableStateOf(false) }
     var showDaynexaConsentDialog by remember { mutableStateOf(false) }
     var showDaynexaDisconnectDialog by remember { mutableStateOf(false) }
+    var showClearAllDataDialog by remember { mutableStateOf(false) }
     var importJsonText by remember { mutableStateOf("") }
     var importCsvText by remember { mutableStateOf("") }
     var importReplace by remember { mutableStateOf(false) }
@@ -149,6 +150,49 @@ fun SettingsScreen(
             onSave = { newMins ->
                 viewModel.updateGoalTarget(periodType, newMins)
                 showGoalEditDialog = null
+            }
+        )
+    }
+
+    if (showClearAllDataDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearAllDataDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.DeleteForever,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(32.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "Clear All App Data?",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to delete all study sessions, subjects, presets, goals, flashcards, and exam milestones? This action cannot be undone.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showClearAllDataDialog = false
+                        viewModel.clearAllAppData()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Clear Everything")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearAllDataDialog = false }) {
+                    Text("Cancel")
+                }
             }
         )
     }
@@ -956,6 +1000,21 @@ fun SettingsScreen(
                         subtitle = "Paste raw CSV data or text directly",
                         onClick = {
                             showCsvTextImportDialog = true
+                        }
+                    )
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 4.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+
+                    // Clear All App Data Card
+                    ActionTile(
+                        icon = Icons.Default.DeleteForever,
+                        title = "Clear All App Data",
+                        subtitle = "Wipe database, sessions, flashcards and restore default settings",
+                        onClick = {
+                            showClearAllDataDialog = true
                         }
                     )
                 }

@@ -1507,35 +1507,42 @@ fun ExamMilestoneDetailDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Bottom Action Buttons
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Bottom Action Buttons cleanly arranged
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextButton(
+                    IconButton(
                         onClick = onDelete,
-                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                        modifier = Modifier.size(44.dp)
                     ) {
-                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Delete")
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete Milestone",
+                            tint = MaterialTheme.colorScheme.error
+                        )
                     }
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(onClick = onDismiss) {
-                            Text("Close")
-                        }
+                    Spacer(modifier = Modifier.weight(1f))
 
-                        Button(
-                            onClick = onStartTimer,
-                            shape = RoundedCornerShape(14.dp),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
-                        ) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Start Stopwatch")
-                        }
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Text("Close")
+                    }
+
+                    Button(
+                        onClick = onStartTimer,
+                        shape = RoundedCornerShape(14.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
+                    ) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Start Stopwatch", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
                     }
                 }
             }

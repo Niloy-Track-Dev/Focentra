@@ -530,6 +530,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun clearAllAppData() {
+        viewModelScope.launch {
+            repository.clearAllAppData()
+            _brainDumpNotes.value = emptyList()
+            _flashcards.value = emptyList()
+            _examTargets.value = emptyList()
+        }
+    }
+
     // Reminders
     fun toggleReminder(reminder: ReminderEntity) {
         viewModelScope.launch {
