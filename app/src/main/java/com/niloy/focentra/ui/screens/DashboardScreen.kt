@@ -157,6 +157,35 @@ fun DashboardScreen(
             )
         }
 
+        // Daily Study Planner To-Do Checklist Widget (NEW FEATURE 3)
+        item {
+            val dailyTasks by viewModel.dailyTasks.collectAsStateWithLifecycle()
+            DailyStudyTaskChecklist(
+                tasks = dailyTasks,
+                onAddTask = { title -> viewModel.addTask(title) },
+                onToggleTask = { task -> viewModel.toggleTask(task) },
+                onDeleteTask = { task -> viewModel.deleteTask(task) }
+            )
+        }
+
+        // Streak Saver Pass Card (NEW FEATURE 4)
+        item {
+            val streakPassMonth by viewModel.streakPassUsedMonth.collectAsStateWithLifecycle()
+            StreakSaverPassCard(
+                currentStreak = streakInfo.currentStreak,
+                usedMonthKey = streakPassMonth,
+                onUsePass = { viewModel.useStreakSaverPass() }
+            )
+        }
+
+        // Subject-wise Goal Progress Rings (NEW FEATURE 2)
+        item {
+            SubjectGoalProgressRings(
+                subjects = subjects,
+                subjectStats = periodStats.subjectStats
+            )
+        }
+
         // Today's Focus Time Card (Styled matching Quick Study Modes)
         item {
             Surface(
