@@ -45,6 +45,19 @@ data class HeatmapCell(
     val topSubject: String = ""
 )
 
+data class CognitiveFatigueMetrics(
+    val brainEnergyPercentage: Int = 100, // 0 - 100%
+    val fatigueLevel: String = "OPTIMAL", // OPTIMAL, MODERATE, HIGH, EXHAUSTED
+    val recommendedBreakMinutes: Int = 15,
+    val burnoutRiskScore: Int = 10 // 0 - 100
+)
+
+data class SubjectMemoryRetention(
+    val subject: String,
+    val daysSinceLastStudied: Int,
+    val retentionPercentage: Int // 0 - 100%
+)
+
 data class PersonalRecords(
     val longestSessionMinutes: Long = 0L,
     val longestSessionSubject: String = "-",
@@ -75,6 +88,8 @@ data class PeriodStatistics(
     val chartData: List<BarChartItem> = emptyList(),
     val hourlyDistribution: List<Float> = List(24) { 0f }, // 00h to 23h
     val subjectStats: List<SubjectStudyStat> = emptyList(),
+    val cognitiveFatigue: CognitiveFatigueMetrics = CognitiveFatigueMetrics(),
+    val memoryRetentions: List<SubjectMemoryRetention> = emptyList(),
     val smartInsights: List<String> = emptyList()
 )
 
@@ -167,6 +182,52 @@ object StatisticsEngine {
         val dayNames = arrayOf("", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
         val mostProductiveDay = if (bestDayOfWeekInt in 1..7) dayNames[bestDayOfWeekInt] else "Monday"
 
+        // Cognitive Fatigue & Brain Energy calculation
+        val todayStartMs = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+
+        val todaySessions = filtered.filter { it.startTime >= todayStartMs }
+        val todayFocusedMins = todaySessions.sumOf { it.actualFocusedSeconds } / 60
+        val fatigueDeduction = ((todayFocusedMins / 45) * 8).toInt().coerceAtMost(70)
+        val brainEnergyPct = (100 - fatigueDeduction).coerceIn(15, 100)
+
+        val fatigueLevelStr = when {
+            brainEnergyPct >= 80 -> "OPTIMAL"
+            brainEnergyPct >= 50 -> "MODERATE"
+            brainEnergyPct >= 30 -> "HIGH"
+            else -> "EXHAUSTED"
+        }
+
+        val recommendedBreakMins = when {
+            todayFocusedMins >= 240 -> 30
+            todayFocusedMins >= 120 -> 20
+            else -> 10
+        }
+
+        val burnoutRisk = ((todayFocusedMins / 360f) * 100f).toInt().coerceIn(5, 95)
+        val cognitiveFatigue = CognitiveFatigueMetrics(
+            brainEnergyPercentage = brainEnergyPct,
+            fatigueLevel = fatigueLevelStr,
+            recommendedBreakMinutes = recommendedBreakMins,
+            burnoutRiskScore = burnoutRisk
+        )
+
+        // Subject Memory Decay calculation
+        val memoryRetentions = subjectGroups.map { entry ->
+            val lastSessionTime = entry.value.maxOfOrNull { it.startTime } ?: System.currentTimeMillis()
+            val daysAgo = ((System.currentTimeMillis() - lastSessionTime) / (1000L * 60 * 60 * 24)).toInt().coerceAtLeast(0)
+            val retention = (100 - (daysAgo * 12)).coerceIn(20, 100)
+            SubjectMemoryRetention(
+                subject = entry.key,
+                daysSinceLastStudied = daysAgo,
+                retentionPercentage = retention
+            )
+        }.sortedBy { it.retentionPercentage }
+
         // Build Bar Chart Data based on period
         val chartData = buildChartItems(filtered, period, dailyGoalMinutes.toFloat())
 
@@ -208,6 +269,8 @@ object StatisticsEngine {
             chartData = chartData,
             hourlyDistribution = hourlyMins.toList(),
             subjectStats = subjectStats,
+            cognitiveFatigue = cognitiveFatigue,
+            memoryRetentions = memoryRetentions,
             smartInsights = insights
         )
     }

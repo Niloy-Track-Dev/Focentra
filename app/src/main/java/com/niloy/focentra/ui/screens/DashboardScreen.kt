@@ -158,6 +158,11 @@ fun DashboardScreen(
         }
 
 
+        // Super Intelligence: Brain Energy & Cognitive Load Card
+        item {
+            CognitiveBrainEnergyCard(fatigueMetrics = periodStats.cognitiveFatigue)
+        }
+
         // Today's Focus Time Card (Styled matching Quick Study Modes)
         item {
             Surface(
