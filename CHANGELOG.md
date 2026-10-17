@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.7.0] - 2026-10-17
+
+### Added
+- **Super Smooth UI & Database Optimization**: Added Room indices on `StudySessionEntity` (`startTime`, `subject`, `completionStatus`) for microsecond query response.
+- **Background Dispatcher Offloading**: Shifted all ViewModel Flow calculations and filtering to `Dispatchers.Default`.
+- **Exam Goals Card Details Area**: Utilized whitespace under "X Days Left" to display target dates and detail hints cleanly.
+- **Full App State Backup & Restoration**: Verified 100% complete import/export of subjects, colors, descriptions, distractions, topics, goals, presets, reminders, and exam targets.
+
+### Updated
+- **Version Bump**: Incremented `versionCode` to `16` and `versionName` to `3.7.0`.
+
 ## [3.6.0] - 2026-10-17
 
 ### Added

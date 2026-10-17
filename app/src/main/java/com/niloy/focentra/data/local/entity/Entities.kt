@@ -3,7 +3,16 @@ package com.niloy.focentra.data.local.entity
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "study_sessions")
+import androidx.room.Index
+
+@Entity(
+    tableName = "study_sessions",
+    indices = [
+        Index(value = ["startTime"]),
+        Index(value = ["subject"]),
+        Index(value = ["completionStatus"])
+    ]
+)
 data class StudySessionEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
