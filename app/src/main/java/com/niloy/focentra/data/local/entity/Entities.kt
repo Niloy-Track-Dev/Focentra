@@ -113,3 +113,14 @@ data class SettingEntity(
     val key: String,
     val value: String
 )
+
+@Entity(tableName = "daily_tasks")
+data class StudyTaskEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val title: String,
+    val subject: String = "General",
+    val dateEpochMs: Long = System.currentTimeMillis(),
+    val isCompleted: Boolean = false,
+    val createdTimestamp: Long = System.currentTimeMillis()
+)

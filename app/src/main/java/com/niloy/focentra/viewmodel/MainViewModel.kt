@@ -110,6 +110,48 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val achievements = repository.allAchievements.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val reminders = repository.allReminders.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val settings = repository.allSettings.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val dailyTasks = repository.allTasks.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    // Streak Saver Pass Used Month (Stored as YYYY-MM)
+    private val _streakPassUsedMonth = MutableStateFlow("")
+    val streakPassUsedMonth: StateFlow<String> = _streakPassUsedMonth.asStateFlow()
+
+    fun addTask(title: String, subject: String = "General") {
+        if (title.isBlank()) return
+        viewModelScope.launch {
+            repository.insertTask(StudyTaskEntity(title = title.trim(), subject = subject))
+        }
+    }
+
+    fun toggleTask(task: StudyTaskEntity) {
+        viewModelScope.launch {
+            repository.updateTask(task.copy(isCompleted = !task.isCompleted))
+        }
+    }
+
+    fun deleteTask(task: StudyTaskEntity) {
+        viewModelScope.launch {
+            repository.deleteTask(task)
+        }
+    }
+
+    fun clearCompletedTasks() {
+        viewModelScope.launch {
+            repository.clearCompletedTasks()
+        }
+    }
+
+    fun useStreakSaverPass() {
+        val cal = Calendar.getInstance()
+        val currentMonthKey = String.format("%04d-%02d", cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1)
+        if (_streakPassUsedMonth.value == currentMonthKey) return
+
+        viewModelScope.launch {
+            _streakPassUsedMonth.value = currentMonthKey
+            repository.setSetting("streak_pass_month", currentMonthKey)
+            _snackbarMessage.emit("Streak Saver Pass activated for this month!")
+        }
+    }
 
     // Derived states
     val streakInfo = sessions.map { calculateStreak(it) }
@@ -172,6 +214,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             val daynexaTime = repository.getSetting("daynexa_connected_timestamp", "0")
             _daynexaConnectedAt.value = daynexaTime.toLongOrNull() ?: 0L
+
+            val streakPass = repository.getSetting("streak_pass_month", "")
+            _streakPassUsedMonth.value = streakPass
 
             loadPersistentUserData()
         }

@@ -197,6 +197,24 @@ interface ReminderDao {
 }
 
 @Dao
+interface StudyTaskDao {
+    @Query("SELECT * FROM daily_tasks ORDER BY isCompleted ASC, id DESC")
+    fun getAllTasksFlow(): Flow<List<StudyTaskEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTask(task: StudyTaskEntity): Long
+
+    @Update
+    suspend fun updateTask(task: StudyTaskEntity)
+
+    @Delete
+    suspend fun deleteTask(task: StudyTaskEntity)
+
+    @Query("DELETE FROM daily_tasks WHERE isCompleted = 1")
+    suspend fun clearCompletedTasks()
+}
+
+@Dao
 interface SettingDao {
     @Query("SELECT * FROM user_settings")
     fun getAllSettingsFlow(): Flow<List<SettingEntity>>

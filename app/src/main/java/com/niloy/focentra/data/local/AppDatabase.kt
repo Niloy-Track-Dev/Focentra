@@ -20,7 +20,8 @@ import kotlinx.coroutines.launch
         PresetEntity::class,
         AchievementEntity::class,
         ReminderEntity::class,
-        SettingEntity::class
+        SettingEntity::class,
+        StudyTaskEntity::class
     ],
     version = 1,
     exportSchema = false
@@ -34,6 +35,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun achievementDao(): AchievementDao
     abstract fun reminderDao(): ReminderDao
     abstract fun settingDao(): SettingDao
+    abstract fun taskDao(): StudyTaskDao
 
     companion object {
         @Volatile
