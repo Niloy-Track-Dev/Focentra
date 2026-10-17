@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
         SettingEntity::class,
         StudyTaskEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -48,6 +48,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "focentra_database.db"
                 )
+                    .fallbackToDestructiveMigration()
                     .addCallback(DatabaseCallback(scope))
                     .build()
                 INSTANCE = instance
