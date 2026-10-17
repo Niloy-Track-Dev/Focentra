@@ -10,6 +10,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -514,6 +515,22 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
                 jWriter.name("daysOfWeek").value(r.daysOfWeek)
                 jWriter.name("enabled").value(r.enabled)
                 jWriter.name("message").value(r.message)
+                jWriter.endObject()
+            }
+            jWriter.endArray()
+
+            jWriter.name("chapters")
+            jWriter.beginArray()
+            database.chapterDao().getAllChaptersFlow().first().forEach { ch ->
+                jWriter.beginObject()
+                jWriter.name("id").value(ch.id)
+                jWriter.name("subjectId").value(ch.subjectId)
+                jWriter.name("subjectName").value(ch.subjectName)
+                jWriter.name("chapterName").value(ch.chapterName)
+                jWriter.name("totalClasses").value(ch.totalClasses)
+                jWriter.name("completedClassesCount").value(ch.completedClassesCount)
+                jWriter.name("isRevision1Completed").value(ch.isRevision1Completed)
+                jWriter.name("isRevision2Completed").value(ch.isRevision2Completed)
                 jWriter.endObject()
             }
             jWriter.endArray()

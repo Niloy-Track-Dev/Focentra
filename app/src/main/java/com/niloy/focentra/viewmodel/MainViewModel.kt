@@ -41,7 +41,8 @@ data class ExamTarget(
     val targetDateEpochMs: Long,
     val targetHours: Float = 50f,
     val subject: String = "General",
-    val notes: String = ""
+    val notes: String = "",
+    val chapterIds: List<Long> = emptyList()
 )
 
 data class DashboardWidgetOrder(
