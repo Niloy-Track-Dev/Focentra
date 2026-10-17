@@ -113,6 +113,33 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val reminders = repository.allReminders.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val settings = repository.allSettings.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val dailyTasks = repository.allTasks.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val chapters = repository.allChapters.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    fun addChapter(subjectId: Long, subjectName: String, chapterName: String, totalClasses: Int) {
+        if (chapterName.isBlank()) return
+        viewModelScope.launch {
+            repository.insertChapter(
+                ChapterEntity(
+                    subjectId = subjectId,
+                    subjectName = subjectName,
+                    chapterName = chapterName.trim(),
+                    totalClasses = totalClasses.coerceAtLeast(1)
+                )
+            )
+        }
+    }
+
+    fun updateChapter(chapter: ChapterEntity) {
+        viewModelScope.launch {
+            repository.updateChapter(chapter)
+        }
+    }
+
+    fun deleteChapter(chapter: ChapterEntity) {
+        viewModelScope.launch {
+            repository.deleteChapter(chapter)
+        }
+    }
 
     // Streak Saver Pass Used Month (Stored as YYYY-MM)
     private val _streakPassUsedMonth = MutableStateFlow("")

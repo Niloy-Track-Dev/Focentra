@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.niloy.focentra.data.local.entity.ChapterEntity
 import com.niloy.focentra.data.local.entity.SubjectEntity
 import com.niloy.focentra.data.local.entity.TopicEntity
 import com.niloy.focentra.ui.components.EmptyStateView
@@ -37,10 +38,13 @@ fun SubjectsScreen(
     val subjects by viewModel.subjects.collectAsStateWithLifecycle()
     val topics by viewModel.topics.collectAsStateWithLifecycle()
     val sessions by viewModel.sessions.collectAsStateWithLifecycle()
+    val chapters by viewModel.chapters.collectAsStateWithLifecycle()
 
     var showCreateDialog by remember { mutableStateOf(false) }
     var subjectToEdit by remember { mutableStateOf<SubjectEntity?>(null) }
     var subjectToAddTopic by remember { mutableStateOf<SubjectEntity?>(null) }
+    var subjectToAddChapter by remember { mutableStateOf<SubjectEntity?>(null) }
+    var chapterToEdit by remember { mutableStateOf<ChapterEntity?>(null) }
     var subjectToDelete by remember { mutableStateOf<SubjectEntity?>(null) }
     var topicToDelete by remember { mutableStateOf<TopicEntity?>(null) }
 
@@ -56,6 +60,17 @@ fun SubjectsScreen(
             onCreate = { name, colorHex, icon, targetHrs, desc ->
                 viewModel.createSubject(name, colorHex, icon, targetHrs, desc)
                 showCreateDialog = false
+            }
+        )
+    }
+
+    if (subjectToAddChapter != null) {
+        AddChapterDialog(
+            subject = subjectToAddChapter!!,
+            onDismiss = { subjectToAddChapter = null },
+            onAdd = { chapterName, totalClasses ->
+                viewModel.addChapter(subjectToAddChapter!!.id, subjectToAddChapter!!.name, chapterName, totalClasses)
+                subjectToAddChapter = null
             }
         )
     }
@@ -155,13 +170,19 @@ fun SubjectsScreen(
                     val targetHrs = subject.targetHours.coerceAtLeast(1f)
                     val progress = (studiedHrs / targetHrs).coerceIn(0f, 1f)
 
+                    val subChapters = chapters.filter { it.subjectId == subject.id || it.subjectName.equals(subject.name, ignoreCase = true) }
+
                     SubjectDetailCard(
                         subject = subject,
                         topics = subTopics,
+                        chapters = subChapters,
                         studiedMins = studiedMins,
                         progress = progress,
                         onEditSubjectClick = { subjectToEdit = subject },
                         onAddTopicClick = { subjectToAddTopic = subject },
+                        onAddChapterClick = { subjectToAddChapter = subject },
+                        onUpdateChapter = { updatedChapter -> viewModel.updateChapter(updatedChapter) },
+                        onDeleteChapter = { chapter -> viewModel.deleteChapter(chapter) },
                         onDeleteTopic = { topic -> topicToDelete = topic },
                         onDeleteSubjectClick = { subjectToDelete = subject }
                     )
@@ -195,10 +216,14 @@ fun SubjectsScreen(
 fun SubjectDetailCard(
     subject: SubjectEntity,
     topics: List<TopicEntity>,
+    chapters: List<ChapterEntity>,
     studiedMins: Long,
     progress: Float,
     onEditSubjectClick: () -> Unit,
     onAddTopicClick: () -> Unit,
+    onAddChapterClick: () -> Unit,
+    onUpdateChapter: (ChapterEntity) -> Unit,
+    onDeleteChapter: (ChapterEntity) -> Unit,
     onDeleteTopic: (TopicEntity) -> Unit,
     onDeleteSubjectClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -364,6 +389,188 @@ fun SubjectDetailCard(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Chapters & Syllabus Section
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Syllabus Chapters (${chapters.size})",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                TextButton(
+                    onClick = onAddChapterClick,
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                ) {
+                    Icon(Icons.Default.LibraryAdd, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Add Chapter")
+                }
+            }
+
+            if (chapters.isNotEmpty()) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    chapters.forEach { chapter ->
+                        ChapterSequentialTrackerView(
+                            chapter = chapter,
+                            onUpdate = onUpdateChapter,
+                            onDelete = { onDeleteChapter(chapter) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ChapterSequentialTrackerView(
+    chapter: ChapterEntity,
+    onUpdate: (ChapterEntity) -> Unit,
+    onDelete: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = chapter.chapterName,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Classes: ${chapter.completedClassesCount}/${chapter.totalClasses} • Rev 1: ${if (chapter.isRevision1Completed) "✓" else "✗"} • Rev 2: ${if (chapter.isRevision2Completed) "✓" else "✗"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
+                        Icon(
+                            imageVector = Icons.Default.DeleteOutline,
+                            contentDescription = "Delete Chapter",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = "Expand",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            if (expanded) {
+                Spacer(modifier = Modifier.height(10.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Sequential Classes Checkbox Grid
+                Text(
+                    text = "Sequential Classes Progress (Auto-Unlocks Next):",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    for (i in 1..chapter.totalClasses) {
+                        val isChecked = i <= chapter.completedClassesCount
+                        val isEnabled = i <= chapter.completedClassesCount + 1
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Checkbox(
+                                checked = isChecked,
+                                enabled = isEnabled,
+                                onCheckedChange = { checked ->
+                                    if (checked) {
+                                        onUpdate(chapter.copy(completedClassesCount = i))
+                                    } else {
+                                        onUpdate(chapter.copy(completedClassesCount = i - 1))
+                                    }
+                                }
+                            )
+                            Text(
+                                text = String.format("Class %02d", i),
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontWeight = if (isChecked) FontWeight.Bold else FontWeight.Normal
+                                ),
+                                color = if (isEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                            )
+                        }
+                    }
+
+                    // Revision Classes shown after regular classes completed
+                    val allRegularDone = chapter.completedClassesCount >= chapter.totalClasses
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Checkbox(
+                            checked = chapter.isRevision1Completed,
+                            enabled = allRegularDone,
+                            onCheckedChange = { checked ->
+                                onUpdate(chapter.copy(isRevision1Completed = checked))
+                            }
+                        )
+                        Text(
+                            text = "Revision Class 01",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                            color = if (allRegularDone) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                        )
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Checkbox(
+                            checked = chapter.isRevision2Completed,
+                            enabled = allRegularDone && chapter.isRevision1Completed,
+                            onCheckedChange = { checked ->
+                                onUpdate(chapter.copy(isRevision2Completed = checked))
+                            }
+                        )
+                        Text(
+                            text = "Revision Class 02",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                            color = if (allRegularDone && chapter.isRevision1Completed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -525,6 +732,57 @@ fun EditSubjectDialog(
                 }
             ) {
                 Text("Save Changes")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
+}
+
+@Composable
+fun AddChapterDialog(
+    subject: SubjectEntity,
+    onDismiss: () -> Unit,
+    onAdd: (chapterName: String, totalClasses: Int) -> Unit
+) {
+    var chapterName by remember { mutableStateOf("") }
+    var totalClassesText by remember { mutableStateOf("10") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Chapter to «${subject.name}»") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = chapterName,
+                    onValueChange = { chapterName = it },
+                    label = { Text("Chapter Name / Title") },
+                    placeholder = { Text("e.g. Chapter 01: Kinematics") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                OutlinedTextField(
+                    value = totalClassesText,
+                    onValueChange = { totalClassesText = it.filter { ch -> ch.isDigit() } },
+                    label = { Text("Total Class Number (e.g. 20)") },
+                    placeholder = { Text("20") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (chapterName.isNotBlank()) {
+                        val count = totalClassesText.toIntOrNull() ?: 10
+                        onAdd(chapterName, count)
+                    }
+                }
+            ) {
+                Text("Add Chapter")
             }
         },
         dismissButton = {

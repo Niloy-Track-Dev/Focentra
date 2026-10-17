@@ -133,3 +133,20 @@ data class StudyTaskEntity(
     val isCompleted: Boolean = false,
     val createdTimestamp: Long = System.currentTimeMillis()
 )
+
+@Entity(
+    tableName = "chapters",
+    indices = [Index(value = ["subjectId"])]
+)
+data class ChapterEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val subjectId: Long,
+    val subjectName: String,
+    val chapterName: String,
+    val totalClasses: Int = 10,
+    val completedClassesCount: Int = 0, // Number of regular classes completed (0 to totalClasses)
+    val isRevision1Completed: Boolean = false,
+    val isRevision2Completed: Boolean = false,
+    val orderIndex: Int = 0
+)

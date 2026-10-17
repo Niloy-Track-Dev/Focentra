@@ -22,9 +22,10 @@ import kotlinx.coroutines.launch
         AchievementEntity::class,
         ReminderEntity::class,
         SettingEntity::class,
-        StudyTaskEntity::class
+        StudyTaskEntity::class,
+        ChapterEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -37,6 +38,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun reminderDao(): ReminderDao
     abstract fun settingDao(): SettingDao
     abstract fun taskDao(): StudyTaskDao
+    abstract fun chapterDao(): ChapterDao
 
     companion object {
         @Volatile
@@ -51,6 +53,13 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS `chapters` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `subjectId` INTEGER NOT NULL, `subjectName` TEXT NOT NULL, `chapterName` TEXT NOT NULL, `totalClasses` INTEGER NOT NULL, `completedClassesCount` INTEGER NOT NULL, `isRevision1Completed` INTEGER NOT NULL, `isRevision2Completed` INTEGER NOT NULL, `orderIndex` INTEGER NOT NULL)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_chapters_subjectId` ON `chapters` (`subjectId`)")
+            }
+        }
+
         fun getDatabase(context: Context, scope: CoroutineScope = CoroutineScope(Dispatchers.IO)): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -58,7 +67,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "focentra_database.db"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .addCallback(DatabaseCallback(scope))
                     .build()
                 INSTANCE = instance

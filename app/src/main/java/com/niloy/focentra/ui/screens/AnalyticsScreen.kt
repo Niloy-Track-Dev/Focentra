@@ -112,12 +112,63 @@ fun AnalyticsScreen(
             }
         }
 
-        // Super Intelligence: Subject Retention & Memory Decay Advisory Card
+
+        // Syllabus Completion Progress & Exam Preparation Readiness Visual Chart
         item {
-            SubjectMemoryDecayCard(memoryRetentions = periodStats.memoryRetentions)
+            val chapters by viewModel.chapters.collectAsStateWithLifecycle()
+            val totalClassesAll = chapters.sumOf { it.totalClasses }
+            val completedClassesAll = chapters.sumOf { it.completedClassesCount }
+            val syllabusPct = if (totalClassesAll > 0) ((completedClassesAll.toFloat() / totalClassesAll) * 100f).toInt().coerceIn(0, 100) else 0
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Syllabus Completion & Exam Readiness",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "$syllabusPct%",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    LinearProgressIndicator(
+                        progress = { syllabusPct / 100f },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(10.dp)
+                            .clip(RoundedCornerShape(5.dp)),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+
+                    Text(
+                        text = "Total Syllabus Classes Done: $completedClassesAll / $totalClassesAll classes completed",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
 
-        // Progress Level Trend Graph Curve (Progress Level Chart retained)
+        // Progress Level Trend Graph Curve
         item {
             ProgressLevelTrendChart(dataPoints = periodStats.chartData)
         }
