@@ -157,34 +157,6 @@ fun DashboardScreen(
             )
         }
 
-        // Daily Study Planner To-Do Checklist Widget (NEW FEATURE 3)
-        item {
-            val dailyTasks by viewModel.dailyTasks.collectAsStateWithLifecycle()
-            DailyStudyTaskChecklist(
-                tasks = dailyTasks,
-                onAddTask = { title -> viewModel.addTask(title) },
-                onToggleTask = { task -> viewModel.toggleTask(task) },
-                onDeleteTask = { task -> viewModel.deleteTask(task) }
-            )
-        }
-
-        // Streak Saver Pass Card (NEW FEATURE 4)
-        item {
-            val streakPassMonth by viewModel.streakPassUsedMonth.collectAsStateWithLifecycle()
-            StreakSaverPassCard(
-                currentStreak = streakInfo.currentStreak,
-                usedMonthKey = streakPassMonth,
-                onUsePass = { viewModel.useStreakSaverPass() }
-            )
-        }
-
-        // Subject-wise Goal Progress Rings (NEW FEATURE 2)
-        item {
-            SubjectGoalProgressRings(
-                subjects = subjects,
-                subjectStats = periodStats.subjectStats
-            )
-        }
 
         // Today's Focus Time Card (Styled matching Quick Study Modes)
         item {
@@ -1240,16 +1212,36 @@ fun ExamMilestoneCard(
                     }
                 }
 
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = if (daysRemaining <= 3) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f)
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = if (daysRemaining <= 3) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f)
+                    ) {
+                        Text(
+                            text = if (daysRemaining > 0) "$daysRemaining Days Left" else "${hoursRemaining}h Left",
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
+                            color = if (daysRemaining <= 3) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+
+                    val targetDateFormat = SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(target.targetDateEpochMs))
                     Text(
-                        text = if (daysRemaining > 0) "$daysRemaining Days Left" else "${hoursRemaining}h Left",
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
-                        color = if (daysRemaining <= 3) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer
+                        text = targetDateFormat,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.primary
                     )
+
+                    if (target.notes.isNotBlank()) {
+                        Text(
+                            text = "Tap for details",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 

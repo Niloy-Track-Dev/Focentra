@@ -112,37 +112,9 @@ fun AnalyticsScreen(
             }
         }
 
-        // Progress Level Trend Graph Curve (NEW FEATURE 1)
+        // Progress Level Trend Graph Curve (Progress Level Chart retained)
         item {
             ProgressLevelTrendChart(dataPoints = periodStats.chartData)
-        }
-
-        // Target vs. Actual Comparison Bar Chart (NEW FEATURE 7)
-        item {
-            TargetVsActualComparisonBarChart(
-                actualMinutes = periodStats.totalFocusedSeconds / 60,
-                targetMinutes = 2400L // Example weekly target (40 hrs)
-            )
-        }
-
-        // Exam Readiness Index Gauge Widget (NEW FEATURE 8)
-        item {
-            val readinessScore = (periodStats.focusScore * 0.9f).toInt().coerceIn(30, 99)
-            ExamReadinessIndexWidget(readinessScore = readinessScore)
-        }
-
-        // Peak Productivity Hour Analysis Chart (NEW FEATURE 11)
-        item {
-            PeakProductivityHourChart(mostProductiveHour = periodStats.mostProductiveHour)
-        }
-
-        // Distraction Analytics Card (NEW FEATURE 5)
-        item {
-            val avgDistractions = periodStats.totalDistractions.toFloat() / periodStats.sessionCount.coerceAtLeast(1)
-            DistractionAnalyticsCard(
-                totalDistractions = periodStats.totalDistractions,
-                avgDistractionsPerSession = avgDistractions
-            )
         }
 
         // Focus Score Card
