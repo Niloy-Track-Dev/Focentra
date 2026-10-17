@@ -45,6 +45,7 @@ fun SubjectsScreen(
     var subjectToAddTopic by remember { mutableStateOf<SubjectEntity?>(null) }
     var subjectToAddChapter by remember { mutableStateOf<SubjectEntity?>(null) }
     var chapterToEdit by remember { mutableStateOf<ChapterEntity?>(null) }
+    var chapterToDelete by remember { mutableStateOf<ChapterEntity?>(null) }
     var subjectToDelete by remember { mutableStateOf<SubjectEntity?>(null) }
     var topicToDelete by remember { mutableStateOf<TopicEntity?>(null) }
 
@@ -60,6 +61,41 @@ fun SubjectsScreen(
             onCreate = { name, colorHex, icon, targetHrs, desc ->
                 viewModel.createSubject(name, colorHex, icon, targetHrs, desc)
                 showCreateDialog = false
+            }
+        )
+    }
+
+    if (chapterToEdit != null) {
+        EditChapterDialog(
+            chapter = chapterToEdit!!,
+            onDismiss = { chapterToEdit = null },
+            onSave = { updated ->
+                viewModel.updateChapter(updated)
+                chapterToEdit = null
+            }
+        )
+    }
+
+    if (chapterToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { chapterToDelete = null },
+            title = { Text("Delete Syllabus Chapter?") },
+            text = { Text("Are you sure you want to delete chapter «${chapterToDelete!!.chapterName}»? All sequential class progress for this chapter will be removed.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.deleteChapter(chapterToDelete!!)
+                        chapterToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { chapterToDelete = null }) {
+                    Text("Cancel")
+                }
             }
         )
     }
@@ -182,7 +218,8 @@ fun SubjectsScreen(
                         onAddTopicClick = { subjectToAddTopic = subject },
                         onAddChapterClick = { subjectToAddChapter = subject },
                         onUpdateChapter = { updatedChapter -> viewModel.updateChapter(updatedChapter) },
-                        onDeleteChapter = { chapter -> viewModel.deleteChapter(chapter) },
+                        onEditChapter = { chapter -> chapterToEdit = chapter },
+                        onDeleteChapter = { chapter -> chapterToDelete = chapter },
                         onDeleteTopic = { topic -> topicToDelete = topic },
                         onDeleteSubjectClick = { subjectToDelete = subject }
                     )
@@ -223,6 +260,7 @@ fun SubjectDetailCard(
     onAddTopicClick: () -> Unit,
     onAddChapterClick: () -> Unit,
     onUpdateChapter: (ChapterEntity) -> Unit,
+    onEditChapter: (ChapterEntity) -> Unit,
     onDeleteChapter: (ChapterEntity) -> Unit,
     onDeleteTopic: (TopicEntity) -> Unit,
     onDeleteSubjectClick: () -> Unit,
@@ -422,6 +460,7 @@ fun SubjectDetailCard(
                         ChapterSequentialTrackerView(
                             chapter = chapter,
                             onUpdate = onUpdateChapter,
+                            onEdit = { onEditChapter(chapter) },
                             onDelete = { onDeleteChapter(chapter) }
                         )
                     }
@@ -435,6 +474,7 @@ fun SubjectDetailCard(
 fun ChapterSequentialTrackerView(
     chapter: ChapterEntity,
     onUpdate: (ChapterEntity) -> Unit,
+    onEdit: (() -> Unit)? = null,
     onDelete: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -470,6 +510,16 @@ fun ChapterSequentialTrackerView(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (onEdit != null) {
+                        IconButton(onClick = onEdit, modifier = Modifier.size(28.dp)) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit Chapter",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
                     IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
                         Icon(
                             imageVector = Icons.Default.DeleteOutline,
@@ -728,6 +778,56 @@ fun EditSubjectDialog(
                                 iconName = selectedIcon
                             )
                         )
+                    }
+                }
+            ) {
+                Text("Save Changes")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
+}
+
+@Composable
+fun EditChapterDialog(
+    chapter: ChapterEntity,
+    onDismiss: () -> Unit,
+    onSave: (ChapterEntity) -> Unit
+) {
+    var chapterName by remember { mutableStateOf(chapter.chapterName) }
+    var totalClassesText by remember { mutableStateOf(chapter.totalClasses.toString()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Chapter Syllabus") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = chapterName,
+                    onValueChange = { chapterName = it },
+                    label = { Text("Chapter Name / Title") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                OutlinedTextField(
+                    value = totalClassesText,
+                    onValueChange = { totalClassesText = it.filter { ch -> ch.isDigit() } },
+                    label = { Text("Total Class Number") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (chapterName.isNotBlank()) {
+                        val count = totalClassesText.toIntOrNull()?.coerceAtLeast(1) ?: chapter.totalClasses
+                        val completedCount = chapter.completedClassesCount.coerceAtMost(count)
+                        onSave(chapter.copy(chapterName = chapterName.trim(), totalClasses = count, completedClassesCount = completedCount))
                     }
                 }
             ) {
