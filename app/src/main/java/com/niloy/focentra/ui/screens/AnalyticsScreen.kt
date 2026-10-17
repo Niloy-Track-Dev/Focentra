@@ -112,6 +112,11 @@ fun AnalyticsScreen(
             }
         }
 
+        // Super Intelligence: Subject Retention & Memory Decay Advisory Card
+        item {
+            SubjectMemoryDecayCard(memoryRetentions = periodStats.memoryRetentions)
+        }
+
         // Progress Level Trend Graph Curve (Progress Level Chart retained)
         item {
             ProgressLevelTrendChart(dataPoints = periodStats.chartData)

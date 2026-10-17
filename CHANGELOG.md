@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.8.0] - 2026-10-17
+
+### Added
+- **AI Adaptive Exam Pacing & Re-balancing Engine**: Dynamically calculates re-balanced focus requirements and study pacing.
+- **Cognitive Fatigue & Burnout Predictor**: Real-time brain energy meter (0-100%), recommended break duration, and burnout risk index.
+- **Smart Focus Peak Window Advisor**: Analyses hourly productivity to recommend peak concentration study windows.
+- **Subject Retention & Spaced Memory Decay Scale**: Predicts memory retention percentages based on time elapsed since last study session.
+
+### Updated
+- **Version Bump**: Incremented `versionCode` to `17` and `versionName` to `3.8.0`.
+
 ## [3.7.0] - 2026-10-17
 
 ### Added
