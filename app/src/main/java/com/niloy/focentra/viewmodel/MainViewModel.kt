@@ -8,8 +8,10 @@ import com.niloy.focentra.FocentraApp
 import com.niloy.focentra.data.local.entity.*
 import com.niloy.focentra.data.repository.calculateStreak
 import com.niloy.focentra.engine.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -153,33 +155,40 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Derived states
-    val streakInfo = sessions.map { calculateStreak(it) }
-        .stateIn(viewModelScope, SharingStarted.Lazily, calculateStreak(emptyList()))
+    // Derived states optimized on Dispatchers.Default background threads
+    val streakInfo = sessions.map { sessionList ->
+        kotlinx.coroutines.withContext(Dispatchers.Default) { calculateStreak(sessionList) }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, calculateStreak(emptyList()))
 
-    val personalRecords = sessions.map { StatisticsEngine.calculatePersonalRecords(it) }
-        .stateIn(viewModelScope, SharingStarted.Lazily, PersonalRecords())
+    val personalRecords = sessions.map { sessionList ->
+        kotlinx.coroutines.withContext(Dispatchers.Default) { StatisticsEngine.calculatePersonalRecords(sessionList) }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, PersonalRecords())
 
-    val heatmapData = sessions.map { StatisticsEngine.buildHeatmapData(it, weeksBack = 16) }
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val heatmapData = sessions.map { sessionList ->
+        kotlinx.coroutines.withContext(Dispatchers.Default) { StatisticsEngine.buildHeatmapData(sessionList, weeksBack = 16) }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val periodStatistics = combine(sessions, _selectedPeriod, goals) { sessionList, period, goalList ->
-        val dailyGoal = goalList.find { it.periodType == "DAILY" }?.targetMinutes ?: 480
-        StatisticsEngine.calculatePeriodStats(sessionList, period, dailyGoal)
+        kotlinx.coroutines.withContext(Dispatchers.Default) {
+            val dailyGoal = goalList.find { it.periodType == "DAILY" }?.targetMinutes ?: 480
+            StatisticsEngine.calculatePeriodStats(sessionList, period, dailyGoal)
+        }
     }.stateIn(viewModelScope, SharingStarted.Lazily, PeriodStatistics(TimePeriod.THIS_WEEK))
 
-    // Filtered History list
+    // Filtered History list optimized on Dispatchers.Default
     val filteredHistory = combine(sessions, _historySearchQuery, _historySubjectFilter, _historyMinProductivity) { list, query, subFilter, minRating ->
-        list.filter { s ->
-            val matchesQuery = query.isBlank() ||
-                    s.subject.contains(query, ignoreCase = true) ||
-                    s.topic.contains(query, ignoreCase = true) ||
-                    s.notes.contains(query, ignoreCase = true) ||
-                    s.tags.contains(query, ignoreCase = true)
+        kotlinx.coroutines.withContext(Dispatchers.Default) {
+            list.filter { s ->
+                val matchesQuery = query.isBlank() ||
+                        s.subject.contains(query, ignoreCase = true) ||
+                        s.topic.contains(query, ignoreCase = true) ||
+                        s.notes.contains(query, ignoreCase = true) ||
+                        s.tags.contains(query, ignoreCase = true)
 
-            val matchesSubject = subFilter == null || s.subject.equals(subFilter, ignoreCase = true)
-            val matchesRating = minRating == 0 || s.productivityRating >= minRating
-            matchesQuery && matchesSubject && matchesRating
+                val matchesSubject = subFilter == null || s.subject.equals(subFilter, ignoreCase = true)
+                val matchesRating = minRating == 0 || s.productivityRating >= minRating
+                matchesQuery && matchesSubject && matchesRating
+            }
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
