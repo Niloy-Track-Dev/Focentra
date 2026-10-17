@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.niloy.focentra.data.local.entity.ChapterEntity
 import com.niloy.focentra.data.local.entity.PresetEntity
 import com.niloy.focentra.data.local.entity.StudySessionEntity
 import com.niloy.focentra.engine.SessionMode
@@ -138,9 +139,13 @@ fun DashboardScreen(
 
         // Exam & Target Milestone Countdown Card (NEW FEATURE)
         item {
+            val chapters by viewModel.chapters.collectAsStateWithLifecycle()
             ExamMilestoneCountdownSection(
                 examTargets = examTargets,
                 sessions = sessions,
+                chapters = chapters,
+                onUpdateChapter = { updatedChapter -> viewModel.updateChapter(updatedChapter) },
+                onDeleteChapter = { chapter -> viewModel.deleteChapter(chapter) },
                 onAddClick = { showAddExamDialog = true },
                 onEditTarget = { target -> targetToEdit = target },
                 onStartTimer = { target ->
@@ -988,6 +993,9 @@ fun QuickTimerSubjectDialog(
 fun ExamMilestoneCountdownSection(
     examTargets: List<com.niloy.focentra.viewmodel.ExamTarget>,
     sessions: List<StudySessionEntity>,
+    chapters: List<ChapterEntity> = emptyList(),
+    onUpdateChapter: (ChapterEntity) -> Unit = {},
+    onDeleteChapter: (ChapterEntity) -> Unit = {},
     onAddClick: () -> Unit,
     onEditTarget: (com.niloy.focentra.viewmodel.ExamTarget) -> Unit,
     onStartTimer: (com.niloy.focentra.viewmodel.ExamTarget) -> Unit,
@@ -1081,6 +1089,9 @@ fun ExamMilestoneCountdownSection(
                 ExamMilestoneCard(
                     target = target,
                     sessions = sessions,
+                    chapters = chapters,
+                    onUpdateChapter = onUpdateChapter,
+                    onDeleteChapter = onDeleteChapter,
                     onStartTimer = { onStartTimer(target) },
                     onEdit = { onEditTarget(target) },
                     onDelete = { onDeleteTarget(target.id) },
@@ -1115,6 +1126,9 @@ fun ExamMilestoneCountdownSection(
 fun ExamMilestoneCard(
     target: com.niloy.focentra.viewmodel.ExamTarget,
     sessions: List<StudySessionEntity>,
+    chapters: List<ChapterEntity> = emptyList(),
+    onUpdateChapter: (ChapterEntity) -> Unit = {},
+    onDeleteChapter: (ChapterEntity) -> Unit = {},
     onStartTimer: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -1149,8 +1163,7 @@ fun ExamMilestoneCard(
                     )
                 ),
                 shape = RoundedCornerShape(26.dp)
-            )
-            .clickable { onCardClick() },
+            ),
         shape = RoundedCornerShape(26.dp),
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
         shadowElevation = 2.dp
@@ -1169,7 +1182,8 @@ fun ExamMilestoneCard(
                 Row(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(end = 10.dp),
+                        .padding(end = 10.dp)
+                        .clickable { onCardClick() },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
@@ -1284,18 +1298,28 @@ fun ExamMilestoneCard(
                     )
 
                     // Linked Syllabus Chapters Sequential Checklist
-                    Text(
-                        text = "Exam Syllabus Sequential Class Tracker:",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
+                    val targetChapters = remember(chapters, target) {
+                        chapters.filter { it.subjectName.equals(target.subject, ignoreCase = true) || target.subject.equals("General", ignoreCase = true) }
+                    }
 
-                    Text(
-                        text = "Complete classes in sequence (Class N+1 unlocks when Class N is completed + Rev 1 & 2)",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    if (targetChapters.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Exam Syllabus Classes Tracker:",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            targetChapters.take(2).forEach { ch ->
+                                ChapterSequentialTrackerView(
+                                    chapter = ch,
+                                    onUpdate = onUpdateChapter,
+                                    onDelete = { onDeleteChapter(ch) }
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
