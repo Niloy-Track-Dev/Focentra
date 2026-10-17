@@ -13,15 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Dynamic Progress Level Trend Curve Chart**: Live trend graph tracking focus minutes and scores over time.
-- **Subject-wise Target Goal Progress Rings**: Visual progress indicators for individual subject targets.
-- **Daily Study Planner To-Do Checklist**: Task management integrated into the study workflow.
-- **Study Streak Saver / Rest Day Pass**: Monthly pass system to protect streak continuity.
-- **Top Distraction Analytics & Tag Breakdown**: Enhanced distraction breakdown with categorical tags.
-- **Weekly/Monthly Study Target vs. Actual Comparison**: Side-by-side bar chart comparison.
-- **Exam Countdown & Preparation Readiness Index**: Readiness percentage score and countdown planner.
-- **Subject Study Time Distribution Chart**: Visual ratio distribution across subjects.
-- **Study Log Note Search & Tag Filter System**: Advanced keyword and tag filtering in history.
-- **Best Productivity Peak Hour Heatmap**: Hourly productivity analysis and peak time visualization.
+- **Enhanced Exam Goals & Milestones Card UI**: Optimized card spacing to display target dates and detail hints.
+- **Complete Application State Backup**: Full streaming JSON/CSV import and export of subjects, presets, goals, reminders, and exam targets.
 
 ### Updated
 - **Version Bump**: Incremented `versionCode` to `15` and `versionName` to `3.6.0`.
