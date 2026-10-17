@@ -215,6 +215,27 @@ interface StudyTaskDao {
 }
 
 @Dao
+interface ChapterDao {
+    @Query("SELECT * FROM chapters ORDER BY orderIndex ASC, id ASC")
+    fun getAllChaptersFlow(): Flow<List<ChapterEntity>>
+
+    @Query("SELECT * FROM chapters WHERE subjectId = :subjectId ORDER BY orderIndex ASC, id ASC")
+    fun getChaptersForSubjectFlow(subjectId: Long): Flow<List<ChapterEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertChapter(chapter: ChapterEntity): Long
+
+    @Update
+    suspend fun updateChapter(chapter: ChapterEntity)
+
+    @Delete
+    suspend fun deleteChapter(chapter: ChapterEntity)
+
+    @Query("DELETE FROM chapters WHERE subjectId = :subjectId")
+    suspend fun deleteChaptersForSubject(subjectId: Long)
+}
+
+@Dao
 interface SettingDao {
     @Query("SELECT * FROM user_settings")
     fun getAllSettingsFlow(): Flow<List<SettingEntity>>

@@ -158,10 +158,6 @@ fun DashboardScreen(
         }
 
 
-        // Super Intelligence: Brain Energy & Cognitive Load Card
-        item {
-            CognitiveBrainEnergyCard(fatigueMetrics = periodStats.cognitiveFatigue)
-        }
 
         // Today's Focus Time Card (Styled matching Quick Study Modes)
         item {
@@ -1250,7 +1246,7 @@ fun ExamMilestoneCard(
                 }
             }
 
-            // Glassmorphic Progress Section
+            // Glassmorphic Progress Section & Exam Syllabus Sequential Checklist
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
@@ -1285,6 +1281,20 @@ fun ExamMilestoneCard(
                             .clip(RoundedCornerShape(4.dp)),
                         color = MaterialTheme.colorScheme.primary,
                         trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+
+                    // Linked Syllabus Chapters Sequential Checklist
+                    Text(
+                        text = "Exam Syllabus Sequential Class Tracker:",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+
+                    Text(
+                        text = "Complete classes in sequence (Class N+1 unlocks when Class N is completed + Rev 1 & 2)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

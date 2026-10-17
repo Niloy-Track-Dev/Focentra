@@ -31,6 +31,19 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
     val allReminders: Flow<List<ReminderEntity>> = database.reminderDao().getAllRemindersFlow()
     val allSettings: Flow<List<SettingEntity>> = database.settingDao().getAllSettingsFlow()
     val allTasks: Flow<List<StudyTaskEntity>> = database.taskDao().getAllTasksFlow()
+    val allChapters: Flow<List<ChapterEntity>> = database.chapterDao().getAllChaptersFlow()
+
+    suspend fun insertChapter(chapter: ChapterEntity): Long = withContext(Dispatchers.IO) {
+        database.chapterDao().insertChapter(chapter)
+    }
+
+    suspend fun updateChapter(chapter: ChapterEntity) = withContext(Dispatchers.IO) {
+        database.chapterDao().updateChapter(chapter)
+    }
+
+    suspend fun deleteChapter(chapter: ChapterEntity) = withContext(Dispatchers.IO) {
+        database.chapterDao().deleteChapter(chapter)
+    }
 
     suspend fun insertTask(task: StudyTaskEntity) = withContext(Dispatchers.IO) {
         database.taskDao().insertTask(task)

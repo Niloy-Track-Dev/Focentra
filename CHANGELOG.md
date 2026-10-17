@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.9.0] - 2026-10-17
+
+### Added
+- **Syllabus & Chapter Sequential Tracking System**: Add chapters to subjects with custom total class count input (e.g. 20 classes).
+- **Sequential Class Unlocking**: Class N+1 is disabled until Class N is completed.
+- **Revision Classes Requirement**: Chapter completion requires finishing all regular classes plus Revision Class 01 & Revision Class 02.
+- **Exam Milestone Syllabus Integration**: Links chapters and sequential class progress directly to upcoming exam goals.
+
+### Updated
+- **Version Bump**: Incremented `versionCode` to `18` and `versionName` to `3.9.0`.
+
 ## [3.8.0] - 2026-10-17
 
 ### Added
