@@ -7,12 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [4.1.0] - 2026-10-17
+## [4.2.0] - 2026-10-17
 
-- **Exam Goals Card Details**: Removed "Tap for details" text and directly displayed target note details on card.
-- **Syllabus Chapter Edit & Confirmation Dialog**: Added Edit Chapter modal dialog and safety delete confirmation dialog for syllabus chapters in SubjectsScreen.
-- **Add Reminder UI Fix**: Resolved text layout/wrapping issue for minute field in reminder dialog.
-- **Version Bump**: Incremented `versionCode` to `20` and `versionName` to `4.1.0`.
+- **Card UI Redesign**: Completely redesigned "Exam Goals & Milestones" card and "Syllabus Compilation & Exam Readiness" card with modern Midnight Dark styling, progress gauges, and daily pacing stats.
+- **Upgraded Syllabus System**: Added overall Syllabus Readiness Overview header card in SubjectsScreen with exam readiness scoring and chapter class metrics.
+- **Version Bump**: Incremented `versionCode` to `21` and `versionName` to `4.2.0`.
+
+## [4.1.0] - 2026-10-17
 
 ## [4.0.0] - 2026-10-17
 

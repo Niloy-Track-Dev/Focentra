@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -199,6 +200,12 @@ fun SubjectsScreen(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
                 contentPadding = PaddingValues(top = 12.dp, bottom = 108.dp)
             ) {
+                if (chapters.isNotEmpty()) {
+                    item {
+                        SyllabusOverviewHeaderCard(chapters = chapters)
+                    }
+                }
+
                 items(subjects, key = { it.id }) { subject ->
                     val subTopics = topics.filter { it.subjectName.equals(subject.name, ignoreCase = true) }
                     val studiedMins = studyMinsBySubject[subject.name] ?: 0L
@@ -244,6 +251,133 @@ fun SubjectsScreen(
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "New Subject")
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun SyllabusOverviewHeaderCard(
+    chapters: List<ChapterEntity>
+) {
+    if (chapters.isEmpty()) return
+
+    val totalClasses = chapters.sumOf { it.totalClasses }
+    val completedClasses = chapters.sumOf { it.completedClassesCount }
+    val completedChapters = chapters.count { it.completedClassesCount >= it.totalClasses && it.totalClasses > 0 }
+    val totalRevisions = chapters.size * 2
+    val completedRevisions = chapters.count { it.isRevision1Completed } + chapters.count { it.isRevision2Completed }
+
+    val readinessScore = if (totalClasses > 0) {
+        val classProgress = (completedClasses.toFloat() / totalClasses) * 70f
+        val revProgress = if (totalRevisions > 0) (completedRevisions.toFloat() / totalRevisions) * 30f else 0f
+        (classProgress + revProgress).coerceIn(0f, 100f)
+    } else 0f
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .border(
+                width = 1.dp,
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+                    )
+                ),
+                shape = RoundedCornerShape(22.dp)
+            ),
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 2.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MenuBook,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    Column {
+                        Text(
+                            text = "Syllabus Readiness System",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "${chapters.size} Syllabus Chapters Total",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer
+                ) {
+                    Text(
+                        text = "${readinessScore.toInt()}% Exam Ready",
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            LinearProgressIndicator(
+                progress = { readinessScore / 100f },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp)),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Classes: $completedClasses/$totalClasses",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Chapters: $completedChapters/${chapters.size}",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Revisions: $completedRevisions/$totalRevisions",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
         }
     }
