@@ -57,6 +57,8 @@ fun SettingsScreen(
     var showAddReminderDialog by remember { mutableStateOf(false) }
     var showImportDialog by remember { mutableStateOf(false) }
     var showCsvTextImportDialog by remember { mutableStateOf(false) }
+    var showCsvTextExportDialog by remember { mutableStateOf(false) }
+    var exportedCsvText by remember { mutableStateOf("") }
     var showDaynexaConsentDialog by remember { mutableStateOf(false) }
     var showDaynexaDisconnectDialog by remember { mutableStateOf(false) }
     var showClearAllDataDialog by remember { mutableStateOf(false) }
@@ -242,6 +244,62 @@ fun SettingsScreen(
         }
     }
 
+    if (showCsvTextExportDialog) {
+        AlertDialog(
+            onDismissRequest = { showCsvTextExportDialog = false },
+            title = { Text("Export Sessions as CSV Text") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = exportedCsvText,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("CSV Output Data") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = {
+                            clipboardManager.setText(AnnotatedString(exportedCsvText))
+                        },
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Copy")
+                    }
+
+                    Button(
+                        onClick = {
+                            val sendIntent = Intent().apply {
+                                action = Intent.ACTION_SEND
+                                putExtra(Intent.EXTRA_TEXT, exportedCsvText)
+                                type = "text/csv"
+                            }
+                            val shareIntent = Intent.createChooser(sendIntent, "Export Study Sessions (CSV)")
+                            context.startActivity(shareIntent)
+                            showCsvTextExportDialog = false
+                        },
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Share")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCsvTextExportDialog = false }) { Text("Close") }
+            }
+        )
+    }
+
     if (showCsvTextImportDialog) {
         var csvError by remember { mutableStateOf<String?>(null) }
         AlertDialog(
@@ -252,6 +310,29 @@ fun SettingsScreen(
             title = { Text("Import Sessions from CSV Text") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Paste or enter CSV text below:", style = MaterialTheme.typography.bodyMedium)
+                        OutlinedButton(
+                            onClick = {
+                                val clipText = clipboardManager.getText()?.text
+                                if (!clipText.isNullOrBlank()) {
+                                    importCsvText = clipText
+                                    csvError = null
+                                }
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(Icons.Default.ContentPaste, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Paste")
+                        }
+                    }
+
                     OutlinedTextField(
                         value = importCsvText,
                         onValueChange = {
@@ -259,7 +340,7 @@ fun SettingsScreen(
                             csvError = null
                         },
                         label = { Text("CSV Text Area") },
-                        placeholder = { Text("Paste CSV contents here...") },
+                        placeholder = { Text("Tap Paste or paste CSV contents here...") },
                         isError = csvError != null,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -618,34 +699,8 @@ fun SettingsScreen(
             }
         }
 
-        // Section 3: Study Reminders
+        // Section 3: Study Reminders (Clean Redesign matching photo)
         item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "STUDY REMINDERS",
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    ),
-                    color = MaterialTheme.colorScheme.primary
-                )
-
-                TextButton(
-                    onClick = { showAddReminderDialog = true },
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Add Reminder", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
-                }
-            }
-
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
@@ -653,7 +708,34 @@ fun SettingsScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(18.dp)) {
+                    // Header row: "Add New" on left with "+" icon on right
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Add New",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+
+                        IconButton(
+                            onClick = { showAddReminderDialog = true },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Add Reminder",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
                     if (reminders.isEmpty()) {
                         Row(
                             modifier = Modifier
@@ -669,84 +751,93 @@ fun SettingsScreen(
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = "No active reminders. Tap 'Add Reminder' to set daily study alarms.",
+                                text = "No active reminders. Tap '+' to add study alarms.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     } else {
-                        reminders.forEachIndexed { idx, reminder ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            reminders.forEach { reminder ->
+                                val h12 = when {
+                                    reminder.hour == 0 -> 12
+                                    reminder.hour > 12 -> reminder.hour - 12
+                                    else -> reminder.hour
+                                }
+                                val amPm = if (reminder.hour >= 12) "PM" else "AM"
+                                val formattedTime = "${h12}:${String.format("%02d", reminder.minute)}"
+
                                 Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Surface(
-                                        shape = RoundedCornerShape(12.dp),
-                                        color = if (reminder.enabled) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
-                                    ) {
-                                        val h12 = when {
-                                            reminder.hour == 0 -> 12
-                                            reminder.hour > 12 -> reminder.hour - 12
-                                            else -> reminder.hour
-                                        }
-                                        val amPm = if (reminder.hour >= 12) "PM" else "AM"
-                                        Text(
-                                            text = "${String.format("%02d", h12)}:${String.format("%02d", reminder.minute)} $amPm",
-                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                            color = if (reminder.enabled) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                        )
-                                    }
-
-                                    Spacer(modifier = Modifier.width(12.dp))
-
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = reminder.title,
-                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                            color = MaterialTheme.colorScheme.onSurface,
+                                            text = reminder.title.lowercase(),
+                                            style = MaterialTheme.typography.bodyMedium.copy(
+                                                fontWeight = FontWeight.Normal,
+                                                fontSize = 15.sp
+                                            ),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
-                                        Text(
-                                            text = formatReminderDays(reminder.daysOfWeek),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-                                }
 
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Switch(
-                                        checked = reminder.enabled,
-                                        onCheckedChange = { viewModel.toggleReminder(reminder) }
-                                    )
-                                    IconButton(
-                                        onClick = { reminderToDelete = reminder },
-                                        modifier = Modifier.size(36.dp)
+                                        Spacer(modifier = Modifier.height(2.dp))
+
+                                        Row(
+                                            verticalAlignment = Alignment.Bottom,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Text(
+                                                text = formattedTime,
+                                                style = MaterialTheme.typography.headlineMedium.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 32.sp
+                                                ),
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                text = amPm,
+                                                style = MaterialTheme.typography.titleMedium.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 16.sp
+                                                ),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                                                modifier = Modifier.padding(bottom = 4.dp)
+                                            )
+                                        }
+                                    }
+
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {
-                                        Icon(
-                                            Icons.Default.DeleteOutline,
-                                            contentDescription = "Delete",
-                                            tint = MaterialTheme.colorScheme.error
+                                        Switch(
+                                            checked = reminder.enabled,
+                                            onCheckedChange = { viewModel.toggleReminder(reminder) },
+                                            colors = SwitchDefaults.colors(
+                                                checkedThumbColor = MaterialTheme.colorScheme.surface,
+                                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                                uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                                                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                                            )
                                         )
+
+                                        IconButton(
+                                            onClick = { reminderToDelete = reminder },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.DeleteOutline,
+                                                contentDescription = "Delete",
+                                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
                                     }
                                 }
-                            }
-                            if (idx < reminders.size - 1) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(vertical = 6.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
-                                )
                             }
                         }
                     }
@@ -806,14 +897,8 @@ fun SettingsScreen(
                         subtitle = "Export study sessions as CSV text to share or copy",
                         onClick = {
                             coroutineScope.launch {
-                                val csv = viewModel.exportCsv()
-                                val sendIntent = Intent().apply {
-                                    action = Intent.ACTION_SEND
-                                    putExtra(Intent.EXTRA_TEXT, csv)
-                                    type = "text/csv"
-                                }
-                                val shareIntent = Intent.createChooser(sendIntent, "Export Study Sessions (CSV)")
-                                context.startActivity(shareIntent)
+                                exportedCsvText = viewModel.exportCsv()
+                                showCsvTextExportDialog = true
                             }
                         }
                     )
@@ -1002,7 +1087,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Focentra v4.4.0 uses on-device Room SQLite database. Your study sessions, personal records, and goals never leave your device.",
+                        text = "Focentra v4.5.0 uses on-device Room SQLite database. Your study sessions, personal records, and goals never leave your device.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
