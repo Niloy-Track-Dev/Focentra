@@ -1086,17 +1086,24 @@ fun ExamMilestoneCountdownSection(
             examTargets.forEach { target ->
                 var showDetailDialog by remember { mutableStateOf(false) }
 
-                ExamMilestoneCard(
-                    target = target,
-                    sessions = sessions,
-                    chapters = chapters,
-                    onUpdateChapter = onUpdateChapter,
-                    onDeleteChapter = onDeleteChapter,
-                    onStartTimer = { onStartTimer(target) },
-                    onEdit = { onEditTarget(target) },
-                    onDelete = { onDeleteTarget(target.id) },
-                    onCardClick = { showDetailDialog = true }
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    ExamMilestoneCard(
+                        target = target,
+                        sessions = sessions,
+                        onStartTimer = { onStartTimer(target) },
+                        onEdit = { onEditTarget(target) },
+                        onDelete = { onDeleteTarget(target.id) },
+                        onCardClick = { showDetailDialog = true }
+                    )
+
+                    // Syllabus Compilation & Exam Readiness Card
+                    SyllabusCompilationReadinessCard(
+                        target = target,
+                        chapters = chapters,
+                        onUpdateChapter = onUpdateChapter,
+                        onDeleteChapter = onDeleteChapter
+                    )
+                }
 
                 if (showDetailDialog) {
                     ExamMilestoneDetailDialog(
@@ -1126,9 +1133,6 @@ fun ExamMilestoneCountdownSection(
 fun ExamMilestoneCard(
     target: com.niloy.focentra.viewmodel.ExamTarget,
     sessions: List<StudySessionEntity>,
-    chapters: List<ChapterEntity> = emptyList(),
-    onUpdateChapter: (ChapterEntity) -> Unit = {},
-    onDeleteChapter: (ChapterEntity) -> Unit = {},
     onStartTimer: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
@@ -1148,6 +1152,7 @@ fun ExamMilestoneCard(
 
     val remainingHoursToStudy = (target.targetHours - studiedHours).coerceAtLeast(0f)
     val dailyPace = if (daysRemaining > 0) remainingHoursToStudy / daysRemaining else remainingHoursToStudy
+    val targetDateFormat = SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(target.targetDateEpochMs))
 
     Surface(
         modifier = Modifier
@@ -1157,21 +1162,22 @@ fun ExamMilestoneCard(
                 width = 1.dp,
                 brush = Brush.linearGradient(
                     colors = listOf(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
                         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
                         MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
                     )
                 ),
                 shape = RoundedCornerShape(26.dp)
-            ),
+            )
+            .clickable { onCardClick() },
         shape = RoundedCornerShape(26.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 2.dp
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
+                .padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Row(
@@ -1180,16 +1186,13 @@ fun ExamMilestoneCard(
                 verticalAlignment = Alignment.Top
             ) {
                 Row(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 10.dp)
-                        .clickable { onCardClick() },
+                    modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(46.dp)
                             .clip(RoundedCornerShape(14.dp))
                             .background(
                                 Brush.linearGradient(
@@ -1202,12 +1205,13 @@ fun ExamMilestoneCard(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.School,
+                            imageVector = Icons.Default.Flag,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(24.dp)
                         )
                     }
+
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = target.title,
@@ -1217,13 +1221,17 @@ fun ExamMilestoneCard(
                             overflow = TextOverflow.Ellipsis
                         )
                         Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = target.subject + if (target.notes.isNotBlank()) " • ${target.notes}" else "",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+                        ) {
+                            Text(
+                                text = target.subject,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
                     }
                 }
 
@@ -1233,39 +1241,44 @@ fun ExamMilestoneCard(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(14.dp),
-                        color = if (daysRemaining <= 3) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f)
+                        color = if (daysRemaining <= 3) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
                     ) {
                         Text(
                             text = if (daysRemaining > 0) "$daysRemaining Days Left" else "${hoursRemaining}h Left",
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
-                            color = if (daysRemaining <= 3) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer
+                            color = if (daysRemaining <= 3) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
 
-                    val targetDateFormat = SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(target.targetDateEpochMs))
                     Text(
                         text = targetDateFormat,
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.primary
                     )
-
-                    if (target.notes.isNotBlank()) {
-                        Text(
-                            text = target.notes,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
                 }
             }
 
-            // Glassmorphic Progress Section & Exam Syllabus Sequential Checklist
+            if (target.notes.isNotBlank()) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = target.notes,
+                        modifier = Modifier.padding(10.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -1278,13 +1291,13 @@ fun ExamMilestoneCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = String.format(Locale.getDefault(), "Target Progress: %.1fh / %.0fh", studiedHours, target.targetHours),
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                            text = String.format(Locale.getDefault(), "Focus Target: %.1fh / %.0fh", studiedHours, target.targetHours),
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "${progressPct.toInt()}%",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            text = "${progressPct.toInt()}% Completed",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.ExtraBold),
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -1298,34 +1311,9 @@ fun ExamMilestoneCard(
                         color = MaterialTheme.colorScheme.primary,
                         trackColor = MaterialTheme.colorScheme.surfaceVariant
                     )
-
-                    // Linked Syllabus Chapters Sequential Checklist
-                    val targetChapters = remember(chapters, target) {
-                        chapters.filter { it.subjectName.equals(target.subject, ignoreCase = true) || target.subject.equals("General", ignoreCase = true) }
-                    }
-
-                    if (targetChapters.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Exam Syllabus Classes Tracker:",
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.primary
-                        )
-
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            targetChapters.take(2).forEach { ch ->
-                                ChapterSequentialTrackerView(
-                                    chapter = ch,
-                                    onUpdate = onUpdateChapter,
-                                    onDelete = { onDeleteChapter(ch) }
-                                )
-                            }
-                        }
-                    }
                 }
             }
 
-            // Pacing recommendation badge & Quick Study Action
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1333,7 +1321,7 @@ fun ExamMilestoneCard(
             ) {
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
+                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -1347,7 +1335,7 @@ fun ExamMilestoneCard(
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            text = String.format(Locale.getDefault(), "%.1f hrs/day needed", dailyPace),
+                            text = String.format(Locale.getDefault(), "%.1f hrs/day pace", dailyPace),
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onTertiaryContainer
                         )
@@ -1355,10 +1343,10 @@ fun ExamMilestoneCard(
                 }
 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
+                    IconButton(onClick = onEdit, modifier = Modifier.size(34.dp)) {
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Edit Milestone",
@@ -1367,23 +1355,188 @@ fun ExamMilestoneCard(
                         )
                     }
 
-                    IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                    IconButton(onClick = onDelete, modifier = Modifier.size(34.dp)) {
                         Icon(
                             imageVector = Icons.Default.DeleteOutline,
                             contentDescription = "Delete Milestone",
-                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                            tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(18.dp)
                         )
                     }
 
                     Button(
                         onClick = onStartTimer,
-                        shape = RoundedCornerShape(14.dp),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Study", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+                        Text("Focus Now", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SyllabusCompilationReadinessCard(
+    target: com.niloy.focentra.viewmodel.ExamTarget,
+    chapters: List<ChapterEntity>,
+    onUpdateChapter: (ChapterEntity) -> Unit,
+    onDeleteChapter: (ChapterEntity) -> Unit
+) {
+    val targetChapters = remember(chapters, target) {
+        chapters.filter {
+            it.subjectName.equals(target.subject, ignoreCase = true) || target.subject.equals("General", ignoreCase = true)
+        }
+    }
+
+    val totalClasses = targetChapters.sumOf { it.totalClasses }
+    val completedClasses = targetChapters.sumOf { it.completedClassesCount }
+    val completedChapters = targetChapters.count { it.completedClassesCount >= it.totalClasses && it.totalClasses > 0 }
+
+    val totalRevisions = targetChapters.size * 2
+    val completedRevisions = targetChapters.count { it.isRevision1Completed } + targetChapters.count { it.isRevision2Completed }
+
+    val readinessScore = if (totalClasses > 0) {
+        val classProgress = (completedClasses.toFloat() / totalClasses) * 70f
+        val revProgress = if (totalRevisions > 0) (completedRevisions.toFloat() / totalRevisions) * 30f else 0f
+        (classProgress + revProgress).coerceIn(0f, 100f)
+    } else 0f
+
+    var isExpanded by remember { mutableStateOf(true) }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(22.dp)
+            ),
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isExpanded = !isExpanded },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MenuBook,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    Column {
+                        Text(
+                            text = "Syllabus Compilation & Exam Readiness",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = if (targetChapters.isNotEmpty()) "${targetChapters.size} Chapters Linked • ${readinessScore.toInt()}% Exam Ready" else "No syllabus chapters created yet",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = when {
+                            readinessScore >= 80f -> MaterialTheme.colorScheme.primaryContainer
+                            readinessScore >= 40f -> MaterialTheme.colorScheme.secondaryContainer
+                            else -> MaterialTheme.colorScheme.surfaceVariant
+                        }
+                    ) {
+                        Text(
+                            text = "${readinessScore.toInt()}% Ready",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    Icon(
+                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = "Expand",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                }
+            }
+
+            LinearProgressIndicator(
+                progress = { readinessScore / 100f },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                color = if (readinessScore >= 80f) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+
+            if (targetChapters.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Classes: $completedClasses/$totalClasses",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Chapters Done: $completedChapters/${targetChapters.size}",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Revisions: $completedRevisions/$totalRevisions",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            if (isExpanded && targetChapters.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    targetChapters.forEach { chapter ->
+                        ChapterSequentialTrackerView(
+                            chapter = chapter,
+                            onUpdate = onUpdateChapter,
+                            onDelete = { onDeleteChapter(chapter) }
+                        )
                     }
                 }
             }
