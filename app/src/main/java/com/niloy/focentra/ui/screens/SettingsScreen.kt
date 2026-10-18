@@ -1002,7 +1002,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Focentra v4.2.0 uses on-device Room SQLite database. Your study sessions, personal records, and goals never leave your device.",
+                        text = "Focentra v4.3.0 uses on-device Room SQLite database. Your study sessions, personal records, and goals never leave your device.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -1279,14 +1279,14 @@ fun AddReminderDialog(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
                         value = hour12,
-                        onValueChange = { hour12 = it },
+                        onValueChange = { hour12 = it.filter { ch -> ch.isDigit() }.take(2) },
                         label = { Text("Hour (1-12)") },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp)
                     )
                     OutlinedTextField(
                         value = minute,
-                        onValueChange = { minute = it },
+                        onValueChange = { minute = it.filter { ch -> ch.isDigit() }.take(2) },
                         label = { Text("Minute (0-59)") },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp)

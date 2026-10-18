@@ -137,21 +137,17 @@ fun DashboardScreen(
             }
         }
 
-        // Exam & Target Milestone Countdown Card (NEW FEATURE)
+        // Exam & Target Milestone Countdown Card
         item {
-            val chapters by viewModel.chapters.collectAsStateWithLifecycle()
             ExamMilestoneCountdownSection(
                 examTargets = examTargets,
                 sessions = sessions,
-                chapters = chapters,
-                onUpdateChapter = { updatedChapter -> viewModel.updateChapter(updatedChapter) },
-                onDeleteChapter = { chapter -> viewModel.deleteChapter(chapter) },
                 onAddClick = { showAddExamDialog = true },
                 onEditTarget = { target -> targetToEdit = target },
                 onStartTimer = { target ->
                     viewModel.timerEngine.configureSession(
                         mode = SessionMode.STOPWATCH,
-                        subject = target.subject
+                        subject = target.subject.split(",").firstOrNull()?.trim() ?: target.subject
                     )
                     viewModel.timerEngine.startSession()
                     viewModel.navigateTo(NavigationTab.TIMER)
@@ -843,13 +839,9 @@ fun DashboardScreen(
     }
 
     if (showAddExamDialog) {
-        val subjectNames = remember(subjects) {
-            val list = mutableListOf("General")
-            subjects.forEach { if (!list.contains(it.name)) list.add(it.name) }
-            list
-        }
+        val availableSubjects = remember(subjects) { subjects.map { it.name }.filter { it.isNotBlank() } }
         AddExamTargetDialog(
-            subjects = subjectNames,
+            availableSubjects = availableSubjects,
             onDismiss = { showAddExamDialog = false },
             onSave = { title, dateEpoch, hours, subj, notes ->
                 viewModel.addExamTarget(title, dateEpoch, hours, subj, notes)
@@ -859,14 +851,10 @@ fun DashboardScreen(
     }
 
     if (targetToEdit != null) {
-        val subjectNames = remember(subjects) {
-            val list = mutableListOf("General")
-            subjects.forEach { if (!list.contains(it.name)) list.add(it.name) }
-            list
-        }
+        val availableSubjects = remember(subjects) { subjects.map { it.name }.filter { it.isNotBlank() } }
         EditExamTargetDialog(
             target = targetToEdit!!,
-            subjects = subjectNames,
+            availableSubjects = availableSubjects,
             onDismiss = { targetToEdit = null },
             onSave = { updatedTarget ->
                 viewModel.editExamTarget(updatedTarget)
@@ -993,9 +981,6 @@ fun QuickTimerSubjectDialog(
 fun ExamMilestoneCountdownSection(
     examTargets: List<com.niloy.focentra.viewmodel.ExamTarget>,
     sessions: List<StudySessionEntity>,
-    chapters: List<ChapterEntity> = emptyList(),
-    onUpdateChapter: (ChapterEntity) -> Unit = {},
-    onDeleteChapter: (ChapterEntity) -> Unit = {},
     onAddClick: () -> Unit,
     onEditTarget: (com.niloy.focentra.viewmodel.ExamTarget) -> Unit,
     onStartTimer: (com.niloy.focentra.viewmodel.ExamTarget) -> Unit,
@@ -1086,24 +1071,14 @@ fun ExamMilestoneCountdownSection(
             examTargets.forEach { target ->
                 var showDetailDialog by remember { mutableStateOf(false) }
 
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    ExamMilestoneCard(
-                        target = target,
-                        sessions = sessions,
-                        onStartTimer = { onStartTimer(target) },
-                        onEdit = { onEditTarget(target) },
-                        onDelete = { onDeleteTarget(target.id) },
-                        onCardClick = { showDetailDialog = true }
-                    )
-
-                    // Syllabus Compilation & Exam Readiness Card
-                    SyllabusCompilationReadinessCard(
-                        target = target,
-                        chapters = chapters,
-                        onUpdateChapter = onUpdateChapter,
-                        onDeleteChapter = onDeleteChapter
-                    )
-                }
+                ExamMilestoneCard(
+                    target = target,
+                    sessions = sessions,
+                    onStartTimer = { onStartTimer(target) },
+                    onEdit = { onEditTarget(target) },
+                    onDelete = { onDeleteTarget(target.id) },
+                    onCardClick = { showDetailDialog = true }
+                )
 
                 if (showDetailDialog) {
                     ExamMilestoneDetailDialog(
@@ -1236,7 +1211,7 @@ fun ExamMilestoneCard(
                 }
 
                 Column(
-                    horizontalAlignment = Alignment.End,
+                    horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Surface(
@@ -1343,10 +1318,10 @@ fun ExamMilestoneCard(
                 }
 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onEdit, modifier = Modifier.size(34.dp)) {
+                    IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
                         Icon(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Edit Milestone",
@@ -1355,7 +1330,7 @@ fun ExamMilestoneCard(
                         )
                     }
 
-                    IconButton(onClick = onDelete, modifier = Modifier.size(34.dp)) {
+                    IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                         Icon(
                             imageVector = Icons.Default.DeleteOutline,
                             contentDescription = "Delete Milestone",
@@ -1366,7 +1341,7 @@ fun ExamMilestoneCard(
 
                     Button(
                         onClick = onStartTimer,
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(
@@ -1375,7 +1350,12 @@ fun ExamMilestoneCard(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Focus Now", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                        Text(
+                            text = "Focus Now",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            maxLines = 1,
+                            softWrap = false
+                        )
                     }
                 }
             }
@@ -1821,16 +1801,24 @@ fun ExamMilestoneDetailDialog(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun EditExamTargetDialog(
     target: com.niloy.focentra.viewmodel.ExamTarget,
-    subjects: List<String>,
+    availableSubjects: List<String>,
     onDismiss: () -> Unit,
     onSave: (com.niloy.focentra.viewmodel.ExamTarget) -> Unit
 ) {
     var title by remember { mutableStateOf(target.title) }
-    var selectedSubject by remember { mutableStateOf(target.subject) }
+
+    // Parse initial subjects
+    val initialSubjectList = remember(target.subject) {
+        val split = target.subject.split(",").map { it.trim() }.filter { it.isNotBlank() }
+        if (split.isEmpty()) mutableStateListOf("General") else split.toMutableStateList()
+    }
+    val selectedSubjectsList = remember { initialSubjectList }
+    var customSubjectInput by remember { mutableStateOf("") }
+
     var targetHoursText by remember { mutableStateOf(target.targetHours.toInt().toString()) }
     val now = System.currentTimeMillis()
     val diffMs = (target.targetDateEpochMs - now).coerceAtLeast(0L)
@@ -1839,7 +1827,6 @@ fun EditExamTargetDialog(
     var notes by remember { mutableStateOf(target.notes) }
 
     val TITLE_LIMIT = 50
-    val SUBJECT_LIMIT = 30
     val NOTES_LIMIT = 200
 
     AlertDialog(
@@ -1883,20 +1870,89 @@ fun EditExamTargetDialog(
                     shape = RoundedCornerShape(12.dp)
                 )
 
-                OutlinedTextField(
-                    value = selectedSubject,
-                    onValueChange = { selectedSubject = it.take(SUBJECT_LIMIT) },
-                    label = { Text("Subject or Category") },
-                    supportingText = {
-                        Text(
-                            text = "${selectedSubject.length}/$SUBJECT_LIMIT",
-                            style = MaterialTheme.typography.labelSmall
+                // Subjects / Categories Chip selector
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Subjects / Categories",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        selectedSubjectsList.forEach { subj ->
+                            InputChip(
+                                selected = true,
+                                onClick = {
+                                    if (selectedSubjectsList.size > 1) {
+                                        selectedSubjectsList.remove(subj)
+                                    }
+                                },
+                                label = { Text(subj) },
+                                trailingIcon = {
+                                    if (selectedSubjectsList.size > 1) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Remove",
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                },
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        }
+                    }
+
+                    // Pre-populated available subjects from "Subjects & Topics"
+                    val unselectedAvailable = availableSubjects.filter { !selectedSubjectsList.contains(it) }
+                    if (unselectedAvailable.isNotEmpty()) {
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(unselectedAvailable) { availSubj ->
+                                SuggestionChip(
+                                    onClick = {
+                                        selectedSubjectsList.add(availSubj)
+                                    },
+                                    label = { Text("+ $availSubj") },
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    // Add Custom Subject input
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = customSubjectInput,
+                            onValueChange = { customSubjectInput = it },
+                            placeholder = { Text("Add another subject...") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp)
                         )
-                    },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                )
+                        IconButton(
+                            onClick = {
+                                val trimmed = customSubjectInput.trim()
+                                if (trimmed.isNotBlank() && !selectedSubjectsList.contains(trimmed)) {
+                                    selectedSubjectsList.add(trimmed)
+                                    customSubjectInput = ""
+                                }
+                            },
+                            enabled = customSubjectInput.isNotBlank()
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Add Subject")
+                        }
+                    }
+                }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1943,12 +1999,13 @@ fun EditExamTargetDialog(
                         val days = daysUntilExamText.toLongOrNull() ?: 30L
                         val hours = targetHoursText.toFloatOrNull() ?: 40f
                         val targetEpoch = System.currentTimeMillis() + (days * 86400000L)
+                        val finalSubjectStr = if (selectedSubjectsList.isEmpty()) "General" else selectedSubjectsList.joinToString(", ")
                         onSave(
                             target.copy(
                                 title = title,
                                 targetDateEpochMs = targetEpoch,
                                 targetHours = hours,
-                                subject = selectedSubject,
+                                subject = finalSubjectStr,
                                 notes = notes
                             )
                         )
@@ -1968,21 +2025,27 @@ fun EditExamTargetDialog(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun AddExamTargetDialog(
-    subjects: List<String>,
+    availableSubjects: List<String>,
     onDismiss: () -> Unit,
     onSave: (title: String, targetDateEpoch: Long, targetHours: Float, subject: String, notes: String) -> Unit
 ) {
     var title by remember { mutableStateOf("") }
-    var selectedSubject by remember { mutableStateOf(subjects.firstOrNull() ?: "General") }
+
+    // Auto-populate with user's created subjects by default
+    val defaultList = remember(availableSubjects) {
+        if (availableSubjects.isNotEmpty()) availableSubjects.toMutableStateList() else mutableStateListOf("General")
+    }
+    val selectedSubjectsList = remember { defaultList }
+    var customSubjectInput by remember { mutableStateOf("") }
+
     var targetHoursText by remember { mutableStateOf("40") }
     var daysUntilExamText by remember { mutableStateOf("30") }
     var notes by remember { mutableStateOf("") }
 
     val TITLE_LIMIT = 50
-    val SUBJECT_LIMIT = 30
     val NOTES_LIMIT = 200
 
     AlertDialog(
@@ -2027,20 +2090,89 @@ fun AddExamTargetDialog(
                     shape = RoundedCornerShape(12.dp)
                 )
 
-                OutlinedTextField(
-                    value = selectedSubject,
-                    onValueChange = { selectedSubject = it.take(SUBJECT_LIMIT) },
-                    label = { Text("Subject or Category") },
-                    supportingText = {
-                        Text(
-                            text = "${selectedSubject.length}/$SUBJECT_LIMIT",
-                            style = MaterialTheme.typography.labelSmall
+                // Subjects / Categories Chip selector
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Subjects / Categories",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        selectedSubjectsList.forEach { subj ->
+                            InputChip(
+                                selected = true,
+                                onClick = {
+                                    if (selectedSubjectsList.size > 1) {
+                                        selectedSubjectsList.remove(subj)
+                                    }
+                                },
+                                label = { Text(subj) },
+                                trailingIcon = {
+                                    if (selectedSubjectsList.size > 1) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Remove",
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                },
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        }
+                    }
+
+                    // Pre-populated available subjects from "Subjects & Topics"
+                    val unselectedAvailable = availableSubjects.filter { !selectedSubjectsList.contains(it) }
+                    if (unselectedAvailable.isNotEmpty()) {
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(unselectedAvailable) { availSubj ->
+                                SuggestionChip(
+                                    onClick = {
+                                        selectedSubjectsList.add(availSubj)
+                                    },
+                                    label = { Text("+ $availSubj") },
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    // Add Custom Subject input
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = customSubjectInput,
+                            onValueChange = { customSubjectInput = it },
+                            placeholder = { Text("Add another subject...") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp)
                         )
-                    },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                )
+                        IconButton(
+                            onClick = {
+                                val trimmed = customSubjectInput.trim()
+                                if (trimmed.isNotBlank() && !selectedSubjectsList.contains(trimmed)) {
+                                    selectedSubjectsList.add(trimmed)
+                                    customSubjectInput = ""
+                                }
+                            },
+                            enabled = customSubjectInput.isNotBlank()
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Add Subject")
+                        }
+                    }
+                }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -2087,7 +2219,8 @@ fun AddExamTargetDialog(
                         val days = daysUntilExamText.toLongOrNull() ?: 30L
                         val hours = targetHoursText.toFloatOrNull() ?: 40f
                         val targetEpoch = System.currentTimeMillis() + (days * 86400000L)
-                        onSave(title, targetEpoch, hours, selectedSubject, notes)
+                        val finalSubjectStr = if (selectedSubjectsList.isEmpty()) "General" else selectedSubjectsList.joinToString(", ")
+                        onSave(title, targetEpoch, hours, finalSubjectStr, notes)
                     }
                 },
                 enabled = title.isNotBlank(),
