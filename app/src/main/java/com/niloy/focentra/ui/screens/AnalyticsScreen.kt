@@ -164,7 +164,7 @@ fun AnalyticsScreen(
                             }
                             Column {
                                 Text(
-                                    text = "Syllabus & Exam Readiness",
+                                    text = "Exam Preparation",
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
