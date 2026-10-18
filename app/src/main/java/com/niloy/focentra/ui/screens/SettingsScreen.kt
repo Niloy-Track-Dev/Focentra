@@ -709,14 +709,14 @@ fun SettingsScreen(
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
-                    // Header row: "Add New" on left with "+" icon on right
+                    // Header row: "Study Reminders" on left with "+" icon on right
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Add New",
+                            text = "Study Reminders",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -1087,7 +1087,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Focentra v4.5.0 uses on-device Room SQLite database. Your study sessions, personal records, and goals never leave your device.",
+                        text = "Focentra v4.6.0 uses on-device Room SQLite database. Your study sessions, personal records, and goals never leave your device.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center

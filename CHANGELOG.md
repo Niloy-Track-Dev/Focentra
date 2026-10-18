@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.6.0] - 2026-10-18
+
+- **Collapsible Exam Goals & Milestones**: Multiple exam milestones on DashboardScreen now collapse into sleek compact rows displaying Goal Title & "XX Days Left", expanding on click to preserve screen space.
+- **Study Reminders Redesign**: Restored "Study Reminders" section header on SettingsScreen and updated Add Study Reminder dialog UI matching design specifications.
+- **Version Bump**: Incremented `versionCode` to `25` and `versionName` to `4.6.0`.
+
 ## [4.2.0] - 2026-10-17
 
 - **Card UI Redesign**: Completely redesigned "Exam Goals & Milestones" card and "Syllabus Compilation & Exam Readiness" card with modern Midnight Dark styling, progress gauges, and daily pacing stats.
