@@ -118,7 +118,14 @@ fun AnalyticsScreen(
             val chapters by viewModel.chapters.collectAsStateWithLifecycle()
             val totalClassesAll = chapters.sumOf { it.totalClasses }
             val completedClassesAll = chapters.sumOf { it.completedClassesCount }
-            val syllabusPct = if (totalClassesAll > 0) ((completedClassesAll.toFloat() / totalClassesAll) * 100f).toInt().coerceIn(0, 100) else 0
+            val classPct = if (totalClassesAll > 0) (completedClassesAll.toFloat() / totalClassesAll) * 70f else 0f
+
+            val totalRevisions = chapters.size * 2
+            val completedRevisions = chapters.count { it.isRevision1Completed } + chapters.count { it.isRevision2Completed }
+            val revPct = if (totalRevisions > 0) (completedRevisions.toFloat() / totalRevisions) * 30f else 0f
+
+            val overallReadiness = (classPct + revPct).toInt().coerceIn(0, 100)
+            val completedChapters = chapters.count { it.completedClassesCount >= it.totalClasses && it.totalClasses > 0 }
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -130,27 +137,60 @@ fun AnalyticsScreen(
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Syllabus Completion & Exam Readiness",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "$syllabusPct%",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.MenuBook,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = "Syllabus & Exam Readiness",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "${chapters.size} Syllabus Chapters Total",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer
+                        ) {
+                            Text(
+                                text = "$overallReadiness% Ready",
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
                     }
 
                     LinearProgressIndicator(
-                        progress = { syllabusPct / 100f },
+                        progress = { overallReadiness / 100f },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(10.dp)
@@ -159,11 +199,49 @@ fun AnalyticsScreen(
                         trackColor = MaterialTheme.colorScheme.surfaceVariant
                     )
 
-                    Text(
-                        text = "Total Syllabus Classes Done: $completedClassesAll / $totalClassesAll classes completed",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(
+                                text = "Classes Done",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "$completedClassesAll / $totalClassesAll",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Chapters Completed",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "$completedChapters / ${chapters.size}",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = "Revisions Done",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "$completedRevisions / $totalRevisions",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
                 }
             }
         }
