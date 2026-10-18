@@ -1252,9 +1252,11 @@ fun ExamMilestoneCard(
 
                     if (target.notes.isNotBlank()) {
                         Text(
-                            text = "Tap for details",
+                            text = target.notes,
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
