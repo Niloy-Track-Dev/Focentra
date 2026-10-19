@@ -110,6 +110,8 @@ class MainActivity : ComponentActivity() {
             }
 
             FocentraTheme(themeName = currentTheme) {
+                var showNotificationCenterDialog by remember { mutableStateOf(false) }
+
                 if (isFullScreenFocus) {
                     FullScreenFocusScreen(viewModel = viewModel)
                 } else {
@@ -187,7 +189,6 @@ class MainActivity : ComponentActivity() {
                                             currentTab == NavigationTab.SETTINGS ||
                                             currentTab == NavigationTab.PRESETS
 
-                                    var showNotificationCenterDialog by remember { mutableStateOf(false) }
                                     val activeNotifications by viewModel.activeNotifications.collectAsStateWithLifecycle()
 
                                     if (showNotificationCenterDialog) {
