@@ -1,5 +1,6 @@
 package com.niloy.focentra.ui.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -48,6 +49,12 @@ fun StudyBarChart(
     }
 
     var selectedIndex by remember { mutableStateOf<Int?>(null) }
+
+    val animationProgress by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = tween(durationMillis = 700, easing = FastOutSlowInEasing),
+        label = "bar_chart_growth"
+    )
 
     val maxVal = remember(items) {
         val maxStudy = items.maxOfOrNull { it.studyMinutes } ?: 60f
@@ -131,7 +138,8 @@ fun StudyBarChart(
 
                 // Active study bar (only if actual study time > 0)
                 if (item.studyMinutes > 0f) {
-                    val barHeight = (item.studyMinutes / maxVal * canvasHeight).coerceAtLeast(8.dp.toPx())
+                    val fullBarHeight = (item.studyMinutes / maxVal * canvasHeight).coerceAtLeast(8.dp.toPx())
+                    val barHeight = fullBarHeight * animationProgress
                     val y = canvasHeight - barHeight
 
                     val brush = Brush.verticalGradient(

@@ -1,5 +1,8 @@
 package com.niloy.focentra.ui.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -9,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -110,6 +114,12 @@ fun FocusScoreCard(
     distractionCount: Int,
     modifier: Modifier = Modifier
 ) {
+    val animatedScoreFraction by animateFloatAsState(
+        targetValue = focusScore / 100f,
+        animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing),
+        label = "score_dial"
+    )
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
@@ -137,7 +147,7 @@ fun FocusScoreCard(
                     drawArc(
                         color = primary,
                         startAngle = -90f,
-                        sweepAngle = (focusScore / 100f) * 360f,
+                        sweepAngle = animatedScoreFraction * 360f,
                         useCenter = false,
                         style = Stroke(stroke, cap = StrokeCap.Round)
                     )

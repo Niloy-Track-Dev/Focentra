@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.1.0] - 2026-10-19
+
+- **Deynexa Cohesive Color Palette**: Applied Deynexa's modern cobalt/indigo primary accent, amoled slate surface background, dark elevated card fills, and emerald state colors to Focentra.
+- **Super Smooth UI Animations**: Integrated `animateFloatAsState` with `FastOutSlowInEasing` across progress bars, bar chart columns, trend curves, and focus score dials.
+- **Version Bump**: Updated `versionCode` to `28` and `versionName` to `5.1.0`.
+
 ## [5.0.0] - 2026-10-19
 
 - **Notification & Smart Alert Hub**: Added Top Bar Notification Icon with live badge indicators for 3-Day Spaced Repetition Revision alerts, 5-Day Chapter Inactivity warnings, Goal Target Pace alerts, and Bengali motivational quotes.

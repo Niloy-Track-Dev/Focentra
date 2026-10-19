@@ -355,8 +355,14 @@ fun SyllabusOverviewHeaderCard(
                 }
             }
 
+            val animatedProgressPct by androidx.compose.animation.core.animateFloatAsState(
+                targetValue = progressPct / 100f,
+                animationSpec = androidx.compose.animation.core.tween(durationMillis = 500, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+                label = "subject_chapter_progress"
+            )
+
             LinearProgressIndicator(
-                progress = { progressPct / 100f },
+                progress = { animatedProgressPct },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
@@ -477,9 +483,15 @@ fun SubjectDetailCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
+            val animatedCardProgress by androidx.compose.animation.core.animateFloatAsState(
+                targetValue = progress,
+                animationSpec = androidx.compose.animation.core.tween(durationMillis = 500, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+                label = "subject_card_progress"
+            )
+
             // Progress Bar vs Target
             LinearProgressIndicator(
-                progress = { progress },
+                progress = { animatedCardProgress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
