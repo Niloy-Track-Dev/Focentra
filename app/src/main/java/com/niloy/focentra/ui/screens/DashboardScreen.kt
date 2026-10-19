@@ -1069,36 +1069,14 @@ fun ExamMilestoneCountdownSection(
             }
 
             examTargets.forEach { target ->
-                var showDetailDialog by remember { mutableStateOf(false) }
-
                 ExamMilestoneCard(
                     target = target,
                     sessions = sessions,
                     onStartTimer = { onStartTimer(target) },
                     onEdit = { onEditTarget(target) },
                     onDelete = { onDeleteTarget(target.id) },
-                    onCardClick = { showDetailDialog = true }
+                    defaultExpanded = examTargets.size == 1
                 )
-
-                if (showDetailDialog) {
-                    ExamMilestoneDetailDialog(
-                        target = target,
-                        sessions = sessions,
-                        onDismiss = { showDetailDialog = false },
-                        onStartTimer = {
-                            showDetailDialog = false
-                            onStartTimer(target)
-                        },
-                        onEdit = {
-                            showDetailDialog = false
-                            onEditTarget(target)
-                        },
-                        onDelete = {
-                            showDetailDialog = false
-                            onDeleteTarget(target.id)
-                        }
-                    )
-                }
             }
         }
     }
@@ -1111,8 +1089,10 @@ fun ExamMilestoneCard(
     onStartTimer: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    onCardClick: () -> Unit
+    defaultExpanded: Boolean = false
 ) {
+    var isExpanded by remember { mutableStateOf(defaultExpanded) }
+
     val now = System.currentTimeMillis()
     val diffMs = target.targetDateEpochMs - now
     val daysRemaining = if (diffMs > 0) (diffMs / (1000L * 60 * 60 * 24)).toInt() else 0
@@ -1132,7 +1112,7 @@ fun ExamMilestoneCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(26.dp))
+            .clip(RoundedCornerShape(22.dp))
             .border(
                 width = 1.dp,
                 brush = Brush.linearGradient(
@@ -1142,23 +1122,26 @@ fun ExamMilestoneCard(
                         MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
                     )
                 ),
-                shape = RoundedCornerShape(26.dp)
+                shape = RoundedCornerShape(22.dp)
             )
-            .clickable { onCardClick() },
-        shape = RoundedCornerShape(26.dp),
+            .animateContentSize(),
+        shape = RoundedCornerShape(22.dp),
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 2.dp
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            // Collapsed Header Row (always visible)
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isExpanded = !isExpanded },
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
                     modifier = Modifier.weight(1f),
@@ -1167,8 +1150,8 @@ fun ExamMilestoneCard(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(46.dp)
-                            .clip(RoundedCornerShape(14.dp))
+                            .size(42.dp)
+                            .clip(RoundedCornerShape(12.dp))
                             .background(
                                 Brush.linearGradient(
                                     colors = listOf(
@@ -1183,167 +1166,188 @@ fun ExamMilestoneCard(
                             imageVector = Icons.Default.Flag,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                     }
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = target.title,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontSize = 17.sp),
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontSize = 16.sp),
                             color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 2,
+                            maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
+                        if (!isExpanded) {
+                            Text(
+                                text = "Target: $targetDateFormat • ${progressPct.toInt()}% done",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
 
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Surface(
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(12.dp),
                         color = if (daysRemaining <= 3) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
                     ) {
                         Text(
                             text = if (daysRemaining > 0) "$daysRemaining Days Left" else "${hoursRemaining}h Left",
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
                             color = if (daysRemaining <= 3) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
 
+                    Icon(
+                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = "Expand/Collapse",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Expanded Details Section
+            AnimatedVisibility(visible = isExpanded) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
                     Text(
-                        text = targetDateFormat,
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                        text = "Target Date: $targetDateFormat",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.primary
                     )
-                }
-            }
 
-            if (target.notes.isNotBlank()) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = target.notes,
-                        modifier = Modifier.padding(10.dp),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
+                    if (target.notes.isNotBlank()) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = target.notes,
+                                modifier = Modifier.padding(10.dp),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 3,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
 
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = String.format(Locale.getDefault(), "Focus Target: %.1fh / %.0fh", studiedHours, target.targetHours),
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "${progressPct.toInt()}% Completed",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.ExtraBold),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            LinearProgressIndicator(
+                                progress = { progressPct / 100f },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(8.dp)
+                                    .clip(RoundedCornerShape(4.dp)),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        }
+                    }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = String.format(Locale.getDefault(), "Focus Target: %.1fh / %.0fh", studiedHours, target.targetHours),
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "${progressPct.toInt()}% Completed",
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.ExtraBold),
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Bolt,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.tertiary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = String.format(Locale.getDefault(), "%.1f hrs/day pace", dailyPace),
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                            }
+                        }
 
-                    LinearProgressIndicator(
-                        progress = { progressPct / 100f },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(8.dp)
-                            .clip(RoundedCornerShape(4.dp)),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                }
-            }
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Edit Milestone",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Bolt,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.tertiary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(
-                            text = String.format(Locale.getDefault(), "%.1f hrs/day pace", dailyPace),
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onTertiaryContainer
-                        )
-                    }
-                }
+                            IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                                Icon(
+                                    imageVector = Icons.Default.DeleteOutline,
+                                    contentDescription = "Delete Milestone",
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit Milestone",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-
-                    IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                        Icon(
-                            imageVector = Icons.Default.DeleteOutline,
-                            contentDescription = "Delete Milestone",
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-
-                    Button(
-                        onClick = onStartTimer,
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Focus Now",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                            maxLines = 1,
-                            softWrap = false
-                        )
+                            Button(
+                                onClick = onStartTimer,
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PlayArrow,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Focus Now",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -1360,22 +1364,13 @@ fun SyllabusCompilationReadinessCard(
 ) {
     val targetChapters = remember(chapters, target) {
         chapters.filter {
-            it.subjectName.equals(target.subject, ignoreCase = true) || target.subject.equals("General", ignoreCase = true)
+            it.subjectName.equals(target.subject, ignoreCase = true) || target.subject.equals("General", ignoreCase = true) || target.subject.equals("All Subjects", ignoreCase = true)
         }
     }
 
-    val totalClasses = targetChapters.sumOf { it.totalClasses }
-    val completedClasses = targetChapters.sumOf { it.completedClassesCount }
-    val completedChapters = targetChapters.count { it.completedClassesCount >= it.totalClasses && it.totalClasses > 0 }
-
-    val totalRevisions = targetChapters.size * 2
-    val completedRevisions = targetChapters.count { it.isRevision1Completed } + targetChapters.count { it.isRevision2Completed }
-
-    val readinessScore = if (totalClasses > 0) {
-        val classProgress = (completedClasses.toFloat() / totalClasses) * 70f
-        val revProgress = if (totalRevisions > 0) (completedRevisions.toFloat() / totalRevisions) * 30f else 0f
-        (classProgress + revProgress).coerceIn(0f, 100f)
-    } else 0f
+    val totalChapters = targetChapters.size
+    val finishedChapters = targetChapters.count { it.tapCount >= 3 || it.status == "অধ্যায় Completely শেষ" }
+    val progressPct = if (totalChapters > 0) (finishedChapters.toFloat() / totalChapters * 100f).coerceIn(0f, 100f) else 0f
 
     var isExpanded by remember { mutableStateOf(true) }
 
@@ -1425,12 +1420,12 @@ fun SyllabusCompilationReadinessCard(
 
                     Column {
                         Text(
-                            text = "Syllabus Compilation & Exam Readiness",
+                            text = "সিলেবাস ট্র্যাকার (Syllabus Tracker)",
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = if (targetChapters.isNotEmpty()) "${targetChapters.size} Chapters Linked • ${readinessScore.toInt()}% Exam Ready" else "No syllabus chapters created yet",
+                            text = if (targetChapters.isNotEmpty()) "$totalChapters টি অধ্যায় সংযুক্ত • $finishedChapters টি শেষ" else "কোনো অধ্যায় সংযুক্ত নেই",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1441,13 +1436,13 @@ fun SyllabusCompilationReadinessCard(
                     Surface(
                         shape = RoundedCornerShape(10.dp),
                         color = when {
-                            readinessScore >= 80f -> MaterialTheme.colorScheme.primaryContainer
-                            readinessScore >= 40f -> MaterialTheme.colorScheme.secondaryContainer
+                            progressPct >= 80f -> MaterialTheme.colorScheme.primaryContainer
+                            progressPct >= 40f -> MaterialTheme.colorScheme.secondaryContainer
                             else -> MaterialTheme.colorScheme.surfaceVariant
                         }
                     ) {
                         Text(
-                            text = "${readinessScore.toInt()}% Ready",
+                            text = "${progressPct.toInt()}% শেষ",
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
                             color = MaterialTheme.colorScheme.primary
@@ -1464,12 +1459,12 @@ fun SyllabusCompilationReadinessCard(
             }
 
             LinearProgressIndicator(
-                progress = { readinessScore / 100f },
+                progress = { progressPct / 100f },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp)
                     .clip(RoundedCornerShape(3.dp)),
-                color = if (readinessScore >= 80f) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
+                color = if (progressPct >= 80f) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
 
@@ -1479,19 +1474,14 @@ fun SyllabusCompilationReadinessCard(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Classes: $completedClasses/$totalClasses",
+                        text = "মোট অধ্যায়: $totalChapters",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Chapters Done: $completedChapters/${targetChapters.size}",
+                        text = "সম্পূর্ণ শেষ: $finishedChapters / $totalChapters",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "Revisions: $completedRevisions/$totalRevisions",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }

@@ -144,8 +144,10 @@ data class ChapterEntity(
     val subjectId: Long,
     val subjectName: String,
     val chapterName: String,
+    val tapCount: Int = 0, // 0 to 3 (3 taps = completely finished)
+    val status: String = "পড়া শুরু হয় নাই", // Status dropdown value
     val totalClasses: Int = 10,
-    val completedClassesCount: Int = 0, // Number of regular classes completed (0 to totalClasses)
+    val completedClassesCount: Int = 0,
     val isRevision1Completed: Boolean = false,
     val isRevision2Completed: Boolean = false,
     val orderIndex: Int = 0

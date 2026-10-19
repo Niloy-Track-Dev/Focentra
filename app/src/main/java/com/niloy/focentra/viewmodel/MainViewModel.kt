@@ -116,7 +116,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val dailyTasks = repository.allTasks.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val chapters = repository.allChapters.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    fun addChapter(subjectId: Long, subjectName: String, chapterName: String, totalClasses: Int) {
+    fun addChapter(subjectId: Long, subjectName: String, chapterName: String) {
         if (chapterName.isBlank()) return
         viewModelScope.launch {
             repository.insertChapter(
@@ -124,9 +124,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     subjectId = subjectId,
                     subjectName = subjectName,
                     chapterName = chapterName.trim(),
-                    totalClasses = totalClasses.coerceAtLeast(1)
+                    tapCount = 0,
+                    status = "পড়া শুরু হয় নাই"
                 )
             )
+        }
+    }
+
+    fun handleChapterTap(chapter: ChapterEntity) {
+        val newTapCount = if (chapter.tapCount >= 3) 0 else chapter.tapCount + 1
+        val newStatus = if (newTapCount == 3) "অধ্যায় Completely শেষ" else when (newTapCount) {
+            1 -> "পড়া শুরু হয়েছে"
+            2 -> "পড়া শেষ"
+            else -> "পড়া শুরু হয় নাই"
+        }
+        viewModelScope.launch {
+            repository.updateChapter(chapter.copy(tapCount = newTapCount, status = newStatus))
+        }
+    }
+
+    fun updateChapterStatus(chapter: ChapterEntity, newStatus: String) {
+        val newTapCount = if (newStatus == "অধ্যায় Completely শেষ") 3 else chapter.tapCount
+        viewModelScope.launch {
+            repository.updateChapter(chapter.copy(status = newStatus, tapCount = newTapCount))
         }
     }
 
@@ -238,6 +258,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch {
+            repository.ensureBanglaSyllabusSeeded()
+
             val themeSetting = repository.getSetting("theme", app.getInitialTheme())
             _currentTheme.value = themeSetting
             app.saveCachedTheme(themeSetting)
