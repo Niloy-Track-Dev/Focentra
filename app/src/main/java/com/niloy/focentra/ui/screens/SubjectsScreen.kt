@@ -1,8 +1,10 @@
 package com.niloy.focentra.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -319,16 +321,17 @@ fun SyllabusOverviewHeaderCard(
                         )
                     }
 
+                    val pendingChapters = (totalChapters - finishedChapters).coerceAtLeast(0)
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "সিলেবাস ট্র্যাকার (Syllabus Tracker)",
+                            text = "সিলেবাস ট্র্যাকার",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = "মোট $totalChapters টি অধ্যায় • $finishedChapters টি সম্পূর্ণ শেষ",
+                            text = "পড়া বাকি: $pendingChapters টি অধ্যায় • শেষ: $finishedChapters টি",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
@@ -508,18 +511,21 @@ fun SubjectDetailCard(
             // Dropdown / Expandable Chapters Section
             var isChapterDropdownExpanded by remember { mutableStateOf(false) }
 
+            val pendingSubChapters = chapters.count { it.tapCount < 3 && it.status != "অধ্যায় Completely শেষ" }
+
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable { isChapterDropdownExpanded = !isChapterDropdownExpanded },
+                    .clip(RoundedCornerShape(12.dp)),
                 shape = RoundedCornerShape(12.dp),
                 color = MaterialTheme.colorScheme.surface,
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { isChapterDropdownExpanded = !isChapterDropdownExpanded },
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -533,21 +539,31 @@ fun SubjectDetailCard(
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(20.dp)
                             )
-                            Text(
-                                text = "Syllabus Chapters (${chapters.size})",
-                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                            Column {
+                                Text(
+                                    text = "Syllabus Chapters (${chapters.size})",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "পড়া বাকি: $pendingSubChapters টি অধ্যায়",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            TextButton(
+                            IconButton(
                                 onClick = onAddChapterClick,
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                                modifier = Modifier.size(32.dp)
                             ) {
-                                Icon(Icons.Default.LibraryAdd, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Add Chapter", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Add Chapter",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
                             }
                             Icon(
                                 imageVector = if (isChapterDropdownExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
@@ -598,6 +614,7 @@ val CHAPTER_STATUS_OPTIONS = listOf(
     "অধ্যায় Completely শেষ"
 )
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChapterSequentialTrackerView(
     chapter: ChapterEntity,
@@ -621,6 +638,19 @@ fun ChapterSequentialTrackerView(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .combinedClickable(
+                    onClick = {
+                        val nextTap = if (chapter.tapCount >= 3) 0 else chapter.tapCount + 1
+                        val nextStatus = when (nextTap) {
+                            3 -> "অধ্যায় Completely শেষ"
+                            2 -> "পড়া শেষ"
+                            1 -> "পড়া শুরু হয়েছে"
+                            else -> "পড়া শুরু হয় নাই"
+                        }
+                        onUpdate(chapter.copy(tapCount = nextTap, status = nextStatus))
+                    },
+                    onLongClick = { onDelete() }
+                )
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -629,7 +659,6 @@ fun ChapterSequentialTrackerView(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Left Chapter Title & 3-Tap Progress Indicator
                 Row(
                     modifier = Modifier
                         .weight(1f)
@@ -637,35 +666,12 @@ fun ChapterSequentialTrackerView(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // 3-Tap Button / Pill Indicator
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = when {
-                            isFinished -> MaterialTheme.colorScheme.primary
-                            chapter.tapCount == 2 -> MaterialTheme.colorScheme.secondaryContainer
-                            chapter.tapCount == 1 -> MaterialTheme.colorScheme.surfaceVariant
-                            else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        },
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable {
-                                val nextTap = if (chapter.tapCount >= 3) 0 else chapter.tapCount + 1
-                                val nextStatus = when (nextTap) {
-                                    3 -> "অধ্যায় Completely শেষ"
-                                    2 -> "পড়া শেষ"
-                                    1 -> "পড়া শুরু হয়েছে"
-                                    else -> "পড়া শুরু হয় নাই"
-                                }
-                                onUpdate(chapter.copy(tapCount = nextTap, status = nextStatus))
-                            }
-                    ) {
-                        Text(
-                            text = if (isFinished) "✓ 3/3" else "${chapter.tapCount}/3 Tap",
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
-                            color = if (isFinished) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                    Icon(
+                        imageVector = if (isFinished) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                        contentDescription = null,
+                        tint = if (isFinished) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
 
                     Text(
                         text = chapter.chapterName,
@@ -676,26 +682,12 @@ fun ChapterSequentialTrackerView(
                     )
                 }
 
-                // Right Action Buttons (Edit & Delete)
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    if (onEdit != null) {
-                        IconButton(onClick = onEdit, modifier = Modifier.size(28.dp)) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Edit Chapter",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                    IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
+                if (onEdit != null) {
+                    IconButton(onClick = onEdit, modifier = Modifier.size(28.dp)) {
                         Icon(
-                            imageVector = Icons.Default.DeleteOutline,
-                            contentDescription = "Delete Chapter",
-                            tint = MaterialTheme.colorScheme.error,
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Chapter",
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -724,7 +716,7 @@ fun ChapterSequentialTrackerView(
                         modifier = Modifier.height(30.dp)
                     ) {
                         Text(
-                            text = "Change Status",
+                            text = "Status",
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp)
                         )
                         Icon(
