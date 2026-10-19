@@ -10,38 +10,35 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val LightColorScheme = lightColorScheme(
-    primary = AccentPrimary,
-    onPrimary = Color.White,
-    primaryContainer = AccentPrimaryContainer,
-    onPrimaryContainer = Color(0xFF1E40AF),
-    secondary = Color(0xFF64748B),
-    onSecondary = Color.White,
-    secondaryContainer = Color(0xFFF1F5F9),
-    onSecondaryContainer = Color(0xFF1E293B),
-    tertiary = StateCompleted,
-    onTertiary = Color.White,
-    background = BackgroundLight,
-    onBackground = TextPrimaryLight,
-    surface = SurfaceLight,
-    onSurface = TextPrimaryLight,
-    surfaceVariant = SurfaceElevatedLight,
-    onSurfaceVariant = TextSecondaryLight,
-    outline = OutlineLight,
-    outlineVariant = OutlineVariantLight,
-    error = StateSkipped,
-    onError = Color.White
+private val MidnightColorScheme = darkColorScheme(
+    primary = MidnightPrimary,
+    onPrimary = Color(0xFF0F172A),
+    primaryContainer = Color(0xFF312E81),
+    onPrimaryContainer = Color(0xFFE0E7FF),
+    secondary = MidnightSecondary,
+    onSecondary = Color(0xFF082F49),
+    secondaryContainer = Color(0xFF075985),
+    onSecondaryContainer = Color(0xFFE0F2FE),
+    tertiary = MidnightTertiary,
+    background = MidnightBackground,
+    onBackground = MidnightTextPrimary,
+    surface = MidnightSurface,
+    onSurface = MidnightTextPrimary,
+    surfaceVariant = MidnightSurfaceVariant,
+    onSurfaceVariant = MidnightTextSecondary,
+    outline = Color(0xFF334155),
+    outlineVariant = Color(0xFF1E293B)
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FocentraTheme(
     themeName: String = "midnight",
-    darkTheme: Boolean = false,
+    darkTheme: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = LightColorScheme
-    val isLight = true
+    val colorScheme = MidnightColorScheme
+    val isLight = false
 
     val view = LocalView.current
     if (!view.isInEditMode) {
