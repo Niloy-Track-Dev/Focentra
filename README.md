@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⏱️Focentra (v5.0.0)
+# ⏱️Focentra (v5.1.0)
 
 ### *Distraction-Free Offline Study Timer & Deep Work Analytics for Android*
 
@@ -9,7 +9,7 @@
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-Material_3-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![Offline First](https://img.shields.io/badge/Architecture-100%25_Offline_First-00897B?style=for-the-badge&logo=sqlite&logoColor=white)](#-privacy--offline-first-guarantee)
 [![CI Status](https://img.shields.io/badge/CI-Passing-brightgreen?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/Niloy-Track-Dev/Focentra/actions)
-[![Release](https://img.shields.io/badge/Release-v5.0.0-8B5CF6?style=for-the-badge&logo=github)](https://github.com/Niloy-Track-Dev/Focentra/releases)
+[![Release](https://img.shields.io/badge/Release-v5.1.0-8B5CF6?style=for-the-badge&logo=github)](https://github.com/Niloy-Track-Dev/Focentra/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F59E0B?style=for-the-badge)](LICENSE)
 
 <br/>

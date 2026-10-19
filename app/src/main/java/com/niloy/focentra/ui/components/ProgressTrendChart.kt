@@ -1,5 +1,8 @@
 package com.niloy.focentra.ui.components
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -9,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -29,6 +33,12 @@ fun ProgressLevelTrendChart(
     modifier: Modifier = Modifier
 ) {
     if (dataPoints.isEmpty()) return
+
+    val animatedFraction by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing),
+        label = "trend_chart_anim"
+    )
 
     val primaryColor = MaterialTheme.colorScheme.primary
 
@@ -95,7 +105,9 @@ fun ProgressLevelTrendChart(
 
             val points = dataPoints.mapIndexed { index, dp ->
                 val x = index * spacing
-                val y = height - ((dp.studyMinutes / maxMins) * (height - 30.dp.toPx())) - 15.dp.toPx()
+                val targetY = height - ((dp.studyMinutes / maxMins) * (height - 30.dp.toPx())) - 15.dp.toPx()
+                val startY = height - 15.dp.toPx()
+                val y = startY + (targetY - startY) * animatedFraction
                 Offset(x, y)
             }
 

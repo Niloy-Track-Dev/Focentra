@@ -182,8 +182,14 @@ fun AnalyticsScreen(
                         }
                     }
 
+                    val animatedReadiness by androidx.compose.animation.core.animateFloatAsState(
+                        targetValue = overallReadiness / 100f,
+                        animationSpec = androidx.compose.animation.core.tween(durationMillis = 600, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+                        label = "analytics_readiness_progress"
+                    )
+
                     LinearProgressIndicator(
-                        progress = { overallReadiness / 100f },
+                        progress = { animatedReadiness },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(10.dp)

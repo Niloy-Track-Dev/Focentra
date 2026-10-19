@@ -1270,8 +1270,14 @@ fun ExamMilestoneCard(
                                 )
                             }
 
+                            val animatedSyllabusProgress by androidx.compose.animation.core.animateFloatAsState(
+                                targetValue = progressPct / 100f,
+                                animationSpec = androidx.compose.animation.core.tween(durationMillis = 500, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+                                label = "dash_syllabus_progress"
+                            )
+
                             LinearProgressIndicator(
-                                progress = { progressPct / 100f },
+                                progress = { animatedSyllabusProgress },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(8.dp)
@@ -1461,8 +1467,14 @@ fun SyllabusCompilationReadinessCard(
                 }
             }
 
+            val animatedCardProgressPct by androidx.compose.animation.core.animateFloatAsState(
+                targetValue = progressPct / 100f,
+                animationSpec = androidx.compose.animation.core.tween(durationMillis = 500, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+                label = "dash_card_progress"
+            )
+
             LinearProgressIndicator(
-                progress = { progressPct / 100f },
+                progress = { animatedCardProgressPct },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp)
@@ -1685,8 +1697,14 @@ fun ExamMilestoneDetailDialog(
                             )
                         }
 
+                        val animatedGoalProgressPct by androidx.compose.animation.core.animateFloatAsState(
+                            targetValue = progressPct / 100f,
+                            animationSpec = androidx.compose.animation.core.tween(durationMillis = 500, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+                            label = "dash_goal_progress"
+                        )
+
                         LinearProgressIndicator(
-                            progress = { progressPct / 100f },
+                            progress = { animatedGoalProgressPct },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(8.dp)

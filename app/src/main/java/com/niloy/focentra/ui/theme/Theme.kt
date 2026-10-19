@@ -11,23 +11,26 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val MidnightColorScheme = darkColorScheme(
-    primary = MidnightPrimary,
+    primary = AccentPrimaryDark,
     onPrimary = Color(0xFF0F172A),
-    primaryContainer = Color(0xFF312E81),
-    onPrimaryContainer = Color(0xFFE0E7FF),
-    secondary = MidnightSecondary,
-    onSecondary = Color(0xFF082F49),
-    secondaryContainer = Color(0xFF075985),
-    onSecondaryContainer = Color(0xFFE0F2FE),
-    tertiary = MidnightTertiary,
-    background = MidnightBackground,
-    onBackground = MidnightTextPrimary,
-    surface = MidnightSurface,
-    onSurface = MidnightTextPrimary,
-    surfaceVariant = MidnightSurfaceVariant,
-    onSurfaceVariant = MidnightTextSecondary,
-    outline = Color(0xFF334155),
-    outlineVariant = Color(0xFF1E293B)
+    primaryContainer = AccentPrimaryContainerDark,
+    onPrimaryContainer = Color(0xFFDBEAFE),
+    secondary = Color(0xFF94A3B8),
+    onSecondary = Color(0xFF0F172A),
+    secondaryContainer = Color(0xFF1E293B),
+    onSecondaryContainer = Color(0xFFE2E8F0),
+    tertiary = StateCompleted,
+    onTertiary = Color.White,
+    background = BackgroundDark,
+    onBackground = TextPrimaryDark,
+    surface = SurfaceDark,
+    onSurface = TextPrimaryDark,
+    surfaceVariant = SurfaceElevatedDark,
+    onSurfaceVariant = TextSecondaryDark,
+    outline = OutlineDark,
+    outlineVariant = OutlineVariantDark,
+    error = StateSkipped,
+    onError = Color.White
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
