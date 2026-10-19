@@ -10,25 +10,25 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val MidnightColorScheme = darkColorScheme(
-    primary = AccentPrimaryDark,
-    onPrimary = Color(0xFF0F172A),
-    primaryContainer = AccentPrimaryContainerDark,
-    onPrimaryContainer = Color(0xFFDBEAFE),
-    secondary = Color(0xFF94A3B8),
-    onSecondary = Color(0xFF0F172A),
-    secondaryContainer = Color(0xFF1E293B),
-    onSecondaryContainer = Color(0xFFE2E8F0),
+private val LightColorScheme = lightColorScheme(
+    primary = AccentPrimary,
+    onPrimary = Color.White,
+    primaryContainer = AccentPrimaryContainer,
+    onPrimaryContainer = Color(0xFF1E40AF),
+    secondary = Color(0xFF64748B),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFF1F5F9),
+    onSecondaryContainer = Color(0xFF1E293B),
     tertiary = StateCompleted,
     onTertiary = Color.White,
-    background = BackgroundDark,
-    onBackground = TextPrimaryDark,
-    surface = SurfaceDark,
-    onSurface = TextPrimaryDark,
-    surfaceVariant = SurfaceElevatedDark,
-    onSurfaceVariant = TextSecondaryDark,
-    outline = OutlineDark,
-    outlineVariant = OutlineVariantDark,
+    background = BackgroundLight,
+    onBackground = TextPrimaryLight,
+    surface = SurfaceLight,
+    onSurface = TextPrimaryLight,
+    surfaceVariant = SurfaceElevatedLight,
+    onSurfaceVariant = TextSecondaryLight,
+    outline = OutlineLight,
+    outlineVariant = OutlineVariantLight,
     error = StateSkipped,
     onError = Color.White
 )
@@ -37,11 +37,11 @@ private val MidnightColorScheme = darkColorScheme(
 @Composable
 fun FocentraTheme(
     themeName: String = "midnight",
-    darkTheme: Boolean = true,
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = MidnightColorScheme
-    val isLight = false
+    val colorScheme = LightColorScheme
+    val isLight = true
 
     val view = LocalView.current
     if (!view.isInEditMode) {
