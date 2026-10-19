@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.0.0] - 2026-10-19
+
+- **Notification & Smart Alert Hub**: Added Top Bar Notification Icon with live badge indicators for 3-Day Spaced Repetition Revision alerts, 5-Day Chapter Inactivity warnings, Goal Target Pace alerts, and Bengali motivational quotes.
+- **Syllabus UI Polishing**: Fixed chapter dropdown collapse mechanics, added long-click chapter deletion popup, streamlined status buttons, and replaced text labels with clean action icons.
+- **Optimized Animations**: Snappy collapse transitions for Exam Goals cards on DashboardScreen.
+- **Major Version Bump**: Updated `versionCode` to `27` and `versionName` to `5.0.0`.
+
 ## [4.7.0] - 2026-10-18
 
 - **Simplified 3-Tap Syllabus Tracker**: Replaced old class number and sequential class unlocking with intuitive 3-tap completion and status dropdown selector.

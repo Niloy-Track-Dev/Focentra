@@ -187,7 +187,40 @@ class MainActivity : ComponentActivity() {
                                             currentTab == NavigationTab.SETTINGS ||
                                             currentTab == NavigationTab.PRESETS
 
+                                    var showNotificationCenterDialog by remember { mutableStateOf(false) }
+                                    val activeNotifications by viewModel.activeNotifications.collectAsStateWithLifecycle()
+
+                                    if (showNotificationCenterDialog) {
+                                        com.niloy.focentra.ui.components.NotificationCenterDialog(
+                                            notifications = activeNotifications,
+                                            onDismiss = { showNotificationCenterDialog = false },
+                                            onStartRevision = { subjectName, chapterName ->
+                                                viewModel.startQuickTimer(30, subjectName)
+                                            }
+                                        )
+                                    }
+
                                     if (isMainScreen) {
+                                        // Notification Bell Icon
+                                        IconButton(onClick = { showNotificationCenterDialog = true }) {
+                                            Box {
+                                                Icon(
+                                                    imageVector = if (activeNotifications.isNotEmpty()) Icons.Default.NotificationsActive else Icons.Default.Notifications,
+                                                    contentDescription = "Notifications",
+                                                    tint = if (activeNotifications.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                if (activeNotifications.isNotEmpty()) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(8.dp)
+                                                            .clip(androidx.compose.foundation.shape.CircleShape)
+                                                            .background(MaterialTheme.colorScheme.error)
+                                                            .align(Alignment.TopEnd)
+                                                    )
+                                                }
+                                            }
+                                        }
+
                                         // Subjects Quick Access Icon
                                         IconButton(onClick = { viewModel.navigateTo(NavigationTab.SUBJECTS) }) {
                                             Icon(

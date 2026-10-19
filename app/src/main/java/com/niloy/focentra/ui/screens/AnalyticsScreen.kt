@@ -116,16 +116,9 @@ fun AnalyticsScreen(
         // Syllabus Completion Progress & Exam Preparation Readiness Visual Chart
         item {
             val chapters by viewModel.chapters.collectAsStateWithLifecycle()
-            val totalClassesAll = chapters.sumOf { it.totalClasses }
-            val completedClassesAll = chapters.sumOf { it.completedClassesCount }
-            val classPct = if (totalClassesAll > 0) (completedClassesAll.toFloat() / totalClassesAll) * 70f else 0f
-
-            val totalRevisions = chapters.size * 2
-            val completedRevisions = chapters.count { it.isRevision1Completed } + chapters.count { it.isRevision2Completed }
-            val revPct = if (totalRevisions > 0) (completedRevisions.toFloat() / totalRevisions) * 30f else 0f
-
-            val overallReadiness = (classPct + revPct).toInt().coerceIn(0, 100)
-            val completedChapters = chapters.count { it.completedClassesCount >= it.totalClasses && it.totalClasses > 0 }
+            val finishedChapters = chapters.count { it.tapCount >= 3 || it.status == "অধ্যায় Completely শেষ" }
+            val pendingChapters = (chapters.size - finishedChapters).coerceAtLeast(0)
+            val overallReadiness = if (chapters.isNotEmpty()) (finishedChapters.toFloat() / chapters.size * 100f).toInt().coerceIn(0, 100) else 0
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -205,40 +198,27 @@ fun AnalyticsScreen(
                     ) {
                         Column {
                             Text(
-                                text = "Classes Done",
+                                text = "Pending Chapters",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "$completedClassesAll / $totalClassesAll",
+                                text = "$pendingChapters",
                                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.error
                             )
                         }
 
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Column(horizontalAlignment = Alignment.End) {
                             Text(
                                 text = "Chapters Completed",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "$completedChapters / ${chapters.size}",
+                                text = "$finishedChapters / ${chapters.size}",
                                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = "Revisions Done",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = "$completedRevisions / $totalRevisions",
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                     }

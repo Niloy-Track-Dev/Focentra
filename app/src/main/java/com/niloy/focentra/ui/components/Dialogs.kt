@@ -112,6 +112,231 @@ fun DistractionLoggerDialog(
 }
 
 @Composable
+fun NotificationCenterDialog(
+    notifications: List<com.niloy.focentra.viewmodel.AppNotification>,
+    onDismiss: () -> Unit,
+    onStartRevision: ((subjectName: String, chapterName: String) -> Unit)? = null
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.NotificationsActive,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+
+                        Text(
+                            text = "নোটিফিকেশন ও অ্যালার্ট হাব",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+                        Icon(Icons.Default.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                if (notifications.isEmpty()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.NotificationsNone,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(40.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "কোনো নতুন নোটিফিকেশন নেই",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "সবগুলো অধ্যায়ের পড়া ও রিভিশন সঠিক ট্র্যাকে রয়েছে!",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 420.dp)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        notifications.forEach { notif ->
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = when (notif.type) {
+                                    com.niloy.focentra.viewmodel.NotificationType.REVISION_DUE -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
+                                    com.niloy.focentra.viewmodel.NotificationType.INACTIVITY_WARNING -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
+                                    com.niloy.focentra.viewmodel.NotificationType.GOAL_WARNING -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
+                                    else -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                                },
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    when (notif.type) {
+                                        com.niloy.focentra.viewmodel.NotificationType.REVISION_DUE -> MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
+                                        else -> MaterialTheme.colorScheme.outlineVariant
+                                    }
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = when (notif.type) {
+                                                com.niloy.focentra.viewmodel.NotificationType.REVISION_DUE -> Icons.Default.Warning
+                                                com.niloy.focentra.viewmodel.NotificationType.INACTIVITY_WARNING -> Icons.Default.Schedule
+                                                com.niloy.focentra.viewmodel.NotificationType.GOAL_WARNING -> Icons.Default.Flag
+                                                else -> Icons.Default.Lightbulb
+                                            },
+                                            contentDescription = null,
+                                            tint = when (notif.type) {
+                                                com.niloy.focentra.viewmodel.NotificationType.REVISION_DUE -> MaterialTheme.colorScheme.error
+                                                else -> MaterialTheme.colorScheme.primary
+                                            },
+                                            modifier = Modifier.size(18.dp)
+                                        )
+
+                                        Text(
+                                            text = notif.title,
+                                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+
+                                    Text(
+                                        text = notif.message,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+
+                                    if (notif.type == com.niloy.focentra.viewmodel.NotificationType.REVISION_DUE && onStartRevision != null) {
+                                        Button(
+                                            onClick = {
+                                                onStartRevision(notif.subjectName, notif.chapterName)
+                                                onDismiss()
+                                            },
+                                            shape = RoundedCornerShape(10.dp),
+                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                                            modifier = Modifier.align(Alignment.End)
+                                        ) {
+                                            Text("৩০ মি. রিভিশন শুরু করুন", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("বন্ধ করুন")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RevisionLockWarningDialog(
+    revisionSubject: String,
+    revisionChapter: String,
+    onDismiss: () -> Unit,
+    onStartRevisionNow: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                imageVector = Icons.Default.Lock,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(36.dp)
+            )
+        },
+        title = {
+            Text(
+                text = "⚠️ রিভিশন লক ওয়ার্নিং!",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                textAlign = TextAlign.Center
+            )
+        },
+        text = {
+            Text(
+                text = "«$revisionSubject» বিষয়ের «$revisionChapter» অধ্যায়টি ৩ দিন আগে শেষ হয়েছে। রিভিশনের নিয়ম অনুযায়ী আগে এই অধ্যায়টি ৩০ মিনিট রিভিশন করতে হবে! রিভিশন শেষ না করা পর্যন্ত অন্য সাবজেক্ট শুরু করা লক থাকবে।",
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onStartRevisionNow,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("৩০ মিনিট রিভিশন শুরু করুন")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("বাতিল")
+            }
+        }
+    )
+}
+
+@Composable
 fun SessionCompletionDialog(
     session: StudySessionEntity,
     onDismiss: () -> Unit,

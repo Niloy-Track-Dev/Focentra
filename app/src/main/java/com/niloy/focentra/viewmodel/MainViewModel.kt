@@ -15,6 +15,23 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
+enum class NotificationType {
+    REVISION_DUE,
+    INACTIVITY_WARNING,
+    GOAL_WARNING,
+    MOTIVATION
+}
+
+data class AppNotification(
+    val id: String = UUID.randomUUID().toString(),
+    val type: NotificationType,
+    val title: String,
+    val message: String,
+    val subjectName: String = "",
+    val chapterName: String = "",
+    val timestamp: Long = System.currentTimeMillis()
+)
+
 enum class NavigationTab {
     DASHBOARD,
     TIMER,
@@ -132,21 +149,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun handleChapterTap(chapter: ChapterEntity) {
+        val now = System.currentTimeMillis()
         val newTapCount = if (chapter.tapCount >= 3) 0 else chapter.tapCount + 1
-        val newStatus = if (newTapCount == 3) "অধ্যায় Completely শেষ" else when (newTapCount) {
-            1 -> "পড়া শুরু হয়েছে"
+        val newStatus = when (newTapCount) {
+            3 -> "অধ্যায় Completely শেষ"
             2 -> "পড়া শেষ"
+            1 -> "পড়া শুরু হয়েছে"
             else -> "পড়া শুরু হয় নাই"
         }
+        val compTime = if (newTapCount == 3) now else chapter.completedTimestamp
         viewModelScope.launch {
-            repository.updateChapter(chapter.copy(tapCount = newTapCount, status = newStatus))
+            repository.updateChapter(chapter.copy(tapCount = newTapCount, status = newStatus, lastStudiedTimestamp = now, completedTimestamp = compTime))
         }
     }
 
     fun updateChapterStatus(chapter: ChapterEntity, newStatus: String) {
+        val now = System.currentTimeMillis()
         val newTapCount = if (newStatus == "অধ্যায় Completely শেষ") 3 else chapter.tapCount
+        val compTime = if (newStatus == "অধ্যায় Completely শেষ") now else chapter.completedTimestamp
         viewModelScope.launch {
-            repository.updateChapter(chapter.copy(status = newStatus, tapCount = newTapCount))
+            repository.updateChapter(chapter.copy(status = newStatus, tapCount = newTapCount, lastStudiedTimestamp = now, completedTimestamp = compTime))
         }
     }
 
@@ -203,7 +225,81 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // Today's focused minutes
+    val todayFocusedMinutes = sessions.map { list ->
+        val cal = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val startOfToday = cal.timeInMillis
+        list.filter { it.startTime >= startOfToday }.sumOf { it.actualFocusedSeconds } / 60
+    }.stateIn(viewModelScope, SharingStarted.Lazily, 0L)
+
     // Derived states optimized on Dispatchers.Default background threads
+    val activeNotifications = combine(chapters, sessions, goals, todayFocusedMinutes) { chapterList, sessionList, goalList, todayMins ->
+        kotlinx.coroutines.withContext(Dispatchers.Default) {
+            val list = mutableListOf<AppNotification>()
+            val now = System.currentTimeMillis()
+            val THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000L
+            val FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000L
+
+            chapterList.forEach { ch ->
+                val isCompleted = ch.tapCount >= 3 || ch.status == "অধ্যায় Completely শেষ"
+                if (isCompleted) {
+                    val compTime = if (ch.completedTimestamp > 0) ch.completedTimestamp else ch.lastStudiedTimestamp
+                    if (now - compTime >= THREE_DAYS_MS) {
+                        list.add(
+                            AppNotification(
+                                type = NotificationType.REVISION_DUE,
+                                title = "⚠️ রিভিশন অ্যালার্ট (৩ দিন পেরিয়ে গেছে)",
+                                message = "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টি ৩ দিন আগে শেষ করেছেন। ৩০ মিনিট রিভিশন সম্পন্ন করুন!",
+                                subjectName = ch.subjectName,
+                                chapterName = ch.chapterName
+                            )
+                        )
+                    }
+                } else if (ch.status != "পড়া শুরু হয় নাই" && ch.status.isNotBlank()) {
+                    val lastStudy = ch.lastStudiedTimestamp
+                    if (now - lastStudy >= FIVE_DAYS_MS) {
+                        list.add(
+                            AppNotification(
+                                type = NotificationType.INACTIVITY_WARNING,
+                                title = "🔔 পড়া সম্পূর্ণ করার সতর্কতা (৫ দিন গ্যাপ)",
+                                message = "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টি গত ৫ দিন ধরে পড়া বন্ধ রয়েছে। দ্রুত পড়া সম্পন্ন করুন!",
+                                subjectName = ch.subjectName,
+                                chapterName = ch.chapterName
+                            )
+                        )
+                    }
+                }
+            }
+
+            val dailyGoal = goalList.find { it.periodType == "DAILY" }?.targetMinutes ?: 480
+            val remainingMins = (dailyGoal - todayMins).coerceAtLeast(0)
+            if (remainingMins > 0) {
+                list.add(
+                    AppNotification(
+                        type = NotificationType.GOAL_WARNING,
+                        title = "🎯 স্টাডি টার্গেট ট্র্যাকার",
+                        message = "আজকের ডেইলি গোল পূরণ করতে আরও ${remainingMins / 60}ঘণ্টা ${remainingMins % 60}মিনিট পড়া প্রয়োজন!"
+                    )
+                )
+            }
+
+            list.add(
+                AppNotification(
+                    type = NotificationType.MOTIVATION,
+                    title = "🔥 ডেইলি মোটিভেশন",
+                    message = "“প্রতিদিনের ছোট ছোট প্রচেষ্টাই একদিন বড় অর্জনে রূপ নেয়। পড়ার ধারাবাহিকতা ধরে রাখুন!”"
+                )
+            )
+
+            list.toList()
+        }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
     val streakInfo = sessions.map { sessionList ->
         kotlinx.coroutines.withContext(Dispatchers.Default) { calculateStreak(sessionList) }
     }.stateIn(viewModelScope, SharingStarted.Lazily, calculateStreak(emptyList()))
@@ -239,18 +335,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
-
-    // Today's focused minutes
-    val todayFocusedMinutes = sessions.map { list ->
-        val cal = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        val startOfToday = cal.timeInMillis
-        list.filter { it.startTime >= startOfToday }.sumOf { it.actualFocusedSeconds } / 60
-    }.stateIn(viewModelScope, SharingStarted.Lazily, 0L)
 
     // Exam / Target Countdown Planner Feature
     private val _examTargets = MutableStateFlow<List<ExamTarget>>(emptyList())

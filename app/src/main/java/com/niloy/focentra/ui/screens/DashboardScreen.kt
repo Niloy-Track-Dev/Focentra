@@ -1123,8 +1123,7 @@ fun ExamMilestoneCard(
                     )
                 ),
                 shape = RoundedCornerShape(22.dp)
-            )
-            .animateContentSize(),
+            ),
         shape = RoundedCornerShape(22.dp),
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 2.dp
@@ -1213,7 +1212,11 @@ fun ExamMilestoneCard(
             }
 
             // Expanded Details Section
-            AnimatedVisibility(visible = isExpanded) {
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(120)) + androidx.compose.animation.expandVertically(animationSpec = androidx.compose.animation.core.tween(120)),
+                exit = androidx.compose.animation.fadeOut(animationSpec = androidx.compose.animation.core.tween(120)) + androidx.compose.animation.shrinkVertically(animationSpec = androidx.compose.animation.core.tween(120))
+            ) {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.padding(top = 4.dp)
@@ -1420,7 +1423,7 @@ fun SyllabusCompilationReadinessCard(
 
                     Column {
                         Text(
-                            text = "সিলেবাস ট্র্যাকার (Syllabus Tracker)",
+                            text = "সিলেবাস ট্র্যাকার",
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onSurface
                         )
