@@ -113,7 +113,7 @@ fun FullScreenFocusScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
             .navigationBarsPadding()
             .clickable(
@@ -141,12 +141,12 @@ fun FullScreenFocusScreen(
                     modifier = Modifier
                         .size(42.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF1E2135))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Icon(
                         imageVector = Icons.Default.FullscreenExit,
                         contentDescription = "Exit Fullscreen",
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -155,7 +155,7 @@ fun FullScreenFocusScreen(
 
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = Color(0xFF1E2135),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
                     modifier = Modifier.weight(1f, fill = false)
                 ) {
                     Row(
@@ -172,7 +172,7 @@ fun FullScreenFocusScreen(
                         Text(
                             text = timerState.subject + if (timerState.topic.isNotBlank()) " • ${timerState.topic}" else "",
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
@@ -213,7 +213,7 @@ fun FullScreenFocusScreen(
                     fontFamily = FontFamily.Monospace,
                     letterSpacing = (-2).sp
                 ),
-                color = if (isPaused) Color(0xFFEF4444) else Color.White
+                color = if (isPaused) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -246,7 +246,7 @@ fun FullScreenFocusScreen(
             Text(
                 text = "“$currentQuote”",
                 style = MaterialTheme.typography.bodyMedium.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
-                color = Color(0xFF94A3B8),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 24.dp)
             )
@@ -270,12 +270,12 @@ fun FullScreenFocusScreen(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF1E2135))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Icon(
                         imageVector = Icons.Default.WarningAmber,
                         contentDescription = "Log Distraction",
-                        tint = Color.White
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -285,12 +285,12 @@ fun FullScreenFocusScreen(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF1E2135))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Psychology,
                         contentDescription = "Focus Brain Dump",
-                        tint = Color.White
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 

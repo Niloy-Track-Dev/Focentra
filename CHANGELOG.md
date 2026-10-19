@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.2.0] - 2026-10-19
+
+- **Deynexa White/Light Aesthetic Overhaul**: Converted Focentra's core theme to Deynexa's clean white surface cards (`#FFFFFF`), soft slate canvas (`#F1F5F9`), and modern Cobalt Blue accents (`#3B82F6`) with dark system bar indicators.
+- **Enhanced Smooth Animations**: Applied `animateFloatAsState` across all progress components, line/bar charts, and dial meters.
+- **Version Bump**: Updated `versionCode` to `29` and `versionName` to `5.2.0`.
+
 ## [5.1.0] - 2026-10-19
 
 - **Deynexa Cohesive Color Palette**: Applied Deynexa's modern cobalt/indigo primary accent, amoled slate surface background, dark elevated card fills, and emerald state colors to Focentra.
