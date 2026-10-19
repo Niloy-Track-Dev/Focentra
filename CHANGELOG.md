@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.3.0] - 2026-10-19
+
+- **Restored Core Midnight Dark Theme**: Reverted application theme to Focentra's core AMOLED Midnight Dark aesthetic (`#090A10` canvas, `#131522` surfaces, `#818CF8` primary indigo accent).
+- **Version Bump**: Updated `versionCode` to `30` and `versionName` to `5.3.0`.
+
 ## [5.2.0] - 2026-10-19
 
 - **Deynexa White/Light Aesthetic Overhaul**: Converted Focentra's core theme to Deynexa's clean white surface cards (`#FFFFFF`), soft slate canvas (`#F1F5F9`), and modern Cobalt Blue accents (`#3B82F6`) with dark system bar indicators.
