@@ -166,19 +166,10 @@ fun TimerScreen(
         label = "BreathingAlpha"
     )
 
-    val ambientColor1 = MaterialTheme.colorScheme.primary.copy(alpha = animAlpha)
-    val ambientColor2 = MaterialTheme.colorScheme.secondary.copy(alpha = animAlpha * 0.7f)
-    val ambientBg = MaterialTheme.colorScheme.background
-
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(ambientColor1, ambientColor2, ambientBg),
-                    radius = 1200f
-                )
-            )
+            .background(MaterialTheme.colorScheme.background)
     ) {
         if (timerState.status == TimerStatus.RUNNING || timerState.status == TimerStatus.PAUSED) {
             // Active Timer View

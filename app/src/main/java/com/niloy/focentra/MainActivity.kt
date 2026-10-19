@@ -201,22 +201,35 @@ class MainActivity : ComponentActivity() {
                                     }
 
                                     if (isMainScreen) {
-                                        // Notification Bell Icon
+                                        // Notification Bell Icon with WhatsApp style badge counter
                                         IconButton(onClick = { showNotificationCenterDialog = true }) {
-                                            Box {
+                                            Box(contentAlignment = Alignment.Center) {
                                                 Icon(
                                                     imageVector = if (activeNotifications.isNotEmpty()) Icons.Default.NotificationsActive else Icons.Default.Notifications,
                                                     contentDescription = "Notifications",
                                                     tint = if (activeNotifications.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
                                                 if (activeNotifications.isNotEmpty()) {
+                                                    val countText = if (activeNotifications.size > 9) "9+" else activeNotifications.size.toString()
                                                     Box(
                                                         modifier = Modifier
-                                                            .size(8.dp)
+                                                            .sizeIn(minWidth = 16.dp, minHeight = 16.dp)
                                                             .clip(androidx.compose.foundation.shape.CircleShape)
                                                             .background(MaterialTheme.colorScheme.error)
                                                             .align(Alignment.TopEnd)
-                                                    )
+                                                            .padding(horizontal = 3.dp, vertical = 1.dp),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Text(
+                                                            text = countText,
+                                                            color = MaterialTheme.colorScheme.onError,
+                                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                                fontSize = 9.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                lineHeight = 9.sp
+                                                            )
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
@@ -301,6 +314,29 @@ class MainActivity : ComponentActivity() {
                                     NavigationTab.SETTINGS -> SettingsScreen(viewModel = viewModel)
                                 }
                             }
+
+                            val activeNotifications by viewModel.activeNotifications.collectAsStateWithLifecycle()
+                            var lastNotifiedCount by remember { mutableIntStateOf(0) }
+                            var latestBannerNotif by remember { mutableStateOf<com.niloy.focentra.viewmodel.AppNotification?>(null) }
+
+                            LaunchedEffect(activeNotifications) {
+                                if (activeNotifications.size > lastNotifiedCount && activeNotifications.isNotEmpty()) {
+                                    latestBannerNotif = activeNotifications.last()
+                                }
+                                lastNotifiedCount = activeNotifications.size
+                            }
+
+                            com.niloy.focentra.ui.components.WhatsAppStyleHeadsUpBanner(
+                                notification = latestBannerNotif,
+                                onDismiss = { latestBannerNotif = null },
+                                onClick = {
+                                    latestBannerNotif = null
+                                    showNotificationCenterDialog = true
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .padding(top = innerPadding.calculateTopPadding())
+                            )
 
                             val shouldShowBottomBar = currentTab != NavigationTab.SUBJECTS &&
                                     currentTab != NavigationTab.ACHIEVEMENTS &&

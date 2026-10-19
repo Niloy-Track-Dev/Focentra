@@ -281,7 +281,7 @@ fun NotificationCenterDialog(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("বন্ধ করুন")
+                    Text("Close")
                 }
             }
         }
