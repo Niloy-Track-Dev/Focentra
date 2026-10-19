@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
         StudyTaskEntity::class,
         ChapterEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -60,6 +60,13 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `chapters` ADD COLUMN `tapCount` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `chapters` ADD COLUMN `status` TEXT NOT NULL DEFAULT 'পড়া শুরু হয় নাই'")
+            }
+        }
+
         fun getDatabase(context: Context, scope: CoroutineScope = CoroutineScope(Dispatchers.IO)): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -67,7 +74,8 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "focentra_database.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .fallbackToDestructiveMigration()
                     .addCallback(DatabaseCallback(scope))
                     .build()
                 INSTANCE = instance
@@ -92,6 +100,61 @@ abstract class AppDatabase : RoomDatabase() {
             val achievementDao = database.achievementDao()
             val reminderDao = database.reminderDao()
             val settingDao = database.settingDao()
+            val subjectDao = database.subjectDao()
+            val chapterDao = database.chapterDao()
+
+            // Pre-populate Bangla 1st Paper
+            val banglaSubjectId = subjectDao.insertSubject(
+                SubjectEntity(
+                    name = "বাংলা ১ম পত্র",
+                    colorHex = "#E11D48",
+                    iconName = "MenuBook",
+                    targetHours = 30f,
+                    description = "উচ্চমাধ্যমিক বাংলা প্রথম পত্র সিলেবাস"
+                )
+            )
+
+            val banglaChapters = listOf(
+                "১. বাঙ্গালার নব্য লেখকদিগের প্রতি নিবেদন (গদ্য)",
+                "২. অপরিচিতা (গদ্য)",
+                "৩. বিলাসী (গদ্য)",
+                "৪. গৃহ (গদ্য)",
+                "৫. আহ্বান (গদ্য)",
+                "৬. আমার পথ (গদ্য)",
+                "৭. মানব-কল্যাণ (গদ্য)",
+                "৮. মাসি-পিসি (গদ্য)",
+                "৯. বায়ান্নর দিনগুলো (গদ্য)",
+                "১০. রেইনকোট (গদ্য)",
+                "১১. নেকলেস (গদ্য)",
+                "১২. অর্ধাঙ্গী / সাহিত্যের খেলা (গদ্য)",
+                "১৩. বিভীষণের প্রতি মেঘনাদ (পদ্য)",
+                "১৪. সোনার তরী (পদ্য)",
+                "১৫. বিদ্রোহী (পদ্য)",
+                "১৬. প্রতিদান (পদ্য)",
+                "১৭. সুচেতনা (পদ্য)",
+                "১৮. তাহারেই পড়ে মনে (পদ্য)",
+                "১৯. পদ্মা (পদ্য)",
+                "২০. ১৮ বছর বয়স (পদ্য)",
+                "২১. ফেব্রুয়ারি ১৯৬৯ (পদ্য)",
+                "২২. আমি কিংবদন্তির কথা বলছি (পদ্য)",
+                "২৩. নূরলদীনের কথা মনে পড়ে যায় (পদ্য)",
+                "২৪. ছবি (পদ্য)",
+                "২৫. লালসালু (সহপাঠ - উপন্যাস)",
+                "২৬. সিরাজউদ্দৌলা (সহপাঠ - নাটক)"
+            )
+
+            banglaChapters.forEachIndexed { index, title ->
+                chapterDao.insertChapter(
+                    ChapterEntity(
+                        subjectId = banglaSubjectId,
+                        subjectName = "বাংলা ১ম পত্র",
+                        chapterName = title,
+                        tapCount = 0,
+                        status = "পড়া শুরু হয় নাই",
+                        orderIndex = index
+                    )
+                )
+            }
 
             // Achievements
             val achievements = listOf(

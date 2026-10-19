@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.7.0] - 2026-10-18
+
+- **Simplified 3-Tap Syllabus Tracker**: Replaced old class number and sequential class unlocking with intuitive 3-tap completion and status dropdown selector.
+- **Built-in Bangla 1st Paper Syllabus**: Pre-populated full 26-chapter HSC Bangla 1st Paper syllabus (গদ্য, পদ্য, উপন্যাস ও নাটক).
+- **Version Bump**: Incremented `versionCode` to `26` and `versionName` to `4.7.0`.
+
 ## [4.6.0] - 2026-10-18
 
 - **Collapsible Exam Goals & Milestones**: Multiple exam milestones on DashboardScreen now collapse into sleek compact rows displaying Goal Title & "XX Days Left", expanding on click to preserve screen space.

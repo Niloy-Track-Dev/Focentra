@@ -1364,22 +1364,13 @@ fun SyllabusCompilationReadinessCard(
 ) {
     val targetChapters = remember(chapters, target) {
         chapters.filter {
-            it.subjectName.equals(target.subject, ignoreCase = true) || target.subject.equals("General", ignoreCase = true)
+            it.subjectName.equals(target.subject, ignoreCase = true) || target.subject.equals("General", ignoreCase = true) || target.subject.equals("All Subjects", ignoreCase = true)
         }
     }
 
-    val totalClasses = targetChapters.sumOf { it.totalClasses }
-    val completedClasses = targetChapters.sumOf { it.completedClassesCount }
-    val completedChapters = targetChapters.count { it.completedClassesCount >= it.totalClasses && it.totalClasses > 0 }
-
-    val totalRevisions = targetChapters.size * 2
-    val completedRevisions = targetChapters.count { it.isRevision1Completed } + targetChapters.count { it.isRevision2Completed }
-
-    val readinessScore = if (totalClasses > 0) {
-        val classProgress = (completedClasses.toFloat() / totalClasses) * 70f
-        val revProgress = if (totalRevisions > 0) (completedRevisions.toFloat() / totalRevisions) * 30f else 0f
-        (classProgress + revProgress).coerceIn(0f, 100f)
-    } else 0f
+    val totalChapters = targetChapters.size
+    val finishedChapters = targetChapters.count { it.tapCount >= 3 || it.status == "অধ্যায় Completely শেষ" }
+    val progressPct = if (totalChapters > 0) (finishedChapters.toFloat() / totalChapters * 100f).coerceIn(0f, 100f) else 0f
 
     var isExpanded by remember { mutableStateOf(true) }
 
@@ -1429,12 +1420,12 @@ fun SyllabusCompilationReadinessCard(
 
                     Column {
                         Text(
-                            text = "Syllabus Compilation & Exam Readiness",
+                            text = "সিলেবাস ট্র্যাকার (Syllabus Tracker)",
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = if (targetChapters.isNotEmpty()) "${targetChapters.size} Chapters Linked • ${readinessScore.toInt()}% Exam Ready" else "No syllabus chapters created yet",
+                            text = if (targetChapters.isNotEmpty()) "$totalChapters টি অধ্যায় সংযুক্ত • $finishedChapters টি শেষ" else "কোনো অধ্যায় সংযুক্ত নেই",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1445,13 +1436,13 @@ fun SyllabusCompilationReadinessCard(
                     Surface(
                         shape = RoundedCornerShape(10.dp),
                         color = when {
-                            readinessScore >= 80f -> MaterialTheme.colorScheme.primaryContainer
-                            readinessScore >= 40f -> MaterialTheme.colorScheme.secondaryContainer
+                            progressPct >= 80f -> MaterialTheme.colorScheme.primaryContainer
+                            progressPct >= 40f -> MaterialTheme.colorScheme.secondaryContainer
                             else -> MaterialTheme.colorScheme.surfaceVariant
                         }
                     ) {
                         Text(
-                            text = "${readinessScore.toInt()}% Ready",
+                            text = "${progressPct.toInt()}% শেষ",
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
                             color = MaterialTheme.colorScheme.primary
@@ -1468,12 +1459,12 @@ fun SyllabusCompilationReadinessCard(
             }
 
             LinearProgressIndicator(
-                progress = { readinessScore / 100f },
+                progress = { progressPct / 100f },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp)
                     .clip(RoundedCornerShape(3.dp)),
-                color = if (readinessScore >= 80f) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
+                color = if (progressPct >= 80f) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
                 trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
 
@@ -1483,19 +1474,14 @@ fun SyllabusCompilationReadinessCard(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Classes: $completedClasses/$totalClasses",
+                        text = "মোট অধ্যায়: $totalChapters",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Chapters Done: $completedChapters/${targetChapters.size}",
+                        text = "সম্পূর্ণ শেষ: $finishedChapters / $totalChapters",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "Revisions: $completedRevisions/$totalRevisions",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
