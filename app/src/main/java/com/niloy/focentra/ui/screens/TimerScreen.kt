@@ -304,20 +304,12 @@ fun TimerScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            item {
-                                FilterChip(
-                                    selected = selectedChapter.isEmpty(),
-                                    onClick = { selectedChapter = "" },
-                                    label = { Text("None") },
-                                    shape = RoundedCornerShape(12.dp)
-                                )
-                            }
                             items(matchingChapters) { ch ->
                                 val cleanName = ch.chapterName.replace(Regex("(?i)\\bnoun\\b"), "").replace("Noun", "").replace("noun", "").trim()
                                 val isSelected = ch.chapterName == selectedChapter
                                 FilterChip(
                                     selected = isSelected,
-                                    onClick = { selectedChapter = ch.chapterName },
+                                    onClick = { selectedChapter = if (isSelected) "" else ch.chapterName },
                                     label = { Text(cleanName) },
                                     shape = RoundedCornerShape(12.dp)
                                 )
