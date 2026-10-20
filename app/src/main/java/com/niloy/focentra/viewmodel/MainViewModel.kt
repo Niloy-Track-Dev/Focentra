@@ -464,15 +464,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         viewModelScope.launch {
+            var lastHandledSessionId: String? = null
             timerEngine.uiState.collect { state ->
                 if (state.status == TimerStatus.COMPLETED && state.completedSessionData != null) {
                     val session = state.completedSessionData
-                    val chapter = state.selectedChapter
-                    if (session != null && chapter.isNotBlank() && session.actualFocusedSeconds >= 30L) {
+                    if (session != null && session.id.toString() != lastHandledSessionId) {
+                        lastHandledSessionId = session.id.toString()
+                        val chapterName = if (state.selectedChapter.isNotBlank()) state.selectedChapter else (if (session.topic.isNotBlank()) session.topic else "General Chapter")
+                        val durMins = (session.actualFocusedSeconds / 60).toInt().coerceAtLeast(1)
                         recordRevision(
-                            subjectName = session.subject,
-                            chapterName = chapter,
-                            durationMinutes = (session.actualFocusedSeconds / 60).toInt().coerceAtLeast(1)
+                            subjectName = session.subject.ifBlank { "General" },
+                            chapterName = chapterName,
+                            durationMinutes = durMins,
+                            stage = if (session.topic.isNotBlank()) session.topic else "Revision"
                         )
                     }
                 }
