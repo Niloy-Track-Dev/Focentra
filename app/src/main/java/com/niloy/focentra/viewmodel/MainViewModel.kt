@@ -99,9 +99,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _currentTab = MutableStateFlow(NavigationTab.DASHBOARD)
     val currentTab: StateFlow<NavigationTab> = _currentTab.asStateFlow()
 
-    // Seen Notification IDs & Persistent Posting Track
+    // Seen Notification IDs & Persistent Posting Track & Dismissed IDs
     private val _seenNotificationIds = MutableStateFlow<Set<String>>(emptySet())
     val seenNotificationIds: StateFlow<Set<String>> = _seenNotificationIds.asStateFlow()
+
+    private val _dismissedNotificationIds = MutableStateFlow<Set<String>>(emptySet())
+    val dismissedNotificationIds: StateFlow<Set<String>> = _dismissedNotificationIds.asStateFlow()
 
     private val _postedNotificationIds = MutableStateFlow<Set<String>>(emptySet())
 
@@ -115,6 +118,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val updated = _seenNotificationIds.value + activeIds
             _seenNotificationIds.value = updated
             repository.setSetting("seen_notification_ids", updated.joinToString(","))
+        }
+    }
+
+    fun dismissNotification(id: String) {
+        viewModelScope.launch {
+            val updated = _dismissedNotificationIds.value + id
+            _dismissedNotificationIds.value = updated
+            repository.setSetting("dismissed_notification_ids", updated.joinToString(","))
         }
     }
 
@@ -278,7 +289,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }.stateIn(viewModelScope, SharingStarted.Lazily, 0L)
 
     // Derived states optimized on Dispatchers.Default background threads
-    val activeNotifications = combine(chapters, sessions, goals, todayFocusedMinutes) { chapterList, sessionList, goalList, todayMins ->
+    val activeNotifications = combine(chapters, sessions, goals, todayFocusedMinutes, _dismissedNotificationIds) { chapterList, sessionList, goalList, todayMins, dismissed ->
         kotlinx.coroutines.withContext(Dispatchers.Default) {
             val list = mutableListOf<AppNotification>()
             val now = System.currentTimeMillis()
@@ -320,32 +331,38 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
 
                     if (title.isNotEmpty()) {
-                        list.add(
-                            AppNotification(
-                                id = "rev_${ch.id}_${compTime}_${stage}",
-                                type = NotificationType.REVISION_DUE,
-                                title = title,
-                                message = msg,
-                                subjectName = ch.subjectName,
-                                chapterName = ch.chapterName,
-                                timestamp = compTime
+                        val notifId = "rev_${ch.id}_${compTime}_${stage}"
+                        if (notifId !in dismissed) {
+                            list.add(
+                                AppNotification(
+                                    id = notifId,
+                                    type = NotificationType.REVISION_DUE,
+                                    title = title,
+                                    message = msg,
+                                    subjectName = ch.subjectName,
+                                    chapterName = ch.chapterName,
+                                    timestamp = compTime
+                                )
                             )
-                        )
+                        }
                     }
                 } else if (ch.status != "পড়া শুরু হয় নাই" && ch.status.isNotBlank()) {
                     val lastStudy = ch.lastStudiedTimestamp
-                    if (now - lastStudy >= FIVE_DAYS_MS) {
-                        list.add(
-                            AppNotification(
-                                id = "inact_${ch.id}_${todayDateStr}",
-                                type = NotificationType.INACTIVITY_WARNING,
-                                title = "🔥 পড়া সম্পূর্ণ করার মেন্টর অ্যালার্ট",
-                                message = "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টি গত ৫ দিন ধরে বন্ধ রয়েছে। অধ্যায়টি শেষ করতে আজই ফোকাস সেশন শুরু করো!",
-                                subjectName = ch.subjectName,
-                                chapterName = ch.chapterName,
-                                timestamp = lastStudy
+                    if (lastStudy > 0 && (now - lastStudy >= FIVE_DAYS_MS)) {
+                        val notifId = "inact_${ch.id}_${todayDateStr}"
+                        if (notifId !in dismissed) {
+                            list.add(
+                                AppNotification(
+                                    id = notifId,
+                                    type = NotificationType.INACTIVITY_WARNING,
+                                    title = "🔥 পড়া সম্পূর্ণ করার মেন্টর অ্যালার্ট",
+                                    message = "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টি গত ৫ দিন ধরে বন্ধ রয়েছে। অধ্যায়টি শেষ করতে আজই ফোকাস সেশন শুরু করো!",
+                                    subjectName = ch.subjectName,
+                                    chapterName = ch.chapterName,
+                                    timestamp = lastStudy
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }
@@ -362,14 +379,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 } else {
                     "আজকের Daily Study Goal পূরণ করতে আরো $hoursBn ঘন্টা $minsBn মিনিট পড়াশোনা করা প্রয়োজন।"
                 }
-                list.add(
-                    AppNotification(
-                        id = "goal_warning_${todayDateStr}",
-                        type = NotificationType.GOAL_WARNING,
-                        title = "🎯 স্টাডি টার্গেট ট্র্যাকার",
-                        message = goalMessage
+                val notifId = "goal_warning_${todayDateStr}"
+                if (notifId !in dismissed) {
+                    list.add(
+                        AppNotification(
+                            id = notifId,
+                            type = NotificationType.GOAL_WARNING,
+                            title = "🎯 স্টাডি টার্গেট ট্র্যাকার",
+                            message = goalMessage
+                        )
                     )
-                )
+                }
             }
 
             list.toList()
@@ -568,10 +588,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _examTargets.value = list
             }
 
-            // Load Seen and Posted Notification IDs
+            // Load Seen, Dismissed, and Posted Notification IDs
             val seenStr = repository.getSetting("seen_notification_ids", "")
             if (seenStr.isNotBlank()) {
                 _seenNotificationIds.value = seenStr.split(",").filter { it.isNotBlank() }.toSet()
+            }
+            val dismissedStr = repository.getSetting("dismissed_notification_ids", "")
+            if (dismissedStr.isNotBlank()) {
+                _dismissedNotificationIds.value = dismissedStr.split(",").filter { it.isNotBlank() }.toSet()
             }
             val postedStr = repository.getSetting("posted_notification_ids", "")
             if (postedStr.isNotBlank()) {

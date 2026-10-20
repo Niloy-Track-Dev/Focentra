@@ -87,7 +87,11 @@ fun NotificationScreen(
                     NotificationCardItem(
                         notification = notif,
                         isUnseen = isUnseen,
+                        onDismiss = {
+                            viewModel.dismissNotification(notif.id)
+                        },
                         onStartRevision = { subjectName, _ ->
+                            viewModel.dismissNotification(notif.id)
                             viewModel.startQuickTimer(30, subjectName)
                         }
                     )
@@ -101,6 +105,7 @@ fun NotificationScreen(
 private fun NotificationCardItem(
     notification: AppNotification,
     isUnseen: Boolean,
+    onDismiss: () -> Unit,
     onStartRevision: (String, String) -> Unit
 ) {
     val cardBgColor = if (isUnseen) {
@@ -217,24 +222,24 @@ private fun NotificationCardItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            if (notification.type == NotificationType.REVISION_DUE && notification.subjectName.isNotBlank()) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(
+                    onClick = onDismiss,
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                 ) {
-                    TextButton(
-                        onClick = { /* Dismiss/bypass warning */ },
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = "Emergency Bypass / Continue Anyway",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                        )
-                    }
+                    Text(
+                        text = if (notification.type == NotificationType.REVISION_DUE) "Emergency Bypass / dismiss" else "ডিমিস করুন",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
 
+                if (notification.type == NotificationType.REVISION_DUE && notification.subjectName.isNotBlank()) {
                     Button(
                         onClick = { onStartRevision(notification.subjectName, notification.chapterName) },
                         shape = RoundedCornerShape(10.dp),
