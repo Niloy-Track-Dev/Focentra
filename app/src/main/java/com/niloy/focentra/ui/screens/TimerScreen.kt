@@ -59,6 +59,8 @@ fun TimerScreen(
     var showBrainDumpDialog by remember { mutableStateOf(false) }
     var showManualDataInputDialog by remember { mutableStateOf(false) }
     var showCancelConfirmDialog by remember { mutableStateOf(false) }
+    var warningTitle by remember { mutableStateOf("") }
+    var warningMessage by remember { mutableStateOf("") }
     var showSelectionWarningDialog by remember { mutableStateOf(false) }
     val brainDumpNotes by viewModel.brainDumpNotes.collectAsStateWithLifecycle()
 
@@ -134,14 +136,14 @@ fun TimerScreen(
             onDismissRequest = { showSelectionWarningDialog = false },
             title = {
                 Text(
-                    text = "বিষয় ও অধ্যায় নির্বাচন করুন",
+                    text = warningTitle,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
             },
             text = {
                 Text(
-                    text = "দয়া করে ফোকাস টাইমার শুরু করার পূর্বে একটি বিষয় (Subject) এবং অধ্যায় (Chapter) নির্বাচন করুন।",
+                    text = warningMessage,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -151,7 +153,7 @@ fun TimerScreen(
                     onClick = { showSelectionWarningDialog = false },
                     shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text("ঠিক আছে")
+                    Text("OK")
                 }
             },
             shape = RoundedCornerShape(20.dp),
@@ -668,7 +670,13 @@ fun TimerScreen(
                 // Big Start Button
                 Button(
                     onClick = {
-                        if (selectedSubject.isBlank() || selectedChapter.isBlank()) {
+                        if (selectedSubject.isBlank() && selectedChapter.isBlank()) {
+                            warningTitle = "Subject & Chapter Required"
+                            warningMessage = "Please select both a subject and a chapter before starting your focus session."
+                            showSelectionWarningDialog = true
+                        } else if (selectedChapter.isBlank()) {
+                            warningTitle = "Chapter Selection Required"
+                            warningMessage = "Please select a chapter before starting your focus session."
                             showSelectionWarningDialog = true
                         } else {
                             viewModel.timerEngine.configureSession(

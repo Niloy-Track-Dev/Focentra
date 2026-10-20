@@ -71,6 +71,7 @@ fun DashboardScreen(
     val heatmapData by viewModel.heatmapData.collectAsStateWithLifecycle()
     val examTargets by viewModel.examTargets.collectAsStateWithLifecycle()
     val subjects by viewModel.subjects.collectAsStateWithLifecycle()
+    val chapters by viewModel.chapters.collectAsStateWithLifecycle()
 
     var showAddExamDialog by remember { mutableStateOf(false) }
     var targetToEdit by remember { mutableStateOf<com.niloy.focentra.viewmodel.ExamTarget?>(null) }
@@ -902,16 +903,24 @@ fun DashboardScreen(
 
     pendingQuickTimerMode?.let { (mode, defaultMins) ->
         val subjectNames = remember(subjects) {
-            val list = mutableListOf("General Study")
-            subjects.forEach { if (!list.contains(it.name)) list.add(it.name) }
+            val list = mutableListOf<String>()
+            subjects.forEach { if (!list.contains(it.name) && it.name != "General Study") list.add(it.name) }
             list
         }
         QuickTimerSubjectDialog(
             subjects = subjectNames,
+            chapters = chapters,
             mode = mode,
             onDismiss = { pendingQuickTimerMode = null },
-            onStart = { selectedSubj ->
-                viewModel.startQuickTimer(defaultMins, selectedSubj, mode)
+            onStart = { selectedSubj, selectedChap ->
+                viewModel.timerEngine.configureSession(
+                    mode = mode,
+                    subject = selectedSubj,
+                    selectedChapter = selectedChap,
+                    durationMinutes = defaultMins
+                )
+                viewModel.timerEngine.startSession()
+                viewModel.navigateTo(NavigationTab.TIMER)
                 pendingQuickTimerMode = null
             }
         )
@@ -921,12 +930,20 @@ fun DashboardScreen(
 @Composable
 fun QuickTimerSubjectDialog(
     subjects: List<String>,
+    chapters: List<ChapterEntity>,
     mode: SessionMode,
     onDismiss: () -> Unit,
-    onStart: (subject: String) -> Unit
+    onStart: (subject: String, chapter: String) -> Unit
 ) {
-    var selectedSubject by remember { mutableStateOf(subjects.firstOrNull() ?: "General Study") }
+    var selectedSubject by remember { mutableStateOf(subjects.firstOrNull() ?: "") }
+    var selectedChapter by remember { mutableStateOf("") }
     var customSubject by remember { mutableStateOf("") }
+    var warningText by remember { mutableStateOf("") }
+
+    val matchingChapters = remember(chapters, selectedSubject) {
+        if (selectedSubject.isBlank()) emptyList()
+        else chapters.filter { it.subjectName.equals(selectedSubject, ignoreCase = true) }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -951,10 +968,41 @@ fun QuickTimerSubjectDialog(
                     items(subjects) { subj ->
                         FilterChip(
                             selected = selectedSubject == subj,
-                            onClick = { selectedSubject = subj },
+                            onClick = {
+                                selectedSubject = subj
+                                selectedChapter = ""
+                                warningText = ""
+                            },
                             label = { Text(subj) },
                             shape = RoundedCornerShape(12.dp)
                         )
+                    }
+                }
+
+                if (matchingChapters.isNotEmpty()) {
+                    Text(
+                        text = "Select a chapter:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(matchingChapters) { ch ->
+                            val cleanName = ch.chapterName.replace(Regex("(?i)\\bnoun\\b"), "").replace("Noun", "").replace("noun", "").trim()
+                            val isSelected = selectedChapter == ch.chapterName
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = {
+                                    selectedChapter = if (isSelected) "" else ch.chapterName
+                                    warningText = ""
+                                },
+                                label = { Text(cleanName) },
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                        }
                     }
                 }
 
@@ -963,19 +1011,37 @@ fun QuickTimerSubjectDialog(
                     onValueChange = {
                         customSubject = it
                         if (it.isNotBlank()) selectedSubject = it
+                        warningText = ""
                     },
                     label = { Text("Or enter custom subject") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )
+
+                if (warningText.isNotBlank()) {
+                    Text(
+                        text = warningText,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
                     val finalSubject = customSubject.ifBlank { selectedSubject }
-                    onStart(finalSubject)
+                    if (finalSubject.isBlank() && selectedChapter.isBlank()) {
+                        warningText = "Please select both a subject and a chapter."
+                    } else if (finalSubject.isBlank()) {
+                        warningText = "Please select a subject."
+                    } else if (selectedChapter.isBlank()) {
+                        warningText = "Please select a chapter."
+                    } else {
+                        onStart(finalSubject, selectedChapter)
+                    }
                 },
                 shape = RoundedCornerShape(12.dp)
             ) {
