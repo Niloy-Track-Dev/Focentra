@@ -25,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.niloy.focentra.data.local.entity.ChapterEntity
 import com.niloy.focentra.engine.SessionMode
 import com.niloy.focentra.engine.TimerStatus
+import com.niloy.focentra.ui.components.TimerProgressRing
 import com.niloy.focentra.ui.components.parseColorHex
 import com.niloy.focentra.viewmodel.MainViewModel
 import com.niloy.focentra.viewmodel.RevisionRecord
@@ -132,23 +133,29 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
     val chapters by viewModel.chapters.collectAsStateWithLifecycle()
     val timerState by viewModel.timerEngine.uiState.collectAsStateWithLifecycle()
 
-    var selectedSubject by remember { mutableStateOf(subjects.firstOrNull()?.name ?: "General") }
+    var selectedSubject by remember { mutableStateOf(subjects.firstOrNull()?.name ?: "") }
     var selectedChapter by remember { mutableStateOf("") }
+
+    var warningTitle by remember { mutableStateOf("") }
+    var warningMessage by remember { mutableStateOf("") }
     var showSelectionWarningDialog by remember { mutableStateOf(false) }
+
+    var pendingSaveData by remember { mutableStateOf<Triple<String, String, Int>?>(null) }
+    var showSaveDialog by remember { mutableStateOf(false) }
 
     if (showSelectionWarningDialog) {
         AlertDialog(
             onDismissRequest = { showSelectionWarningDialog = false },
             title = {
                 Text(
-                    text = "বিষয় ও অধ্যায় নির্বাচন করুন",
+                    text = warningTitle,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
             },
             text = {
                 Text(
-                    text = "দয়া করে রিভিশন শুরু করার পূর্বে একটি বিষয় (Subject) এবং অধ্যায় (Chapter) নির্বাচন করুন।",
+                    text = warningMessage,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -158,7 +165,7 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
                     onClick = { showSelectionWarningDialog = false },
                     shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text("ঠিক আছে")
+                    Text("OK")
                 }
             },
             shape = RoundedCornerShape(20.dp),
@@ -166,8 +173,36 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
         )
     }
 
+    if (showSaveDialog && pendingSaveData != null) {
+        val (sub, ch, durMins) = pendingSaveData!!
+        RevisionSaveDialog(
+            subjectName = sub,
+            chapterName = ch,
+            durationMinutes = durMins,
+            onDismiss = {
+                showSaveDialog = false
+                pendingSaveData = null
+                viewModel.timerEngine.cancelSession()
+                viewModel.timerEngine.dismissCompletionSheet()
+            },
+            onSave = { notes ->
+                viewModel.recordRevision(
+                    subjectName = sub,
+                    chapterName = if (ch.isNotBlank()) ch else "General Revision",
+                    durationMinutes = durMins,
+                    stage = if (notes.isNotBlank()) notes else "Revision"
+                )
+                viewModel.timerEngine.cancelSession()
+                viewModel.timerEngine.dismissCompletionSheet()
+                showSaveDialog = false
+                pendingSaveData = null
+            }
+        )
+    }
+
     val matchingChapters = remember(chapters, selectedSubject) {
-        chapters.filter { it.subjectName.equals(selectedSubject, ignoreCase = true) }
+        if (selectedSubject.isBlank()) emptyList()
+        else chapters.filter { it.subjectName.equals(selectedSubject, ignoreCase = true) }
     }
 
     Column(
@@ -176,224 +211,243 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Active Stopwatch Banner
+        // Active Stopwatch Timer Ring inside Revision Hub
         if (timerState.status == TimerStatus.RUNNING || timerState.status == TimerStatus.PAUSED) {
             Card(
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    containerColor = MaterialTheme.colorScheme.surface
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), RoundedCornerShape(24.dp))
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = if (timerState.status == TimerStatus.RUNNING) "REVISION STOPWATCH IN PROGRESS" else "REVISION PAUSED",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "${timerState.subject}${if (timerState.selectedChapter.isNotBlank()) " • ${timerState.selectedChapter}" else ""}",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-
-                        val elapsedSec = timerState.focusedSeconds
-                        val hrs = elapsedSec / 3600
-                        val min = (elapsedSec % 3600) / 60
-                        val sec = elapsedSec % 60
-                        val timeStr = if (hrs > 0) String.format("%02d:%02d:%02d", hrs, min, sec) else String.format("%02d:%02d", min, sec)
-
-                        Text(
-                            text = timeStr,
-                            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        if (timerState.status == TimerStatus.RUNNING) {
-                            OutlinedButton(
-                                onClick = { viewModel.timerEngine.pauseSession() },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Icon(Icons.Default.Pause, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Pause")
-                            }
-                        } else {
-                            Button(
-                                onClick = { viewModel.timerEngine.resumeSession() },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Resume")
-                            }
-                        }
-
-                        Button(
-                            onClick = {
-                                val currentSubject = timerState.subject
-                                val currentChapter = timerState.selectedChapter
-                                val startMs = timerState.sessionStartTime
-                                val endMs = System.currentTimeMillis()
-                                val durMins = (timerState.focusedSeconds / 60).toInt().coerceAtLeast(1)
-                                viewModel.timerEngine.finishSession(isEarly = true)
-                                viewModel.recordRevision(
-                                    subjectName = currentSubject,
-                                    chapterName = if (currentChapter.isNotBlank()) currentChapter else "General Revision",
-                                    durationMinutes = durMins,
-                                    startTime = if (startMs > 0) startMs else endMs - (durMins * 60 * 1000L),
-                                    endTime = endMs,
-                                    stage = "Revision"
-                                )
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                        ) {
-                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Finish")
-                        }
-
-                        IconButton(
-                            onClick = { viewModel.timerEngine.cancelSession() }
-                        ) {
-                            Icon(Icons.Default.Stop, contentDescription = "Stop", tint = MaterialTheme.colorScheme.error)
-                        }
-                    }
-                }
-            }
-        }
-
-        // Subject Selector
-        Column {
-            Text(
-                text = "Select Subject",
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(subjects) { sub ->
-                    val isSelected = sub.name == selectedSubject
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = {
-                            selectedSubject = sub.name
-                            selectedChapter = ""
+                    TimerProgressRing(
+                        state = timerState,
+                        onPauseClick = { viewModel.timerEngine.pauseSession() },
+                        onResumeClick = { viewModel.timerEngine.resumeSession() },
+                        onFinishClick = {
+                            val sub = timerState.subject
+                            val ch = timerState.selectedChapter
+                            val durMins = (timerState.focusedSeconds / 60).toInt().coerceAtLeast(1)
+                            viewModel.timerEngine.finishSession(isEarly = true)
+                            viewModel.timerEngine.dismissCompletionSheet()
+                            pendingSaveData = Triple(sub, ch, durMins)
+                            showSaveDialog = true
                         },
-                        label = { Text(sub.name) },
-                        leadingIcon = {
-                            Box(
-                                modifier = Modifier
-                                    .size(10.dp)
-                                    .clip(CircleShape)
-                                    .background(parseColorHex(sub.colorHex))
-                            )
+                        onCancelClick = {
+                            viewModel.timerEngine.cancelSession()
+                            viewModel.timerEngine.dismissCompletionSheet()
                         },
-                        shape = RoundedCornerShape(12.dp)
+                        onLogDistractionClick = { viewModel.timerEngine.addDistraction("Other") },
+                        onToggleFullScreen = { viewModel.setFullScreenFocus(true) },
+                        ringSize = 250.dp
                     )
                 }
             }
-        }
-
-        // Chapter Selector
-        if (matchingChapters.isNotEmpty()) {
+        } else {
+            // Subject Selector
             Column {
                 Text(
-                    text = "Select Chapter",
+                    text = "Select Subject",
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(matchingChapters) { ch ->
-                        val isSelected = ch.chapterName == selectedChapter
+                    items(subjects) { sub ->
+                        val isSelected = sub.name == selectedSubject
                         FilterChip(
                             selected = isSelected,
-                            onClick = { selectedChapter = ch.chapterName },
-                            label = { Text(ch.chapterName) },
+                            onClick = {
+                                selectedSubject = if (isSelected) "" else sub.name
+                                selectedChapter = ""
+                            },
+                            label = { Text(sub.name) },
+                            leadingIcon = {
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .clip(CircleShape)
+                                        .background(parseColorHex(sub.colorHex))
+                                )
+                            },
                             shape = RoundedCornerShape(12.dp)
                         )
                     }
                 }
             }
-        }
 
-        // Revision Mode Info Header
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Timer,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
-            )
-            Text(
-                text = "Revision Mode: Stopwatch",
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-
-        Button(
-            onClick = {
-                if (selectedSubject.isBlank() || selectedChapter.isBlank()) {
-                    showSelectionWarningDialog = true
-                } else {
-                    if (timerState.status == TimerStatus.RUNNING || timerState.status == TimerStatus.PAUSED) {
-                        viewModel.timerEngine.cancelSession()
-                    }
-                    viewModel.timerEngine.configureSession(
-                        mode = SessionMode.STOPWATCH,
-                        subject = selectedSubject,
-                        selectedChapter = selectedChapter,
-                        topic = "Revision Stopwatch"
+            // Chapter Selector
+            if (matchingChapters.isNotEmpty()) {
+                Column {
+                    Text(
+                        text = "Select Chapter",
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
                     )
-                    viewModel.timerEngine.startSession()
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(matchingChapters) { ch ->
+                            val cleanName = ch.chapterName.replace(Regex("(?i)\\bnoun\\b"), "").replace("Noun", "").replace("noun", "").trim()
+                            val isSelected = ch.chapterName == selectedChapter
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { selectedChapter = if (isSelected) "" else ch.chapterName },
+                                label = { Text(cleanName) },
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                        }
+                    }
                 }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(54.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-        ) {
-            Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Start Stopwatch Revision",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-            )
+            }
+
+            // Revision Mode Info Header
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Timer,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = "Revision Mode: Stopwatch",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            Button(
+                onClick = {
+                    if (selectedSubject.isBlank() && selectedChapter.isBlank()) {
+                        warningTitle = "Subject & Chapter Required"
+                        warningMessage = "Please select both a subject and a chapter before starting your revision session."
+                        showSelectionWarningDialog = true
+                    } else if (selectedChapter.isBlank()) {
+                        warningTitle = "Chapter Selection Required"
+                        warningMessage = "Please select a chapter before starting your revision session."
+                        showSelectionWarningDialog = true
+                    } else {
+                        if (timerState.status == TimerStatus.RUNNING || timerState.status == TimerStatus.PAUSED) {
+                            viewModel.timerEngine.cancelSession()
+                            viewModel.timerEngine.dismissCompletionSheet()
+                        }
+                        viewModel.timerEngine.configureSession(
+                            mode = SessionMode.STOPWATCH,
+                            subject = selectedSubject,
+                            selectedChapter = selectedChapter,
+                            topic = "Revision Stopwatch"
+                        )
+                        viewModel.timerEngine.startSession()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Start Stopwatch Revision",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(100.dp))
     }
+}
+
+@Composable
+fun RevisionSaveDialog(
+    subjectName: String,
+    chapterName: String,
+    durationMinutes: Int,
+    onDismiss: () -> Unit,
+    onSave: (notes: String) -> Unit
+) {
+    var notes by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(26.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Revision Completed!",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "$subjectName -> $chapterName",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Focused Duration: ${durationMinutes}m",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text("Revision Notes (Optional)") },
+                    placeholder = { Text("Key formulas, weak points reviewed...") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    maxLines = 3
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onSave(notes) },
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text("Save Session")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable
@@ -469,6 +523,7 @@ private fun UpcomingScheduledRevisionsSection(viewModel: MainViewModel) {
                     onStart = {
                         if (viewModel.timerEngine.uiState.value.status == TimerStatus.RUNNING || viewModel.timerEngine.uiState.value.status == TimerStatus.PAUSED) {
                             viewModel.timerEngine.cancelSession()
+                            viewModel.timerEngine.dismissCompletionSheet()
                         }
                         viewModel.timerEngine.configureSession(
                             mode = SessionMode.STOPWATCH,
