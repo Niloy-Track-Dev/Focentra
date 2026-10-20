@@ -794,9 +794,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // Subject operations
     fun createSubject(name: String, colorHex: String, iconName: String, targetHours: Float, description: String) {
         viewModelScope.launch {
+            val trimmedName = name.trim()
+            val existing = subjects.value.find { it.name.trim().equals(trimmedName, ignoreCase = true) }
+            if (existing != null) {
+                _snackbarMessage.emit("Subject «$trimmedName» already exists.")
+                return@launch
+            }
             repository.insertSubject(
                 SubjectEntity(
-                    name = name,
+                    name = trimmedName,
                     colorHex = colorHex,
                     iconName = iconName,
                     targetHours = targetHours,
@@ -804,7 +810,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     orderIndex = subjects.value.size
                 )
             )
-            _snackbarMessage.emit("Subject «$name» created.")
+            _snackbarMessage.emit("Subject «$trimmedName» created.")
         }
     }
 
