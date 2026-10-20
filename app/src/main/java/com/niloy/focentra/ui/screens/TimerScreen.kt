@@ -38,10 +38,12 @@ fun TimerScreen(
 ) {
     val timerState by viewModel.timerEngine.uiState.collectAsStateWithLifecycle()
     val subjects by viewModel.subjects.collectAsStateWithLifecycle()
+    val chapters by viewModel.chapters.collectAsStateWithLifecycle()
     val presets by viewModel.presets.collectAsStateWithLifecycle()
 
     var selectedMode by remember { mutableStateOf(SessionMode.COUNTDOWN) }
     var selectedSubject by remember { mutableStateOf("Mathematics") }
+    var selectedChapter by remember { mutableStateOf("") }
     var topicText by remember { mutableStateOf("") }
     var goalText by remember { mutableStateOf("") }
     var selectedDurationMinutes by remember { mutableIntStateOf(25) }
@@ -266,7 +268,10 @@ fun TimerScreen(
                             val isSelected = sub.name == selectedSubject
                             FilterChip(
                                 selected = isSelected,
-                                onClick = { selectedSubject = sub.name },
+                                onClick = {
+                                    selectedSubject = sub.name
+                                    selectedChapter = ""
+                                },
                                 label = { Text(sub.name) },
                                 leadingIcon = {
                                     Box(
@@ -278,6 +283,44 @@ fun TimerScreen(
                                 },
                                 shape = RoundedCornerShape(12.dp)
                             )
+                        }
+                    }
+                }
+
+                // Chapter Picker (if chapters exist for selected subject)
+                val matchingChapters = remember(chapters, selectedSubject) {
+                    chapters.filter { it.subjectName.equals(selectedSubject, ignoreCase = true) }
+                }
+
+                if (matchingChapters.isNotEmpty()) {
+                    Column {
+                        Text(
+                            text = "Chapter (Optional)",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            item {
+                                FilterChip(
+                                    selected = selectedChapter.isEmpty(),
+                                    onClick = { selectedChapter = "" },
+                                    label = { Text("None") },
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                            }
+                            items(matchingChapters) { ch ->
+                                val isSelected = ch.chapterName == selectedChapter
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = { selectedChapter = ch.chapterName },
+                                    label = { Text(ch.chapterName) },
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -604,6 +647,7 @@ fun TimerScreen(
                         viewModel.timerEngine.configureSession(
                             mode = selectedMode,
                             subject = selectedSubject,
+                            selectedChapter = selectedChapter,
                             topic = topicText,
                             goal = goalText,
                             durationMinutes = selectedDurationMinutes,

@@ -42,7 +42,8 @@ enum class NavigationTab {
     ACHIEVEMENTS,
     PRESETS,
     SETTINGS,
-    NOTIFICATIONS
+    NOTIFICATIONS,
+    REVISION_HUB
 }
 
 data class BrainDumpNote(
@@ -61,6 +62,15 @@ data class ExamTarget(
     val subject: String = "General",
     val notes: String = "",
     val chapterIds: List<Long> = emptyList()
+)
+
+data class RevisionRecord(
+    val id: String = UUID.randomUUID().toString(),
+    val subjectName: String,
+    val chapterName: String,
+    val durationMinutes: Int,
+    val timestamp: Long = System.currentTimeMillis(),
+    val revisionStage: String = "Revision"
 )
 
 data class DashboardWidgetOrder(
@@ -260,19 +270,43 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         kotlinx.coroutines.withContext(Dispatchers.Default) {
             val list = mutableListOf<AppNotification>()
             val now = System.currentTimeMillis()
-            val THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000L
-            val FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000L
+            val ONE_DAY_MS = 24 * 60 * 60 * 1000L
+            val THREE_DAYS_MS = 3 * ONE_DAY_MS
+            val FIVE_DAYS_MS = 5 * ONE_DAY_MS
+            val SEVEN_DAYS_MS = 7 * ONE_DAY_MS
+            val FIFTEEN_DAYS_MS = 15 * ONE_DAY_MS
 
             chapterList.forEach { ch ->
                 val isCompleted = ch.tapCount >= 3 || ch.status == "অধ্যায় Completely শেষ"
                 if (isCompleted) {
                     val compTime = if (ch.completedTimestamp > 0) ch.completedTimestamp else ch.lastStudiedTimestamp
-                    if (now - compTime >= THREE_DAYS_MS) {
+                    val elapsed = now - compTime
+                    val (title, msg) = when {
+                        elapsed >= FIFTEEN_DAYS_MS -> Pair(
+                            "🧠 ১৫শ দিনের ফাইনাল রিভিশন টেস্ট",
+                            "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টির ১৫শ দিনের রিভিশন সময় উপস্থিত। চূড়ান্ত প্রস্তুতির জন্য ৩০ মিনিট রিভিশন সম্পন্ন করো!"
+                        )
+                        elapsed >= SEVEN_DAYS_MS -> Pair(
+                            "📝 ৭ম দিনের প্রবলেম সলভিং রিভিশন",
+                            "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টি ৭ দিন আগে পড়া হয়েছে। স্মৃতিকে স্থায়ী করতে ৩০ মিনিট রিভিশন সেশন চালু করো!"
+                        )
+                        elapsed >= THREE_DAYS_MS -> Pair(
+                            "⚡ ৩য় দিনের সায়েন্টিফিক রিভিশন",
+                            "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টির ৩ দিনের সায়েন্টিফিক রিভিশন সাইকেল শুরু হয়েছে। ৩০ মিনিট রিভিশন সম্পন্ন করে স্মৃতি ঝালাই করে নাও!"
+                        )
+                        elapsed >= ONE_DAY_MS -> Pair(
+                            "🔄 ১ম দিনের কুইক রিক্যাপ রিভিশন",
+                            "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টি সম্প্রতি শেষ করেছো। পড়া দীর্ঘস্থায়ী করতে এখনই একটি কুইক রিভিশন দাও!"
+                        )
+                        else -> Pair("", "")
+                    }
+
+                    if (title.isNotEmpty()) {
                         list.add(
                             AppNotification(
                                 type = NotificationType.REVISION_DUE,
-                                title = "⚠️ রিভিশন অ্যালার্ট (৩ দিন পেরিয়ে গেছে)",
-                                message = "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টি ৩ দিন আগে শেষ করেছেন। ৩০ মিনিট রিভিশন সম্পন্ন করুন!",
+                                title = title,
+                                message = msg,
                                 subjectName = ch.subjectName,
                                 chapterName = ch.chapterName
                             )
@@ -284,8 +318,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         list.add(
                             AppNotification(
                                 type = NotificationType.INACTIVITY_WARNING,
-                                title = "🔔 পড়া সম্পূর্ণ করার সতর্কতা (৫ দিন গ্যাপ)",
-                                message = "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টি গত ৫ দিন ধরে পড়া বন্ধ রয়েছে। দ্রুত পড়া সম্পন্ন করুন!",
+                                title = "🔥 পড়া সম্পূর্ণ করার মেন্টর অ্যালার্ট",
+                                message = "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টি গত ৫ দিন ধরে বন্ধ রয়েছে। অধ্যায়টি শেষ করতে আজই ফোকাস সেশন শুরু করো!",
                                 subjectName = ch.subjectName,
                                 chapterName = ch.chapterName
                             )
@@ -363,6 +397,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _examTargets = MutableStateFlow<List<ExamTarget>>(emptyList())
     val examTargets: StateFlow<List<ExamTarget>> = _examTargets.asStateFlow()
 
+    // Revision History Log Feature
+    private val _revisionHistory = MutableStateFlow<List<RevisionRecord>>(emptyList())
+    val revisionHistory: StateFlow<List<RevisionRecord>> = _revisionHistory.asStateFlow()
+
+    fun recordRevision(subjectName: String, chapterName: String, durationMinutes: Int, stage: String = "Revision") {
+        val newRecord = RevisionRecord(
+            subjectName = subjectName,
+            chapterName = chapterName,
+            durationMinutes = durationMinutes,
+            revisionStage = stage
+        )
+        _revisionHistory.value = listOf(newRecord) + _revisionHistory.value
+        persistRevisionHistory()
+
+        // Also update chapter lastStudiedTimestamp if matching chapter exists
+        val matchingChapter = chapters.value.find { it.subjectName.equals(subjectName, ignoreCase = true) && it.chapterName.equals(chapterName, ignoreCase = true) }
+        if (matchingChapter != null) {
+            updateChapter(matchingChapter.copy(lastStudiedTimestamp = System.currentTimeMillis()))
+        }
+    }
+
     init {
         viewModelScope.launch {
             repository.ensureBanglaSyllabusSeeded()
@@ -385,6 +440,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _streakPassUsedMonth.value = streakPass
 
             loadPersistentUserData()
+        }
+
+        viewModelScope.launch {
+            timerEngine.uiState.collect { state ->
+                if (state.status == TimerStatus.COMPLETED && state.completedSessionData != null) {
+                    val session = state.completedSessionData
+                    val chapter = state.selectedChapter
+                    if (session != null && chapter.isNotBlank() && session.actualFocusedSeconds >= 30L) {
+                        recordRevision(
+                            subjectName = session.subject,
+                            chapterName = chapter,
+                            durationMinutes = (session.actualFocusedSeconds / 60).toInt().coerceAtLeast(1)
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -431,6 +502,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 _examTargets.value = list
             }
+
+            // Load Revision History
+            val rhJson = repository.getSetting("revision_history_json", "")
+            if (rhJson.isNotBlank()) {
+                val array = org.json.JSONArray(rhJson)
+                val list = mutableListOf<RevisionRecord>()
+                for (i in 0 until array.length()) {
+                    val obj = array.getJSONObject(i)
+                    list.add(
+                        RevisionRecord(
+                            id = obj.optString("id", UUID.randomUUID().toString()),
+                            subjectName = obj.optString("subjectName", ""),
+                            chapterName = obj.optString("chapterName", ""),
+                            durationMinutes = obj.optInt("durationMinutes", 30),
+                            timestamp = obj.optLong("timestamp", System.currentTimeMillis()),
+                            revisionStage = obj.optString("revisionStage", "Revision")
+                        )
+                    )
+                }
+                _revisionHistory.value = list
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -451,6 +543,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     array.put(obj)
                 }
                 repository.setSetting("brain_dumps_json", array.toString())
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun persistRevisionHistory() {
+        viewModelScope.launch {
+            try {
+                val array = org.json.JSONArray()
+                _revisionHistory.value.forEach { rec ->
+                    val obj = org.json.JSONObject().apply {
+                        put("id", rec.id)
+                        put("subjectName", rec.subjectName)
+                        put("chapterName", rec.chapterName)
+                        put("durationMinutes", rec.durationMinutes)
+                        put("timestamp", rec.timestamp)
+                        put("revisionStage", rec.revisionStage)
+                    }
+                    array.put(obj)
+                }
+                repository.setSetting("revision_history_json", array.toString())
             } catch (e: Exception) {
                 e.printStackTrace()
             }
