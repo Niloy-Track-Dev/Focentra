@@ -225,13 +225,17 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
                             onClick = {
                                 val currentSubject = timerState.subject
                                 val currentChapter = timerState.selectedChapter
+                                val startMs = timerState.sessionStartTime
+                                val endMs = System.currentTimeMillis()
                                 val durMins = (timerState.focusedSeconds / 60).toInt().coerceAtLeast(1)
                                 viewModel.timerEngine.finishSession(isEarly = true)
                                 viewModel.recordRevision(
                                     subjectName = currentSubject,
                                     chapterName = if (currentChapter.isNotBlank()) currentChapter else "General Revision",
                                     durationMinutes = durMins,
-                                    stage = "Revision Stopwatch"
+                                    startTime = if (startMs > 0) startMs else endMs - (durMins * 60 * 1000L),
+                                    endTime = endMs,
+                                    stage = "Revision"
                                 )
                             },
                             modifier = Modifier.weight(1f),
@@ -550,47 +554,94 @@ private fun ScheduledRevisionCard(
 @Composable
 private fun RevisionHistorySection(viewModel: MainViewModel) {
     val history by viewModel.revisionHistory.collectAsStateWithLifecycle()
+    val subjects by viewModel.subjects.collectAsStateWithLifecycle()
 
-    if (history.isEmpty()) {
-        Box(
+    var selectedSubjectFilter by remember { mutableStateOf("All") }
+
+    val filteredHistory = remember(history, selectedSubjectFilter) {
+        if (selectedSubjectFilter == "All") {
+            history
+        } else {
+            history.filter { it.subjectName.equals(selectedSubjectFilter, ignoreCase = true) }
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Subject Filter Chips Row
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .padding(bottom = 12.dp)
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.HistoryEdu,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.size(64.dp)
+            item {
+                FilterChip(
+                    selected = selectedSubjectFilter == "All",
+                    onClick = { selectedSubjectFilter = "All" },
+                    label = { Text("All") },
+                    shape = RoundedCornerShape(12.dp)
                 )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "কোনো রিভিশন হিস্ট্রি নেই",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "আপনার সম্পন্ন করা সকল রিভিশনের তথ্য ও হিস্ট্রি লগ এখানে সংরক্ষিত হবে।",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    textAlign = TextAlign.Center
+            }
+            items(subjects) { sub ->
+                val isSelected = sub.name.equals(selectedSubjectFilter, ignoreCase = true)
+                FilterChip(
+                    selected = isSelected,
+                    onClick = { selectedSubjectFilter = sub.name },
+                    label = { Text(sub.name) },
+                    leadingIcon = {
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(parseColorHex(sub.colorHex))
+                        )
+                    },
+                    shape = RoundedCornerShape(12.dp)
                 )
             }
         }
-    } else {
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            contentPadding = PaddingValues(bottom = 100.dp)
-        ) {
-            items(history, key = { it.id }) { rec ->
-                RevisionHistoryCard(record = rec)
+
+        if (filteredHistory.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.HistoryEdu,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.size(64.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "কোনো রিভিশন হিস্ট্রি নেই",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "আপনার সম্পন্ন করা সকল রিভিশনের তথ্য ও হিস্ট্রি লগ এখানে সংরক্ষিত হবে।",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(bottom = 100.dp)
+            ) {
+                items(filteredHistory, key = { it.id }) { rec ->
+                    RevisionHistoryCard(record = rec)
+                }
             }
         }
     }
@@ -598,9 +649,15 @@ private fun RevisionHistorySection(viewModel: MainViewModel) {
 
 @Composable
 private fun RevisionHistoryCard(record: RevisionRecord) {
-    val dateStr = remember(record.timestamp) {
-        val sdf = SimpleDateFormat("MMM d, yyyy • hh:mm a", Locale.getDefault())
-        sdf.format(Date(record.timestamp))
+    val dateAndRangeStr = remember(record.startTime, record.endTime, record.timestamp) {
+        val dateSdf = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
+        val timeSdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
+
+        val dateText = dateSdf.format(Date(record.endTime))
+        val startText = timeSdf.format(Date(record.startTime)).lowercase()
+        val endText = timeSdf.format(Date(record.endTime)).lowercase()
+
+        "$dateText • $startText - $endText"
     }
 
     Card(
@@ -619,13 +676,13 @@ private fun RevisionHistoryCard(record: RevisionRecord) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "${record.subjectName} • ${record.chapterName}",
+                    text = "${record.subjectName} -> ${record.chapterName}",
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "$dateStr • ${record.revisionStage}",
+                    text = dateAndRangeStr,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

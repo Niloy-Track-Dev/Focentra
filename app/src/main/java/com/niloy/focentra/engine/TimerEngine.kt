@@ -281,6 +281,14 @@ class TimerEngine private constructor(
         location: String
     ) {
         val completed = _uiState.value.completedSessionData ?: return
+        if (completed.topic.contains("Revision", ignoreCase = true) || completed.sessionType == "REVISION") {
+            _uiState.value = _uiState.value.copy(
+                showCompletionSheet = false,
+                status = TimerStatus.IDLE,
+                completedSessionData = null
+            )
+            return
+        }
         scope.launch {
             val updated = completed.copy(
                 productivityRating = productivityRating,
@@ -301,7 +309,7 @@ class TimerEngine private constructor(
 
     fun dismissCompletionSheet() {
         val completed = _uiState.value.completedSessionData
-        if (completed != null) {
+        if (completed != null && !completed.topic.contains("Revision", ignoreCase = true) && completed.sessionType != "REVISION") {
             scope.launch {
                 repository.insertSession(completed)
             }
