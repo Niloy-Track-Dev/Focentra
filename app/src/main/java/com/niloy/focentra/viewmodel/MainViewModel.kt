@@ -19,6 +19,13 @@ enum class NotificationType {
     REVISION_DUE,
     INACTIVITY_WARNING,
     GOAL_WARNING,
+    PEAK_FOCUS_REMINDER,
+    STREAK_SAVER,
+    EXAM_COUNTDOWN,
+    BRAIN_DUMP_PROMPT,
+    WEEKLY_DIGEST,
+    BREAK_OVERSTAY,
+    AMBIENT_VIBE,
     MOTIVATION
 }
 
@@ -301,6 +308,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             val todayDateStr = SimpleDateFormat("yyyy_MM_dd", Locale.getDefault()).format(Date())
 
+            // Ebbinghaus Scientific Revision Due Alerts (English messages, keeping chapter/subject names)
             chapterList.forEach { ch ->
                 val isCompleted = ch.tapCount >= 3 || ch.status == "অধ্যায় Completely শেষ"
                 if (isCompleted) {
@@ -308,23 +316,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val elapsed = now - compTime
                     val (title, msg, stage) = when {
                         elapsed >= FIFTEEN_DAYS_MS -> Triple(
-                            "🧠 ১৫শ দিনের ফাইনাল রিভিশন টেস্ট",
-                            "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টির ১৫শ দিনের রিভিশন সময় উপস্থিত। চূড়ান্ত প্রস্তুতির জন্য ৩০ মিনিট রিভিশন সম্পন্ন করো!",
+                            "🧠 15-Day Scientific Revision Test",
+                            "It's time for 15-day revision cycle for ${ch.subjectName} - «${ch.chapterName}». Start a 30m revision session now!",
                             "15d"
                         )
                         elapsed >= SEVEN_DAYS_MS -> Triple(
-                            "📝 ৭ম দিনের প্রবলেম সলভিং রিভিশন",
-                            "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টি ৭ দিন আগে পড়া হয়েছে। স্মৃতিকে স্থায়ী করতে ৩০ মিনিট রিভিশন সেশন চালু করো!",
+                            "📝 7-Day Active Recall Revision",
+                            "Chapter ${ch.subjectName} - «${ch.chapterName}» was completed 7 days ago. Solidify memory retention with a quick 30m revision!",
                             "7d"
                         )
                         elapsed >= THREE_DAYS_MS -> Triple(
-                            "⚡ ৩য় দিনের সায়েন্টিফিক রিভিশন",
-                            "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টির ৩ দিনের সায়েন্টিফিক রিভিশন সাইকেল শুরু হয়েছে। ৩০ মিনিট রিভিশন সম্পন্ন করে স্মৃতি ঝালাই করে নাও!",
+                            "⚡ 3-Day Spaced Repetition Alert",
+                            "3-day revision cycle is active for ${ch.subjectName} - «${ch.chapterName}». Complete 30m focus revision to strengthen memory!",
                             "3d"
                         )
                         elapsed >= ONE_DAY_MS -> Triple(
-                            "🔄 ১ম দিনের কুইক রিক্যাপ রিভিশন",
-                            "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টি সম্প্রতি শেষ করেছো। পড়া দীর্ঘস্থায়ী করতে এখনই একটি কুইক রিভিশন দাও!",
+                            "🔄 1-Day Quick Recap Alert",
+                            "You recently finished ${ch.subjectName} - «${ch.chapterName}». Start a 30m quick recap revision session now!",
                             "1d"
                         )
                         else -> Triple("", "", "")
@@ -355,8 +363,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                 AppNotification(
                                     id = notifId,
                                     type = NotificationType.INACTIVITY_WARNING,
-                                    title = "🔥 পড়া সম্পূর্ণ করার মেন্টর অ্যালার্ট",
-                                    message = "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টি গত ৫ দিন ধরে বন্ধ রয়েছে। অধ্যায়টি শেষ করতে আজই ফোকাস সেশন শুরু করো!",
+                                    title = "🔥 Study Progress Alert",
+                                    message = "Chapter «${ch.chapterName}» (${ch.subjectName}) has been idle for 5 days. Resume your study session today!",
                                     subjectName = ch.subjectName,
                                     chapterName = ch.chapterName,
                                     timestamp = lastStudy
@@ -367,17 +375,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
 
+            // Target Tracker Notification with Visual Text Progress Bar [▓▓▓▓▓░░░░░]
             val dailyGoal = goalList.find { it.periodType == "DAILY" }?.targetMinutes ?: 480
             val remainingMins = (dailyGoal - todayMins).coerceAtLeast(0L)
             if (remainingMins > 0) {
                 val hours = remainingMins / 60
                 val mins = remainingMins % 60
-                val hoursBn = toBanglaDigits(hours.toString())
-                val minsBn = toBanglaDigits(mins.toString())
+                val progressPct = ((todayMins.toFloat() / dailyGoal) * 100).toInt().coerceIn(0, 100)
+
+                val filledBlocks = (progressPct / 10).coerceIn(0, 10)
+                val emptyBlocks = 10 - filledBlocks
+                val bar = "▓".repeat(filledBlocks) + "░".repeat(emptyBlocks)
+
                 val goalMessage = if (mins == 0L) {
-                    "আজকের Daily Study Goal পূরণ করতে আরো $hoursBn ঘন্টা পড়াশোনা করা প্রয়োজন।"
+                    "Progress: [$bar] $progressPct%\nYou need $hours hours remaining to hit today's study target."
                 } else {
-                    "আজকের Daily Study Goal পূরণ করতে আরো $hoursBn ঘন্টা $minsBn মিনিট পড়াশোনা করা প্রয়োজন।"
+                    "Progress: [$bar] $progressPct%\nYou need $hours hrs $mins mins remaining to hit today's study target."
                 }
                 val notifId = "goal_warning_${todayDateStr}"
                 if (notifId !in dismissed) {
@@ -385,8 +398,92 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         AppNotification(
                             id = notifId,
                             type = NotificationType.GOAL_WARNING,
-                            title = "🎯 স্টাডি টার্গেট ট্র্যাকার",
+                            title = "🎯 Daily Study Target Progress",
                             message = goalMessage
+                        )
+                    )
+                }
+            }
+
+            // Feature 2: Smart Usage Peak Hour Reminder
+            val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+            if (currentHour in 19..22) { // Evening Peak Study Time
+                val notifId = "peak_hour_${todayDateStr}"
+                if (notifId !in dismissed) {
+                    list.add(
+                        AppNotification(
+                            id = notifId,
+                            type = NotificationType.PEAK_FOCUS_REMINDER,
+                            title = "⚡ Peak Focus Hour Active",
+                            message = "Your high-productivity focus window is open. Start a study session now for maximum retention!"
+                        )
+                    )
+                }
+            }
+
+            // Feature 4: Streak Saver Emergency Alert (Evening check)
+            val currentStreak = calculateStreak(sessionList).currentStreak
+            val isStudiedToday = calculateStreak(sessionList).isStudiedToday
+            if (currentStreak > 0 && !isStudiedToday && currentHour >= 18) {
+                val notifId = "streak_saver_${todayDateStr}"
+                if (notifId !in dismissed) {
+                    list.add(
+                        AppNotification(
+                            id = notifId,
+                            type = NotificationType.STREAK_SAVER,
+                            title = "🔥 Streak Preservation Alert",
+                            message = "Your $currentStreak-day study streak is at risk! Complete a quick 10-minute focus session now to keep it alive."
+                        )
+                    )
+                }
+            }
+
+            // Feature 5: Exam Countdown Alerts
+            examTargets.value.forEach { target ->
+                val daysLeft = ((target.targetDateEpochMs - now) / (1000 * 60 * 60 * 24)).toInt()
+                if (daysLeft in 1..30) {
+                    val notifId = "exam_cd_${target.id}_${todayDateStr}"
+                    if (notifId !in dismissed) {
+                        list.add(
+                            AppNotification(
+                                id = notifId,
+                                type = NotificationType.EXAM_COUNTDOWN,
+                                title = "⏳ ${target.title} Countdown",
+                                message = "Only $daysLeft days remaining until ${target.title}. Stay focused and cover today's chapters!",
+                                subjectName = target.subject
+                            )
+                        )
+                    }
+                }
+            }
+
+            // Feature 6: Brain Dump & Evening Reflection Prompt
+            if (currentHour in 21..23) {
+                val notifId = "brain_dump_prompt_${todayDateStr}"
+                if (notifId !in dismissed) {
+                    list.add(
+                        AppNotification(
+                            id = notifId,
+                            type = NotificationType.BRAIN_DUMP_PROMPT,
+                            title = "💡 Evening Reflection & Brain Dump",
+                            message = "Clear your mind before rest! Record your study notes and unresolved thoughts in Brain Dump."
+                        )
+                    )
+                }
+            }
+
+            // Feature 7: Weekly Digest & Productivity Summary
+            val dayOfWeek = Calendar.getInstance().get(Calendar.DAY_OF_WEEK)
+            if (dayOfWeek == Calendar.SUNDAY && currentHour >= 9) {
+                val notifId = "weekly_digest_${todayDateStr}"
+                if (notifId !in dismissed) {
+                    val totalWeeklyHours = (sessionList.filter { (now - it.startTime) <= 7 * 24 * 60 * 60 * 1000L }.sumOf { it.actualFocusedSeconds } / 3600f)
+                    list.add(
+                        AppNotification(
+                            id = notifId,
+                            type = NotificationType.WEEKLY_DIGEST,
+                            title = "🏆 Weekly Performance Summary",
+                            message = "Great effort this week! You accumulated ${String.format(Locale.US, "%.1f", totalWeeklyHours)} hours of focused deep work."
                         )
                     )
                 }
