@@ -134,6 +134,37 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
 
     var selectedSubject by remember { mutableStateOf(subjects.firstOrNull()?.name ?: "General") }
     var selectedChapter by remember { mutableStateOf("") }
+    var showSelectionWarningDialog by remember { mutableStateOf(false) }
+
+    if (showSelectionWarningDialog) {
+        AlertDialog(
+            onDismissRequest = { showSelectionWarningDialog = false },
+            title = {
+                Text(
+                    text = "বিষয় ও অধ্যায় নির্বাচন করুন",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            text = {
+                Text(
+                    text = "দয়া করে রিভিশন শুরু করার পূর্বে একটি বিষয় (Subject) এবং অধ্যায় (Chapter) নির্বাচন করুন।",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showSelectionWarningDialog = false },
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("ঠিক আছে")
+                }
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
 
     val matchingChapters = remember(chapters, selectedSubject) {
         chapters.filter { it.subjectName.equals(selectedSubject, ignoreCase = true) }
@@ -332,16 +363,20 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
 
         Button(
             onClick = {
-                if (timerState.status == TimerStatus.RUNNING || timerState.status == TimerStatus.PAUSED) {
-                    viewModel.timerEngine.cancelSession()
+                if (selectedSubject.isBlank() || selectedChapter.isBlank()) {
+                    showSelectionWarningDialog = true
+                } else {
+                    if (timerState.status == TimerStatus.RUNNING || timerState.status == TimerStatus.PAUSED) {
+                        viewModel.timerEngine.cancelSession()
+                    }
+                    viewModel.timerEngine.configureSession(
+                        mode = SessionMode.STOPWATCH,
+                        subject = selectedSubject,
+                        selectedChapter = selectedChapter,
+                        topic = "Revision Stopwatch"
+                    )
+                    viewModel.timerEngine.startSession()
                 }
-                viewModel.timerEngine.configureSession(
-                    mode = SessionMode.STOPWATCH,
-                    subject = selectedSubject,
-                    selectedChapter = selectedChapter,
-                    topic = "Revision Stopwatch"
-                )
-                viewModel.timerEngine.startSession()
             },
             modifier = Modifier
                 .fillMaxWidth()
