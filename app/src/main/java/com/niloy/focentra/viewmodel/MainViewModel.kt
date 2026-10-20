@@ -97,13 +97,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _currentTab = MutableStateFlow(NavigationTab.DASHBOARD)
     val currentTab: StateFlow<NavigationTab> = _currentTab.asStateFlow()
 
-    // Seen Notification IDs & Unseen Count
+    // Seen Notification IDs & Persistent Posting Track
     private val _seenNotificationIds = MutableStateFlow<Set<String>>(emptySet())
     val seenNotificationIds: StateFlow<Set<String>> = _seenNotificationIds.asStateFlow()
 
+    private val _postedNotificationIds = MutableStateFlow<Set<String>>(emptySet())
+
+    val systemNotificationEvent = kotlinx.coroutines.flow.MutableSharedFlow<AppNotification>(
+        extraBufferCapacity = 10
+    )
+
     fun markNotificationsAsSeen() {
-        val activeIds = activeNotifications.value.map { it.id }.toSet()
-        _seenNotificationIds.value = _seenNotificationIds.value + activeIds
+        viewModelScope.launch {
+            val activeIds = activeNotifications.value.map { it.id }.toSet()
+            val updated = _seenNotificationIds.value + activeIds
+            _seenNotificationIds.value = updated
+            repository.setSetting("seen_notification_ids", updated.joinToString(","))
+        }
     }
 
     // Full screen focus mode state
@@ -276,39 +286,47 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val SEVEN_DAYS_MS = 7 * ONE_DAY_MS
             val FIFTEEN_DAYS_MS = 15 * ONE_DAY_MS
 
+            val todayDateStr = SimpleDateFormat("yyyy_MM_dd", Locale.getDefault()).format(Date())
+
             chapterList.forEach { ch ->
                 val isCompleted = ch.tapCount >= 3 || ch.status == "অধ্যায় Completely শেষ"
                 if (isCompleted) {
                     val compTime = if (ch.completedTimestamp > 0) ch.completedTimestamp else ch.lastStudiedTimestamp
                     val elapsed = now - compTime
-                    val (title, msg) = when {
-                        elapsed >= FIFTEEN_DAYS_MS -> Pair(
+                    val (title, msg, stage) = when {
+                        elapsed >= FIFTEEN_DAYS_MS -> Triple(
                             "🧠 ১৫শ দিনের ফাইনাল রিভিশন টেস্ট",
-                            "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টির ১৫শ দিনের রিভিশন সময় উপস্থিত। চূড়ান্ত প্রস্তুতির জন্য ৩০ মিনিট রিভিশন সম্পন্ন করো!"
+                            "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টির ১৫শ দিনের রিভিশন সময় উপস্থিত। চূড়ান্ত প্রস্তুতির জন্য ৩০ মিনিট রিভিশন সম্পন্ন করো!",
+                            "15d"
                         )
-                        elapsed >= SEVEN_DAYS_MS -> Pair(
+                        elapsed >= SEVEN_DAYS_MS -> Triple(
                             "📝 ৭ম দিনের প্রবলেম সলভিং রিভিশন",
-                            "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টি ৭ দিন আগে পড়া হয়েছে। স্মৃতিকে স্থায়ী করতে ৩০ মিনিট রিভিশন সেশন চালু করো!"
+                            "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টি ৭ দিন আগে পড়া হয়েছে। স্মৃতিকে স্থায়ী করতে ৩০ মিনিট রিভিশন সেশন চালু করো!",
+                            "7d"
                         )
-                        elapsed >= THREE_DAYS_MS -> Pair(
+                        elapsed >= THREE_DAYS_MS -> Triple(
                             "⚡ ৩য় দিনের সায়েন্টিফিক রিভিশন",
-                            "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টির ৩ দিনের সায়েন্টিফিক রিভিশন সাইকেল শুরু হয়েছে। ৩০ মিনিট রিভিশন সম্পন্ন করে স্মৃতি ঝালাই করে নাও!"
+                            "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টির ৩ দিনের সায়েন্টিফিক রিভিশন সাইকেল শুরু হয়েছে। ৩০ মিনিট রিভিশন সম্পন্ন করে স্মৃতি ঝালাই করে নাও!",
+                            "3d"
                         )
-                        elapsed >= ONE_DAY_MS -> Pair(
+                        elapsed >= ONE_DAY_MS -> Triple(
                             "🔄 ১ম দিনের কুইক রিক্যাপ রিভিশন",
-                            "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টি সম্প্রতি শেষ করেছো। পড়া দীর্ঘস্থায়ী করতে এখনই একটি কুইক রিভিশন দাও!"
+                            "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টি সম্প্রতি শেষ করেছো। পড়া দীর্ঘস্থায়ী করতে এখনই একটি কুইক রিভিশন দাও!",
+                            "1d"
                         )
-                        else -> Pair("", "")
+                        else -> Triple("", "", "")
                     }
 
                     if (title.isNotEmpty()) {
                         list.add(
                             AppNotification(
+                                id = "rev_${ch.id}_${compTime}_${stage}",
                                 type = NotificationType.REVISION_DUE,
                                 title = title,
                                 message = msg,
                                 subjectName = ch.subjectName,
-                                chapterName = ch.chapterName
+                                chapterName = ch.chapterName,
+                                timestamp = compTime
                             )
                         )
                     }
@@ -317,11 +335,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     if (now - lastStudy >= FIVE_DAYS_MS) {
                         list.add(
                             AppNotification(
+                                id = "inact_${ch.id}_${todayDateStr}",
                                 type = NotificationType.INACTIVITY_WARNING,
                                 title = "🔥 পড়া সম্পূর্ণ করার মেন্টর অ্যালার্ট",
                                 message = "${ch.subjectName} এর «${ch.chapterName}» অধ্যায়টি গত ৫ দিন ধরে বন্ধ রয়েছে। অধ্যায়টি শেষ করতে আজই ফোকাস সেশন শুরু করো!",
                                 subjectName = ch.subjectName,
-                                chapterName = ch.chapterName
+                                chapterName = ch.chapterName,
+                                timestamp = lastStudy
                             )
                         )
                     }
@@ -342,6 +362,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 list.add(
                     AppNotification(
+                        id = "goal_warning_${todayDateStr}",
                         type = NotificationType.GOAL_WARNING,
                         title = "🎯 স্টাডি টার্গেট ট্র্যাকার",
                         message = goalMessage
@@ -457,6 +478,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+
+        viewModelScope.launch {
+            activeNotifications.collect { list ->
+                val posted = _postedNotificationIds.value.toMutableSet()
+                var newlyAdded = false
+                list.forEach { notif ->
+                    if (notif.id !in posted) {
+                        posted.add(notif.id)
+                        newlyAdded = true
+                        systemNotificationEvent.emit(notif)
+                    }
+                }
+                if (newlyAdded) {
+                    _postedNotificationIds.value = posted
+                    repository.setSetting("posted_notification_ids", posted.joinToString(","))
+                }
+            }
+        }
     }
 
     private suspend fun loadPersistentUserData() {
@@ -501,6 +540,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
                 _examTargets.value = list
+            }
+
+            // Load Seen and Posted Notification IDs
+            val seenStr = repository.getSetting("seen_notification_ids", "")
+            if (seenStr.isNotBlank()) {
+                _seenNotificationIds.value = seenStr.split(",").filter { it.isNotBlank() }.toSet()
+            }
+            val postedStr = repository.getSetting("posted_notification_ids", "")
+            if (postedStr.isNotBlank()) {
+                _postedNotificationIds.value = postedStr.split(",").filter { it.isNotBlank() }.toSet()
             }
 
             // Load Revision History

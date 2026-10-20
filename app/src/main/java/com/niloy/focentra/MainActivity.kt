@@ -76,7 +76,7 @@ private fun postSystemNotification(context: Context, notif: com.niloy.focentra.v
     )
 
     val builder = NotificationCompat.Builder(context, "focentra_alerts_channel")
-        .setSmallIcon(R.mipmap.ic_launcher)
+        .setSmallIcon(R.drawable.ic_notification_logo)
         .setContentTitle(notif.title)
         .setContentText(notif.message)
         .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -297,43 +297,45 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
 
-                                    // More Menu items
-                                    var showMenu by remember { mutableStateOf(false) }
-                                    IconButton(onClick = { showMenu = true }) {
-                                        Icon(
-                                            imageVector = Icons.Default.MoreVert,
-                                            contentDescription = "More",
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                    DropdownMenu(
-                                        expanded = showMenu,
-                                        onDismissRequest = { showMenu = false }
-                                    ) {
-                                        DropdownMenuItem(
-                                            text = { Text("Revision Hub") },
-                                            leadingIcon = { Icon(Icons.Default.Autorenew, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                                            onClick = {
-                                                showMenu = false
-                                                viewModel.navigateTo(NavigationTab.REVISION_HUB)
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text("Study Presets") },
-                                            leadingIcon = { Icon(Icons.Default.BookmarkBorder, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                                            onClick = {
-                                                showMenu = false
-                                                viewModel.navigateTo(NavigationTab.PRESETS)
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text("Settings & Backup") },
-                                            leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                                            onClick = {
-                                                showMenu = false
-                                                viewModel.navigateTo(NavigationTab.SETTINGS)
-                                            }
-                                        )
+                                    // More Menu items (hidden when in Revision Hub)
+                                    if (currentTab != NavigationTab.REVISION_HUB) {
+                                        var showMenu by remember { mutableStateOf(false) }
+                                        IconButton(onClick = { showMenu = true }) {
+                                            Icon(
+                                                imageVector = Icons.Default.MoreVert,
+                                                contentDescription = "More",
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        DropdownMenu(
+                                            expanded = showMenu,
+                                            onDismissRequest = { showMenu = false }
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = { Text("Revision Hub") },
+                                                leadingIcon = { Icon(Icons.Default.Autorenew, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                                onClick = {
+                                                    showMenu = false
+                                                    viewModel.navigateTo(NavigationTab.REVISION_HUB)
+                                                }
+                                            )
+                                            DropdownMenuItem(
+                                                text = { Text("Study Presets") },
+                                                leadingIcon = { Icon(Icons.Default.BookmarkBorder, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                                onClick = {
+                                                    showMenu = false
+                                                    viewModel.navigateTo(NavigationTab.PRESETS)
+                                                }
+                                            )
+                                            DropdownMenuItem(
+                                                text = { Text("Settings & Backup") },
+                                                leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                                onClick = {
+                                                    showMenu = false
+                                                    viewModel.navigateTo(NavigationTab.SETTINGS)
+                                                }
+                                            )
+                                        }
                                     }
                                 },
                                 colors = TopAppBarDefaults.topAppBarColors(
@@ -369,15 +371,10 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
 
-                            val activeNotifications by viewModel.activeNotifications.collectAsStateWithLifecycle()
-                            var lastNotifiedCount by remember { mutableIntStateOf(0) }
-
-                            LaunchedEffect(activeNotifications) {
-                                if (activeNotifications.size > lastNotifiedCount && activeNotifications.isNotEmpty()) {
-                                    val latestNotif = activeNotifications.last()
-                                    postSystemNotification(context, latestNotif)
+                            LaunchedEffect(Unit) {
+                                viewModel.systemNotificationEvent.collect { notif ->
+                                    postSystemNotification(context, notif)
                                 }
-                                lastNotifiedCount = activeNotifications.size
                             }
 
                             val shouldShowBottomBar = currentTab != NavigationTab.SUBJECTS &&

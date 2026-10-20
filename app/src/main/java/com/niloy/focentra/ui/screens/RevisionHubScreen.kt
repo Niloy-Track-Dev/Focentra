@@ -19,11 +19,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.niloy.focentra.data.local.entity.ChapterEntity
 import com.niloy.focentra.engine.SessionMode
+import com.niloy.focentra.engine.TimerStatus
 import com.niloy.focentra.ui.components.parseColorHex
 import com.niloy.focentra.viewmodel.MainViewModel
 import com.niloy.focentra.viewmodel.RevisionRecord
@@ -42,7 +44,7 @@ fun RevisionHubScreen(
     viewModel: MainViewModel,
     modifier: Modifier = Modifier
 ) {
-    var selectedTab by remember { mutableIntStateOf(0) } // 0: Quick Timer, 1: Upcoming Scheduled, 2: History
+    var selectedTab by remember { mutableIntStateOf(0) } // 0: Revision, 1: Scheduled, 2: History
 
     Column(
         modifier = modifier
@@ -52,58 +54,73 @@ fun RevisionHubScreen(
     ) {
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Tab Selector
+        // Segmented Tab Row
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             SegmentedButton(
                 selected = selectedTab == 0,
                 onClick = { selectedTab = 0 },
                 shape = SegmentedButtonDefaults.itemShape(index = 0, count = 3),
-                icon = {
+                icon = {}
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
                     Icon(
                         imageVector = Icons.Default.PlayCircleOutline,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(15.dp)
                     )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Revision", maxLines = 1, fontSize = 13.sp)
                 }
-            ) {
-                Text("Quick Revision", maxLines = 1)
             }
 
             SegmentedButton(
                 selected = selectedTab == 1,
                 onClick = { selectedTab = 1 },
                 shape = SegmentedButtonDefaults.itemShape(index = 1, count = 3),
-                icon = {
+                icon = {}
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
                     Icon(
                         imageVector = Icons.Default.Event,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(15.dp)
                     )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Scheduled", maxLines = 1, fontSize = 13.sp)
                 }
-            ) {
-                Text("Scheduled", maxLines = 1)
             }
 
             SegmentedButton(
                 selected = selectedTab == 2,
                 onClick = { selectedTab = 2 },
                 shape = SegmentedButtonDefaults.itemShape(index = 2, count = 3),
-                icon = {
+                icon = {}
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
                     Icon(
                         imageVector = Icons.Default.History,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(15.dp)
                     )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("History", maxLines = 1, fontSize = 13.sp)
                 }
-            ) {
-                Text("History", maxLines = 1)
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         when (selectedTab) {
-            0 -> QuickRevisionTimerSection(viewModel = viewModel)
+            0 -> RevisionTimerSection(viewModel = viewModel)
             1 -> UpcomingScheduledRevisionsSection(viewModel = viewModel)
             2 -> RevisionHistorySection(viewModel = viewModel)
         }
@@ -111,9 +128,10 @@ fun RevisionHubScreen(
 }
 
 @Composable
-private fun QuickRevisionTimerSection(viewModel: MainViewModel) {
+private fun RevisionTimerSection(viewModel: MainViewModel) {
     val subjects by viewModel.subjects.collectAsStateWithLifecycle()
     val chapters by viewModel.chapters.collectAsStateWithLifecycle()
+    val timerState by viewModel.timerEngine.uiState.collectAsStateWithLifecycle()
 
     var selectedSubject by remember { mutableStateOf(subjects.firstOrNull()?.name ?: "General") }
     var selectedChapter by remember { mutableStateOf("") }
@@ -129,6 +147,98 @@ private fun QuickRevisionTimerSection(viewModel: MainViewModel) {
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Active Timer Banner
+        if (timerState.status == TimerStatus.RUNNING || timerState.status == TimerStatus.PAUSED) {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "ACTIVE TIMER IN PROGRESS",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "${timerState.subject}${if (timerState.selectedChapter.isNotBlank()) " • ${timerState.selectedChapter}" else ""}",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        val remainingMin = timerState.remainingSeconds / 60
+                        val remainingSec = timerState.remainingSeconds % 60
+                        Text(
+                            text = String.format("%02d:%02d", remainingMin, remainingSec),
+                            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (timerState.status == TimerStatus.RUNNING) {
+                            OutlinedButton(
+                                onClick = { viewModel.timerEngine.pauseSession() },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Icon(Icons.Default.Pause, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Pause")
+                            }
+                        } else {
+                            Button(
+                                onClick = { viewModel.timerEngine.resumeSession() },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Resume")
+                            }
+                        }
+
+                        Button(
+                            onClick = { viewModel.timerEngine.finishSession(isEarly = true) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Finish")
+                        }
+
+                        IconButton(
+                            onClick = { viewModel.timerEngine.cancelSession() }
+                        ) {
+                            Icon(Icons.Default.Stop, contentDescription = "Stop", tint = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+            }
+        }
+
         // Subject Selector
         Column {
             Text(
@@ -210,6 +320,9 @@ private fun QuickRevisionTimerSection(viewModel: MainViewModel) {
 
         Button(
             onClick = {
+                if (timerState.status == TimerStatus.RUNNING || timerState.status == TimerStatus.PAUSED) {
+                    viewModel.timerEngine.cancelSession()
+                }
                 viewModel.timerEngine.configureSession(
                     mode = SessionMode.COUNTDOWN,
                     subject = selectedSubject,
@@ -271,27 +384,32 @@ private fun UpcomingScheduledRevisionsSection(viewModel: MainViewModel) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(32.dp),
+                .padding(horizontal = 24.dp),
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
                 Icon(
                     imageVector = Icons.Default.EventAvailable,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.size(56.dp)
+                    modifier = Modifier.size(64.dp)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "কোনো শিডিউল্ড রিভিশন নেই",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "অধ্যায় শেষ করার পর ১, ৩, ৭ এবং ১৫তম দিনের সায়েন্টিফিক রিভিশন শিডিউল এখানে দেখা যাবে।",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center
                 )
             }
         }
@@ -304,6 +422,9 @@ private fun UpcomingScheduledRevisionsSection(viewModel: MainViewModel) {
                 ScheduledRevisionCard(
                     item = item,
                     onStart = {
+                        if (viewModel.timerEngine.uiState.value.status == TimerStatus.RUNNING || viewModel.timerEngine.uiState.value.status == TimerStatus.PAUSED) {
+                            viewModel.timerEngine.cancelSession()
+                        }
                         viewModel.timerEngine.configureSession(
                             mode = SessionMode.COUNTDOWN,
                             subject = item.chapter.subjectName,
@@ -430,27 +551,32 @@ private fun RevisionHistorySection(viewModel: MainViewModel) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(32.dp),
+                .padding(horizontal = 24.dp),
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
                 Icon(
                     imageVector = Icons.Default.HistoryEdu,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.size(56.dp)
+                    modifier = Modifier.size(64.dp)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "কোনো রিভিশন হিস্ট্রি নেই",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "আপনার সম্পন্ন করা সকল রিভিশনের তথ্য ও হিস্ট্রি লগ এখানে সংরক্ষিত হবে।",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center
                 )
             }
         }
