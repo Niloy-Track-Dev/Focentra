@@ -43,6 +43,7 @@ data class TimerUiState(
     val status: TimerStatus = TimerStatus.IDLE,
     val mode: SessionMode = SessionMode.COUNTDOWN,
     val subject: String = "Mathematics",
+    val selectedChapter: String = "",
     val topic: String = "",
     val goal: String = "",
     val tags: List<String> = emptyList(),
@@ -106,6 +107,7 @@ class TimerEngine private constructor(
     fun configureSession(
         mode: SessionMode,
         subject: String,
+        selectedChapter: String = "",
         topic: String = "",
         goal: String = "",
         tags: List<String> = emptyList(),
@@ -134,6 +136,7 @@ class TimerEngine private constructor(
             status = TimerStatus.IDLE,
             mode = mode,
             subject = subject,
+            selectedChapter = selectedChapter,
             topic = topic,
             goal = goal,
             tags = tags,

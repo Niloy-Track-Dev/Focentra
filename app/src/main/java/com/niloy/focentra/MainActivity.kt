@@ -198,6 +198,7 @@ class MainActivity : ComponentActivity() {
                                                 NavigationTab.PRESETS -> "Study Presets"
                                                 NavigationTab.SETTINGS -> "Settings"
                                                 NavigationTab.NOTIFICATIONS -> "Notification"
+                                                NavigationTab.REVISION_HUB -> "Revision Hub"
                                             },
                                             style = if (isSubPage || currentTab == NavigationTab.ANALYTICS) {
                                                 MaterialTheme.typography.titleMedium.copy(
@@ -310,6 +311,14 @@ class MainActivity : ComponentActivity() {
                                         onDismissRequest = { showMenu = false }
                                     ) {
                                         DropdownMenuItem(
+                                            text = { Text("Revision Hub") },
+                                            leadingIcon = { Icon(Icons.Default.Autorenew, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                            onClick = {
+                                                showMenu = false
+                                                viewModel.navigateTo(NavigationTab.REVISION_HUB)
+                                            }
+                                        )
+                                        DropdownMenuItem(
                                             text = { Text("Study Presets") },
                                             leadingIcon = { Icon(Icons.Default.BookmarkBorder, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                             onClick = {
@@ -356,6 +365,7 @@ class MainActivity : ComponentActivity() {
                                     NavigationTab.PRESETS -> PresetsScreen(viewModel = viewModel, isFabVisible = isBottomBarVisible.value)
                                     NavigationTab.SETTINGS -> SettingsScreen(viewModel = viewModel)
                                     NavigationTab.NOTIFICATIONS -> NotificationScreen(viewModel = viewModel)
+                                    NavigationTab.REVISION_HUB -> RevisionHubScreen(viewModel = viewModel)
                                 }
                             }
 
@@ -373,7 +383,8 @@ class MainActivity : ComponentActivity() {
                             val shouldShowBottomBar = currentTab != NavigationTab.SUBJECTS &&
                                     currentTab != NavigationTab.ACHIEVEMENTS &&
                                     currentTab != NavigationTab.PRESETS &&
-                                    currentTab != NavigationTab.NOTIFICATIONS
+                                    currentTab != NavigationTab.NOTIFICATIONS &&
+                                    currentTab != NavigationTab.REVISION_HUB
 
                             AnimatedVisibility(
                                 visible = isBottomBarVisible.value && shouldShowBottomBar,
