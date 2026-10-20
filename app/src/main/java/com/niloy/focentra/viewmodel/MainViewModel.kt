@@ -69,6 +69,8 @@ data class RevisionRecord(
     val subjectName: String,
     val chapterName: String,
     val durationMinutes: Int,
+    val startTime: Long = System.currentTimeMillis(),
+    val endTime: Long = System.currentTimeMillis(),
     val timestamp: Long = System.currentTimeMillis(),
     val revisionStage: String = "Revision"
 )
@@ -422,18 +424,38 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _revisionHistory = MutableStateFlow<List<RevisionRecord>>(emptyList())
     val revisionHistory: StateFlow<List<RevisionRecord>> = _revisionHistory.asStateFlow()
 
-    fun recordRevision(subjectName: String, chapterName: String, durationMinutes: Int, stage: String = "Revision") {
+    fun recordRevision(
+        subjectName: String,
+        chapterName: String,
+        durationMinutes: Int,
+        startTime: Long = System.currentTimeMillis() - (durationMinutes.coerceAtLeast(1) * 60 * 1000L),
+        endTime: Long = System.currentTimeMillis(),
+        stage: String = "Revision"
+    ) {
         val newRecord = RevisionRecord(
-            subjectName = subjectName,
-            chapterName = chapterName,
-            durationMinutes = durationMinutes,
-            revisionStage = stage
+            subjectName = subjectName.ifBlank { "General" },
+            chapterName = chapterName.ifBlank { "General Revision" },
+            durationMinutes = durationMinutes.coerceAtLeast(1),
+            startTime = startTime,
+            endTime = endTime,
+            timestamp = endTime,
+            revisionStage = stage.ifBlank { "Revision" }
         )
+        val existing = _revisionHistory.value.firstOrNull()
+        if (existing != null &&
+            existing.subjectName == newRecord.subjectName &&
+            existing.chapterName == newRecord.chapterName &&
+            (System.currentTimeMillis() - existing.endTime) < 2000L) {
+            return
+        }
+
         _revisionHistory.value = listOf(newRecord) + _revisionHistory.value
         persistRevisionHistory()
 
-        // Also update chapter lastStudiedTimestamp if matching chapter exists
-        val matchingChapter = chapters.value.find { it.subjectName.equals(subjectName, ignoreCase = true) && it.chapterName.equals(chapterName, ignoreCase = true) }
+        val matchingChapter = chapters.value.find {
+            it.subjectName.equals(subjectName, ignoreCase = true) &&
+            it.chapterName.equals(chapterName, ignoreCase = true)
+        }
         if (matchingChapter != null) {
             updateChapter(matchingChapter.copy(lastStudiedTimestamp = System.currentTimeMillis()))
         }
@@ -563,13 +585,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val list = mutableListOf<RevisionRecord>()
                 for (i in 0 until array.length()) {
                     val obj = array.getJSONObject(i)
+                    val st = obj.optLong("startTime", 0L)
+                    val et = obj.optLong("endTime", 0L)
+                    val ts = obj.optLong("timestamp", System.currentTimeMillis())
                     list.add(
                         RevisionRecord(
                             id = obj.optString("id", UUID.randomUUID().toString()),
                             subjectName = obj.optString("subjectName", ""),
                             chapterName = obj.optString("chapterName", ""),
                             durationMinutes = obj.optInt("durationMinutes", 30),
-                            timestamp = obj.optLong("timestamp", System.currentTimeMillis()),
+                            startTime = if (st > 0) st else ts,
+                            endTime = if (et > 0) et else ts,
+                            timestamp = ts,
                             revisionStage = obj.optString("revisionStage", "Revision")
                         )
                     )
@@ -612,6 +639,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         put("subjectName", rec.subjectName)
                         put("chapterName", rec.chapterName)
                         put("durationMinutes", rec.durationMinutes)
+                        put("startTime", rec.startTime)
+                        put("endTime", rec.endTime)
                         put("timestamp", rec.timestamp)
                         put("revisionStage", rec.revisionStage)
                     }
