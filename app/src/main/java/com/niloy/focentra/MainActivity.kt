@@ -38,9 +38,61 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.niloy.focentra.ui.components.FocentraFloatingNavBar
 import com.niloy.focentra.ui.screens.*
 import com.niloy.focentra.ui.theme.FocentraTheme
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import com.niloy.focentra.viewmodel.MainViewModel
 import com.niloy.focentra.viewmodel.NavigationTab
 import kotlinx.coroutines.flow.collectLatest
+
+private fun createAlertsNotificationChannel(context: Context) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val channel = NotificationChannel(
+            "focentra_alerts_channel",
+            "Focentra Study Alerts",
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description = "Notifications for revision due and study goals"
+        }
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+        manager?.createNotificationChannel(channel)
+    }
+}
+
+private fun postSystemNotification(context: Context, notif: com.niloy.focentra.viewmodel.AppNotification) {
+    createAlertsNotificationChannel(context)
+    val intent = Intent(context, MainActivity::class.java).apply {
+        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+    }
+    val pendingIntent = PendingIntent.getActivity(
+        context,
+        0,
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+
+    val builder = NotificationCompat.Builder(context, "focentra_alerts_channel")
+        .setSmallIcon(R.mipmap.ic_launcher)
+        .setContentTitle(notif.title)
+        .setContentText(notif.message)
+        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        .setAutoCancel(true)
+        .setContentIntent(pendingIntent)
+
+    try {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        ) {
+            NotificationManagerCompat.from(context).notify(notif.id.hashCode(), builder.build())
+        }
+    } catch (e: SecurityException) {
+        e.printStackTrace()
+    }
+}
 
 class MainActivity : ComponentActivity() {
 
@@ -110,8 +162,6 @@ class MainActivity : ComponentActivity() {
             }
 
             FocentraTheme(themeName = currentTheme) {
-                var showNotificationCenterDialog by remember { mutableStateOf(false) }
-
                 if (isFullScreenFocus) {
                     FullScreenFocusScreen(viewModel = viewModel)
                 } else {
@@ -147,6 +197,7 @@ class MainActivity : ComponentActivity() {
                                                 NavigationTab.ACHIEVEMENTS -> "Achievements"
                                                 NavigationTab.PRESETS -> "Study Presets"
                                                 NavigationTab.SETTINGS -> "Settings"
+                                                NavigationTab.NOTIFICATIONS -> "Notification"
                                             },
                                             style = if (isSubPage || currentTab == NavigationTab.ANALYTICS) {
                                                 MaterialTheme.typography.titleMedium.copy(
@@ -190,28 +241,19 @@ class MainActivity : ComponentActivity() {
                                             currentTab == NavigationTab.PRESETS
 
                                     val activeNotifications by viewModel.activeNotifications.collectAsStateWithLifecycle()
-
-                                    if (showNotificationCenterDialog) {
-                                        com.niloy.focentra.ui.components.NotificationCenterDialog(
-                                            notifications = activeNotifications,
-                                            onDismiss = { showNotificationCenterDialog = false },
-                                            onStartRevision = { subjectName, chapterName ->
-                                                viewModel.startQuickTimer(30, subjectName)
-                                            }
-                                        )
-                                    }
+                                    val unseenCount by viewModel.unseenNotificationCount.collectAsStateWithLifecycle()
 
                                     if (isMainScreen) {
-                                        // Notification Bell Icon with WhatsApp style badge counter
-                                        IconButton(onClick = { showNotificationCenterDialog = true }) {
+                                        // Notification Bell Icon with unseen counter badge
+                                        IconButton(onClick = { viewModel.navigateTo(NavigationTab.NOTIFICATIONS) }) {
                                             Box(contentAlignment = Alignment.Center) {
                                                 Icon(
-                                                    imageVector = if (activeNotifications.isNotEmpty()) Icons.Default.NotificationsActive else Icons.Default.Notifications,
+                                                    imageVector = if (unseenCount > 0) Icons.Default.NotificationsActive else Icons.Default.Notifications,
                                                     contentDescription = "Notifications",
-                                                    tint = if (activeNotifications.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                                    tint = if (unseenCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
-                                                if (activeNotifications.isNotEmpty()) {
-                                                    val countText = if (activeNotifications.size > 9) "9+" else activeNotifications.size.toString()
+                                                if (unseenCount > 0) {
+                                                    val countText = if (unseenCount > 9) "9+" else unseenCount.toString()
                                                     Box(
                                                         modifier = Modifier
                                                             .sizeIn(minWidth = 16.dp, minHeight = 16.dp)
@@ -313,35 +355,25 @@ class MainActivity : ComponentActivity() {
                                     NavigationTab.ACHIEVEMENTS -> AchievementsScreen(viewModel = viewModel)
                                     NavigationTab.PRESETS -> PresetsScreen(viewModel = viewModel, isFabVisible = isBottomBarVisible.value)
                                     NavigationTab.SETTINGS -> SettingsScreen(viewModel = viewModel)
+                                    NavigationTab.NOTIFICATIONS -> NotificationScreen(viewModel = viewModel)
                                 }
                             }
 
                             val activeNotifications by viewModel.activeNotifications.collectAsStateWithLifecycle()
                             var lastNotifiedCount by remember { mutableIntStateOf(0) }
-                            var latestBannerNotif by remember { mutableStateOf<com.niloy.focentra.viewmodel.AppNotification?>(null) }
 
                             LaunchedEffect(activeNotifications) {
                                 if (activeNotifications.size > lastNotifiedCount && activeNotifications.isNotEmpty()) {
-                                    latestBannerNotif = activeNotifications.last()
+                                    val latestNotif = activeNotifications.last()
+                                    postSystemNotification(context, latestNotif)
                                 }
                                 lastNotifiedCount = activeNotifications.size
                             }
 
-                            com.niloy.focentra.ui.components.WhatsAppStyleHeadsUpBanner(
-                                notification = latestBannerNotif,
-                                onDismiss = { latestBannerNotif = null },
-                                onClick = {
-                                    latestBannerNotif = null
-                                    showNotificationCenterDialog = true
-                                },
-                                modifier = Modifier
-                                    .align(Alignment.TopCenter)
-                                    .padding(top = innerPadding.calculateTopPadding())
-                            )
-
                             val shouldShowBottomBar = currentTab != NavigationTab.SUBJECTS &&
                                     currentTab != NavigationTab.ACHIEVEMENTS &&
-                                    currentTab != NavigationTab.PRESETS
+                                    currentTab != NavigationTab.PRESETS &&
+                                    currentTab != NavigationTab.NOTIFICATIONS
 
                             AnimatedVisibility(
                                 visible = isBottomBarVisible.value && shouldShowBottomBar,
