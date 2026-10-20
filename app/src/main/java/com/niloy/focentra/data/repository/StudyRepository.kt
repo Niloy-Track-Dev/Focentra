@@ -36,8 +36,8 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
 
     suspend fun ensureBanglaSyllabusSeeded() = withContext(Dispatchers.IO) {
         val subjects = database.subjectDao().getAllSubjects()
-        val existingBangla = subjects.find { it.name.contains("বাংলা ১ম পত্র", ignoreCase = true) }
-        if (existingBangla == null) {
+        val existingBangla1 = subjects.find { it.name.contains("বাংলা ১ম পত্র", ignoreCase = true) }
+        if (existingBangla1 == null) {
             val banglaSubjectId = database.subjectDao().insertSubject(
                 SubjectEntity(
                     name = "বাংলা ১ম পত্র",
@@ -82,6 +82,47 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
                     ChapterEntity(
                         subjectId = banglaSubjectId,
                         subjectName = "বাংলা ১ম পত্র",
+                        chapterName = title,
+                        tapCount = 0,
+                        status = "পড়া শুরু হয় নাই",
+                        orderIndex = index
+                    )
+                )
+            }
+        }
+
+        val existingBangla2 = subjects.find { it.name.contains("বাংলা ২য় পত্র", ignoreCase = true) }
+        if (existingBangla2 == null) {
+            val bangla2SubjectId = database.subjectDao().insertSubject(
+                SubjectEntity(
+                    name = "বাংলা ২য় পত্র",
+                    colorHex = "#F59E0B",
+                    iconName = "MenuBook",
+                    targetHours = 30f,
+                    description = "উচ্চমাধ্যমিক বাংলা দ্বিতীয় পত্র সিলেবাস"
+                )
+            )
+
+            val bangla2Chapters = listOf(
+                "১. বাংলা উচ্চারণের নিয়ম (ব্যাকরণ)",
+                "২. বাংলা বানানের নিয়ম (ব্যাকরণ)",
+                "৩. বাংলা ভাষার ব্যাকরণিক শব্দশ্রেণি (ব্যাকরণ)",
+                "৪. বাংলা শব্দ গঠন: উপসর্গ, প্রত্যয় ও সমাস (ব্যাকরণ)",
+                "৫. বাক্য তত্ত্ব: বাক্যের শ্রেণিবিভাগ ও রূপান্তর (ব্যাকরণ)",
+                "৬. বাংলা ভাষার অপপ্রয়োগ ও শুদ্ধ প্রয়োগ (ব্যাকরণ)",
+                "৭. পারিভাষিক শব্দ অথবা অনুবাদ (নির্মিতি)",
+                "৮. দিনলিপি লিখন অথবা প্রতিবেদন তৈরি (নির্মিতি)",
+                "৯. বৈদ্যুতিন চিঠি (Email) অথবা আবেদনপত্র (নির্মিতি)",
+                "১০. সারাংশ/সারসংক্ষেপ অথবা ভাব-সম্প্রসারণ (নির্মিতি)",
+                "১১. সংলাপ লিখন অথবা ক্ষুদে গল্প রচনা (নির্মিতি)",
+                "১২. প্রবন্ধ-নিবন্ধ লিখন (রচনা) (নির্মিতি)"
+            )
+
+            bangla2Chapters.forEachIndexed { index, title ->
+                database.chapterDao().insertChapter(
+                    ChapterEntity(
+                        subjectId = bangla2SubjectId,
+                        subjectName = "বাংলা ২য় পত্র",
                         chapterName = title,
                         tapCount = 0,
                         status = "পড়া শুরু হয় নাই",
