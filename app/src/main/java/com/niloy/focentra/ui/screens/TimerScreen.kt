@@ -59,6 +59,7 @@ fun TimerScreen(
     var showBrainDumpDialog by remember { mutableStateOf(false) }
     var showManualDataInputDialog by remember { mutableStateOf(false) }
     var showCancelConfirmDialog by remember { mutableStateOf(false) }
+    var showSelectionWarningDialog by remember { mutableStateOf(false) }
     val brainDumpNotes by viewModel.brainDumpNotes.collectAsStateWithLifecycle()
 
     // Sync subject default if subjects loaded
@@ -125,6 +126,36 @@ fun TimerScreen(
                     Text("Keep Studying")
                 }
             }
+        )
+    }
+
+    if (showSelectionWarningDialog) {
+        AlertDialog(
+            onDismissRequest = { showSelectionWarningDialog = false },
+            title = {
+                Text(
+                    text = "বিষয় ও অধ্যায় নির্বাচন করুন",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            text = {
+                Text(
+                    text = "দয়া করে ফোকাস টাইমার শুরু করার পূর্বে একটি বিষয় (Subject) এবং অধ্যায় (Chapter) নির্বাচন করুন।",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showSelectionWarningDialog = false },
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("ঠিক আছে")
+                }
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 
@@ -637,20 +668,24 @@ fun TimerScreen(
                 // Big Start Button
                 Button(
                     onClick = {
-                        viewModel.timerEngine.configureSession(
-                            mode = selectedMode,
-                            subject = selectedSubject,
-                            selectedChapter = selectedChapter,
-                            topic = topicText,
-                            goal = goalText,
-                            durationMinutes = selectedDurationMinutes,
-                            pomodoroFocusMin = pomodoroFocusMin,
-                            pomodoroShortBreakMin = pomodoroShortBreakMin,
-                            pomodoroLongBreakMin = pomodoroLongBreakMin,
-                            pomodoroRounds = pomodoroRounds,
-                            autoStartBreaks = autoStartBreaks
-                        )
-                        viewModel.timerEngine.startSession()
+                        if (selectedSubject.isBlank() || selectedChapter.isBlank()) {
+                            showSelectionWarningDialog = true
+                        } else {
+                            viewModel.timerEngine.configureSession(
+                                mode = selectedMode,
+                                subject = selectedSubject,
+                                selectedChapter = selectedChapter,
+                                topic = topicText,
+                                goal = goalText,
+                                durationMinutes = selectedDurationMinutes,
+                                pomodoroFocusMin = pomodoroFocusMin,
+                                pomodoroShortBreakMin = pomodoroShortBreakMin,
+                                pomodoroLongBreakMin = pomodoroLongBreakMin,
+                                pomodoroRounds = pomodoroRounds,
+                                autoStartBreaks = autoStartBreaks
+                            )
+                            viewModel.timerEngine.startSession()
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
