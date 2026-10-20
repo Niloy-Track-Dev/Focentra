@@ -36,6 +36,9 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
     val allChapters: Flow<List<ChapterEntity>> = database.chapterDao().getAllChaptersFlow()
 
     suspend fun ensureBanglaSyllabusSeeded() = withContext(Dispatchers.IO) {
+        // First, clean up duplicate subjects in Room DB if any exist
+        deduplicateSubjectsInternal()
+
         val existingSubjects = database.subjectDao().getAllSubjects()
 
         val syllabiToSeed = listOf(
@@ -302,6 +305,39 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
         }
     }
 
+    private suspend fun deduplicateSubjectsInternal() {
+        val allSubjects = database.subjectDao().getAllSubjects()
+        val grouped = allSubjects.groupBy { it.name.trim().lowercase() }
+        grouped.forEach { (_, subjects) ->
+            if (subjects.size > 1) {
+                // Keep the one with lowest ID (original entry)
+                val sorted = subjects.sortedBy { it.id }
+                val keepSubject = sorted.first()
+                val duplicates = sorted.drop(1)
+
+                val allChapters = database.chapterDao().getAllChaptersFlow().first()
+                val allTopics = database.topicDao().getAllTopics()
+
+                duplicates.forEach { dup ->
+                    // Reassign chapters from duplicate to original
+                    allChapters.filter { it.subjectId == dup.id }.forEach { ch ->
+                        database.chapterDao().insertChapter(ch.copy(subjectId = keepSubject.id, subjectName = keepSubject.name))
+                    }
+                    // Reassign topics from duplicate to original
+                    allTopics.filter { it.subjectId == dup.id }.forEach { tp ->
+                        database.topicDao().insertTopic(tp.copy(subjectId = keepSubject.id, subjectName = keepSubject.name))
+                    }
+                    // Delete duplicate subject
+                    database.subjectDao().deleteSubject(dup)
+                }
+            }
+        }
+    }
+
+    suspend fun deduplicateSubjects() = withContext(Dispatchers.IO) {
+        deduplicateSubjectsInternal()
+    }
+
     suspend fun insertChapter(chapter: ChapterEntity): Long = withContext(Dispatchers.IO) {
         database.chapterDao().insertChapter(chapter)
     }
@@ -419,6 +455,7 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
     }
 
     suspend fun deleteSubject(subject: SubjectEntity) = withContext(Dispatchers.IO) {
+        database.chapterDao().deleteChaptersForSubject(subject.id)
         database.subjectDao().deleteSubject(subject)
     }
 
