@@ -41,7 +41,8 @@ enum class NavigationTab {
     SUBJECTS,
     ACHIEVEMENTS,
     PRESETS,
-    SETTINGS
+    SETTINGS,
+    NOTIFICATIONS
 }
 
 data class BrainDumpNote(
@@ -68,6 +69,14 @@ data class DashboardWidgetOrder(
     val isVisible: Boolean = true
 )
 
+private fun toBanglaDigits(input: String): String {
+    val map = mapOf(
+        '0' to '০', '1' to '১', '2' to '২', '3' to '৩', '4' to '৪',
+        '5' to '৫', '6' to '৬', '7' to '৭', '8' to '৮', '9' to '৯'
+    )
+    return input.map { map[it] ?: it }.joinToString("")
+}
+
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val app = application as FocentraApp
@@ -77,6 +86,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // Active Navigation Screen
     private val _currentTab = MutableStateFlow(NavigationTab.DASHBOARD)
     val currentTab: StateFlow<NavigationTab> = _currentTab.asStateFlow()
+
+    // Seen Notification IDs & Unseen Count
+    private val _seenNotificationIds = MutableStateFlow<Set<String>>(emptySet())
+    val seenNotificationIds: StateFlow<Set<String>> = _seenNotificationIds.asStateFlow()
+
+    fun markNotificationsAsSeen() {
+        val activeIds = activeNotifications.value.map { it.id }.toSet()
+        _seenNotificationIds.value = _seenNotificationIds.value + activeIds
+    }
 
     // Full screen focus mode state
     private val _isFullScreenFocus = MutableStateFlow(false)
@@ -277,28 +295,33 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             val dailyGoal = goalList.find { it.periodType == "DAILY" }?.targetMinutes ?: 480
-            val remainingMins = (dailyGoal - todayMins).coerceAtLeast(0)
+            val remainingMins = (dailyGoal - todayMins).coerceAtLeast(0L)
             if (remainingMins > 0) {
+                val hours = remainingMins / 60
+                val mins = remainingMins % 60
+                val hoursBn = toBanglaDigits(hours.toString())
+                val minsBn = toBanglaDigits(mins.toString())
+                val goalMessage = if (mins == 0L) {
+                    "আজকের Daily Study Goal পূরণ করতে আরো $hoursBn ঘন্টা পড়াশোনা করা প্রয়োজন।"
+                } else {
+                    "আজকের Daily Study Goal পূরণ করতে আরো $hoursBn ঘন্টা $minsBn মিনিট পড়াশোনা করা প্রয়োজন।"
+                }
                 list.add(
                     AppNotification(
                         type = NotificationType.GOAL_WARNING,
                         title = "🎯 স্টাডি টার্গেট ট্র্যাকার",
-                        message = "আজকের ডেইলি গোল পূরণ করতে আরও ${remainingMins / 60}ঘণ্টা ${remainingMins % 60}মিনিট পড়া প্রয়োজন!"
+                        message = goalMessage
                     )
                 )
             }
 
-            list.add(
-                AppNotification(
-                    type = NotificationType.MOTIVATION,
-                    title = "🔥 ডেইলি মোটিভেশন",
-                    message = "“প্রতিদিনের ছোট ছোট প্রচেষ্টাই একদিন বড় অর্জনে রূপ নেয়। পড়ার ধারাবাহিকতা ধরে রাখুন!”"
-                )
-            )
-
             list.toList()
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    val unseenNotificationCount = combine(activeNotifications, _seenNotificationIds) { active, seen ->
+        active.count { it.id !in seen }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, 0)
 
     val streakInfo = sessions.map { sessionList ->
         kotlinx.coroutines.withContext(Dispatchers.Default) { calculateStreak(sessionList) }
