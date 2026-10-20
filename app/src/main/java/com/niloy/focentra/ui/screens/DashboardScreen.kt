@@ -49,6 +49,19 @@ fun DashboardScreen(
     modifier: Modifier = Modifier
 ) {
     val timerState by viewModel.timerEngine.uiState.collectAsStateWithLifecycle()
+    val brainDumpNotes by viewModel.brainDumpNotes.collectAsStateWithLifecycle()
+    var showBrainDumpDialog by remember { mutableStateOf(false) }
+
+    if (showBrainDumpDialog) {
+        com.niloy.focentra.ui.components.BrainDumpDialog(
+            notes = brainDumpNotes,
+            onDismiss = { showBrainDumpDialog = false },
+            onAddNote = { text -> viewModel.addBrainDumpNote(text, "General") },
+            onToggleDone = { id -> viewModel.toggleBrainDumpDone(id) },
+            onDeleteNote = { id -> viewModel.deleteBrainDumpNote(id) },
+            onClearCompleted = { viewModel.clearCompletedBrainDumps() }
+        )
+    }
     val streakInfo by viewModel.streakInfo.collectAsStateWithLifecycle()
     val todayMins by viewModel.todayFocusedMinutes.collectAsStateWithLifecycle()
     val goals by viewModel.goals.collectAsStateWithLifecycle()
@@ -695,7 +708,7 @@ fun DashboardScreen(
                 Card(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable { viewModel.navigateTo(NavigationTab.TIMER) },
+                        .clickable { showBrainDumpDialog = true },
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)

@@ -17,7 +17,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -135,7 +134,6 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
 
     var selectedSubject by remember { mutableStateOf(subjects.firstOrNull()?.name ?: "General") }
     var selectedChapter by remember { mutableStateOf("") }
-    var durationMins by remember { mutableIntStateOf(30) }
 
     val matchingChapters = remember(chapters, selectedSubject) {
         chapters.filter { it.subjectName.equals(selectedSubject, ignoreCase = true) }
@@ -147,7 +145,7 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Active Timer Banner
+        // Active Stopwatch Banner
         if (timerState.status == TimerStatus.RUNNING || timerState.status == TimerStatus.PAUSED) {
             Card(
                 shape = RoundedCornerShape(16.dp),
@@ -168,12 +166,13 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "ACTIVE TIMER IN PROGRESS",
+                                text = if (timerState.status == TimerStatus.RUNNING) "REVISION STOPWATCH IN PROGRESS" else "REVISION PAUSED",
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.primary
                             )
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = "${timerState.subject}${if (timerState.selectedChapter.isNotBlank()) " • ${timerState.selectedChapter}" else ""}",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
@@ -181,16 +180,20 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
                             )
                         }
 
-                        val remainingMin = timerState.remainingSeconds / 60
-                        val remainingSec = timerState.remainingSeconds % 60
+                        val elapsedSec = timerState.focusedSeconds
+                        val hrs = elapsedSec / 3600
+                        val min = (elapsedSec % 3600) / 60
+                        val sec = elapsedSec % 60
+                        val timeStr = if (hrs > 0) String.format("%02d:%02d:%02d", hrs, min, sec) else String.format("%02d:%02d", min, sec)
+
                         Text(
-                            text = String.format("%02d:%02d", remainingMin, remainingSec),
+                            text = timeStr,
                             style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -219,7 +222,18 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
                         }
 
                         Button(
-                            onClick = { viewModel.timerEngine.finishSession(isEarly = true) },
+                            onClick = {
+                                val currentSubject = timerState.subject
+                                val currentChapter = timerState.selectedChapter
+                                val durMins = (timerState.focusedSeconds / 60).toInt().coerceAtLeast(1)
+                                viewModel.timerEngine.finishSession(isEarly = true)
+                                viewModel.recordRevision(
+                                    subjectName = currentSubject,
+                                    chapterName = if (currentChapter.isNotBlank()) currentChapter else "General Revision",
+                                    durationMinutes = durMins,
+                                    stage = "Revision Stopwatch"
+                                )
+                            },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
@@ -294,29 +308,23 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
             }
         }
 
-        // Duration Selection
-        Column {
+        // Revision Mode Info Header
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Timer,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
             Text(
-                text = "Revision Duration",
+                text = "Revision Mode: Stopwatch",
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            val options = listOf(15, 30, 45, 60, 90)
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(options) { dur ->
-                    val isSelected = durationMins == dur
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { durationMins = dur },
-                        label = { Text("${dur}m") },
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                }
-            }
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
 
         Button(
             onClick = {
@@ -324,14 +332,12 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
                     viewModel.timerEngine.cancelSession()
                 }
                 viewModel.timerEngine.configureSession(
-                    mode = SessionMode.COUNTDOWN,
+                    mode = SessionMode.STOPWATCH,
                     subject = selectedSubject,
                     selectedChapter = selectedChapter,
-                    topic = "Spaced Revision",
-                    durationMinutes = durationMins
+                    topic = "Revision Stopwatch"
                 )
                 viewModel.timerEngine.startSession()
-                viewModel.navigateTo(com.niloy.focentra.viewmodel.NavigationTab.TIMER)
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -342,7 +348,7 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
             Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Start $durationMins Mins Revision Timer",
+                text = "Start Stopwatch Revision",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
             )
         }
@@ -426,14 +432,12 @@ private fun UpcomingScheduledRevisionsSection(viewModel: MainViewModel) {
                             viewModel.timerEngine.cancelSession()
                         }
                         viewModel.timerEngine.configureSession(
-                            mode = SessionMode.COUNTDOWN,
+                            mode = SessionMode.STOPWATCH,
                             subject = item.chapter.subjectName,
                             selectedChapter = item.chapter.chapterName,
-                            topic = item.stageName,
-                            durationMinutes = 30
+                            topic = item.stageName
                         )
                         viewModel.timerEngine.startSession()
-                        viewModel.navigateTo(com.niloy.focentra.viewmodel.NavigationTab.TIMER)
                     }
                 )
             }
@@ -537,7 +541,7 @@ private fun ScheduledRevisionCard(
             ) {
                 Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Start Revision Timer", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
+                Text("Start Stopwatch Revision", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
             }
         }
     }

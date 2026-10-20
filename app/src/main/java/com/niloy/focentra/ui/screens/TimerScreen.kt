@@ -295,7 +295,7 @@ fun TimerScreen(
                 if (matchingChapters.isNotEmpty()) {
                     Column {
                         Text(
-                            text = "Chapter (Optional)",
+                            text = "Chapter",
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -313,11 +313,12 @@ fun TimerScreen(
                                 )
                             }
                             items(matchingChapters) { ch ->
+                                val cleanName = ch.chapterName.replace(Regex("(?i)\\bnoun\\b"), "").replace("Noun", "").replace("noun", "").trim()
                                 val isSelected = ch.chapterName == selectedChapter
                                 FilterChip(
                                     selected = isSelected,
                                     onClick = { selectedChapter = ch.chapterName },
-                                    label = { Text(ch.chapterName) },
+                                    label = { Text(cleanName) },
                                     shape = RoundedCornerShape(12.dp)
                                 )
                             }
