@@ -14,8 +14,8 @@ android {
     applicationId = "com.niloy.focentra"
     minSdk = 24
     targetSdk = 36
-    versionCode = 42
-    versionName = "6.0.9"
+    versionCode = 43
+    versionName = "6.1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
