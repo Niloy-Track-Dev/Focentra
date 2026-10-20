@@ -236,47 +236,38 @@ class TimerEngine private constructor(
         val totalDuration = finalFocused + finalPaused
         val currentState = _uiState.value
 
-        // Only save session if it has at least 5 seconds of focused time
-        if (finalFocused >= 5L) {
-            val distractionSummary = currentState.distractions
-                .groupBy { it.category }
-                .map { "${it.key}: ${it.value.size}" }
-                .joinToString(", ")
+        val distractionSummary = currentState.distractions
+            .groupBy { it.category }
+            .map { "${it.key}: ${it.value.size}" }
+            .joinToString(", ")
 
-            val sessionEntity = StudySessionEntity(
-                startTime = if (sessionStartMs > 0) sessionStartMs else now - (totalDuration * 1000),
-                endTime = now,
-                durationSeconds = totalDuration,
-                actualFocusedSeconds = finalFocused,
-                pausedSeconds = finalPaused,
-                sessionType = currentState.mode.name,
-                subject = currentState.subject,
-                topic = currentState.topic,
-                goal = currentState.goal,
-                tags = currentState.tags.joinToString(","),
-                distractionCount = currentState.distractionCount,
-                distractionDetails = distractionSummary,
-                completionStatus = if (isEarly) "EARLY_FINISH" else "COMPLETED"
-            )
+        val safeFocused = finalFocused.coerceAtLeast(1L)
+        val safeDuration = totalDuration.coerceAtLeast(1L)
 
-            _uiState.value = currentState.copy(
-                status = TimerStatus.COMPLETED,
-                focusedSeconds = finalFocused,
-                pausedSeconds = finalPaused,
-                elapsedSeconds = totalDuration,
-                showCompletionSheet = true,
-                completedSessionData = sessionEntity
-            )
-        } else {
-            // Dismiss without saving if negligible
-            _uiState.value = currentState.copy(
-                status = TimerStatus.IDLE,
-                focusedSeconds = 0L,
-                elapsedSeconds = 0L,
-                showCompletionSheet = false,
-                completedSessionData = null
-            )
-        }
+        val sessionEntity = StudySessionEntity(
+            startTime = if (sessionStartMs > 0) sessionStartMs else now - (safeDuration * 1000),
+            endTime = now,
+            durationSeconds = safeDuration,
+            actualFocusedSeconds = safeFocused,
+            pausedSeconds = finalPaused,
+            sessionType = currentState.mode.name,
+            subject = currentState.subject,
+            topic = currentState.topic,
+            goal = currentState.goal,
+            tags = currentState.tags.joinToString(","),
+            distractionCount = currentState.distractionCount,
+            distractionDetails = distractionSummary,
+            completionStatus = if (isEarly) "EARLY_FINISH" else "COMPLETED"
+        )
+
+        _uiState.value = currentState.copy(
+            status = TimerStatus.COMPLETED,
+            focusedSeconds = finalFocused,
+            pausedSeconds = finalPaused,
+            elapsedSeconds = totalDuration,
+            showCompletionSheet = true,
+            completedSessionData = sessionEntity
+        )
 
         updateServiceState(TimerStatus.IDLE)
         playCompletionSignals()
