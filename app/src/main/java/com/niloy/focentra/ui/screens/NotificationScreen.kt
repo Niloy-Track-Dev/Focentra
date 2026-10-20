@@ -63,13 +63,13 @@ fun NotificationScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "কোনো নোটিফিকেশন নেই",
+                        text = "No Notifications",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "আপনার রিভিশন অ্যালার্ট এবং ডেইলি গোল নোটিফিকেশন এখানে দেখাবে।",
+                        text = "Your revision alerts, goal trackers, and smart reminders will appear here.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         fontSize = 12.sp
@@ -124,6 +124,13 @@ private fun NotificationCardItem(
         NotificationType.REVISION_DUE -> Icons.Default.Autorenew
         NotificationType.INACTIVITY_WARNING -> Icons.Default.Warning
         NotificationType.GOAL_WARNING -> Icons.Default.AdsClick
+        NotificationType.PEAK_FOCUS_REMINDER -> Icons.Default.Bolt
+        NotificationType.STREAK_SAVER -> Icons.Default.LocalFireDepartment
+        NotificationType.EXAM_COUNTDOWN -> Icons.Default.Timer
+        NotificationType.BRAIN_DUMP_PROMPT -> Icons.Default.Lightbulb
+        NotificationType.WEEKLY_DIGEST -> Icons.Default.EmojiEvents
+        NotificationType.BREAK_OVERSTAY -> Icons.Default.Alarm
+        NotificationType.AMBIENT_VIBE -> Icons.Default.VolumeUp
         NotificationType.MOTIVATION -> Icons.Default.Lightbulb
     }
 
@@ -131,6 +138,13 @@ private fun NotificationCardItem(
         NotificationType.REVISION_DUE -> MaterialTheme.colorScheme.primary
         NotificationType.INACTIVITY_WARNING -> Color(0xFFF59E0B)
         NotificationType.GOAL_WARNING -> Color(0xFF10B981)
+        NotificationType.PEAK_FOCUS_REMINDER -> Color(0xFF8B5CF6)
+        NotificationType.STREAK_SAVER -> Color(0xFFEF4444)
+        NotificationType.EXAM_COUNTDOWN -> Color(0xFFEC4899)
+        NotificationType.BRAIN_DUMP_PROMPT -> Color(0xFF06B6D4)
+        NotificationType.WEEKLY_DIGEST -> Color(0xFFF59E0B)
+        NotificationType.BREAK_OVERSTAY -> Color(0xFFEF4444)
+        NotificationType.AMBIENT_VIBE -> MaterialTheme.colorScheme.primary
         NotificationType.MOTIVATION -> MaterialTheme.colorScheme.primary
     }
 
@@ -233,7 +247,7 @@ private fun NotificationCardItem(
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = if (notification.type == NotificationType.REVISION_DUE) "Emergency Bypass / dismiss" else "ডিমিস করুন",
+                        text = if (notification.type == NotificationType.REVISION_DUE) "Bypass / Dismiss" else "Dismiss",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
@@ -253,7 +267,7 @@ private fun NotificationCardItem(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "৩০ মি. রিভিশন শুরু করুন",
+                            text = "Start 30m Revision",
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                         )
                     }
