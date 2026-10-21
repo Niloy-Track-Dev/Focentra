@@ -63,13 +63,13 @@ fun NotificationScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "কোনো নোটিফিকেশন নেই",
+                        text = "No Notifications",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "আপনার রিভিশন অ্যালার্ট এবং ডেইলি গোল নোটিফিকেশন এখানে দেখাবে।",
+                        text = "Your study reminders and revision alerts will be listed here.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         fontSize = 12.sp
@@ -87,11 +87,7 @@ fun NotificationScreen(
                     NotificationCardItem(
                         notification = notif,
                         isUnseen = isUnseen,
-                        onDismiss = {
-                            viewModel.dismissNotification(notif.id)
-                        },
                         onStartRevision = { subjectName, _ ->
-                            viewModel.dismissNotification(notif.id)
                             viewModel.startQuickTimer(30, subjectName)
                         }
                     )
@@ -105,7 +101,6 @@ fun NotificationScreen(
 private fun NotificationCardItem(
     notification: AppNotification,
     isUnseen: Boolean,
-    onDismiss: () -> Unit,
     onStartRevision: (String, String) -> Unit
 ) {
     val cardBgColor = if (isUnseen) {
@@ -222,41 +217,25 @@ private fun NotificationCardItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TextButton(
-                    onClick = onDismiss,
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+            if (notification.type == NotificationType.REVISION_DUE && notification.subjectName.isNotBlank()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(
+                    onClick = { onStartRevision(notification.subjectName, notification.chapterName) },
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                    modifier = Modifier.align(Alignment.End)
                 ) {
-                    Text(
-                        text = if (notification.type == NotificationType.REVISION_DUE) "Emergency Bypass / dismiss" else "ডিমিস করুন",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
                     )
-                }
-
-                if (notification.type == NotificationType.REVISION_DUE && notification.subjectName.isNotBlank()) {
-                    Button(
-                        onClick = { onStartRevision(notification.subjectName, notification.chapterName) },
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "৩০ মি. রিভিশন শুরু করুন",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
-                        )
-                    }
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Start 30m Revision",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                    )
                 }
             }
         }
