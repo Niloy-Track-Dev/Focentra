@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [7.1.3] - 2026-10-21
+
+- **App-Wide Bug Fixes**: Corrected timer accounting, study statistics, reminder scheduling, backup/restore behavior, and audio/foreground-service lifecycle issues.
+- **Release Signing**: Signed with the new permanent release key. This signing certificate differs from v7.1.2; existing installs cannot update in place and may need a reinstall. Export or back up local data before uninstalling.
+- **Version Bump**: Updated `versionCode` to `49` and `versionName` to `7.1.3`.
+
 ## [7.1.2] - 2026-10-21
 
 - **Reliable Study Reminders**: Added scheduled Android notifications that survive app restarts and reboot, follow selected weekdays, and are canceled when reminders are disabled or deleted.
