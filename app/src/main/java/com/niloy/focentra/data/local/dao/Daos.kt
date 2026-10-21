@@ -255,6 +255,9 @@ interface ChapterDao {
     @Query("DELETE FROM chapters WHERE subjectId = :subjectId")
     suspend fun deleteChaptersForSubject(subjectId: Long)
 
+    @Query("DELETE FROM chapters")
+    suspend fun deleteAllChapters()
+
     @Query("UPDATE chapters SET subjectName = :subjectName WHERE subjectId = :subjectId")
     suspend fun updateSubjectName(subjectId: Long, subjectName: String)
 }

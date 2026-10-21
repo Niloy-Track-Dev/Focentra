@@ -74,6 +74,30 @@ data class TimerUiState(
     val completedSessionData: StudySessionEntity? = null
 )
 
+internal data class PomodoroSessionTotals(
+    val focusedSeconds: Long = 0L,
+    val breakSeconds: Long = 0L,
+    val pausedSeconds: Long = 0L
+) {
+    fun includePhase(phase: PomodoroPhase, elapsedSeconds: Long, pausedSeconds: Long): PomodoroSessionTotals =
+        when (phase) {
+            PomodoroPhase.FOCUS -> copy(
+                focusedSeconds = focusedSeconds + elapsedSeconds.coerceAtLeast(0L),
+                pausedSeconds = this.pausedSeconds + pausedSeconds.coerceAtLeast(0L)
+            )
+            PomodoroPhase.SHORT_BREAK, PomodoroPhase.LONG_BREAK -> copy(
+                breakSeconds = breakSeconds + elapsedSeconds.coerceAtLeast(0L),
+                pausedSeconds = this.pausedSeconds + pausedSeconds.coerceAtLeast(0L)
+            )
+        }
+
+    val durationSeconds: Long
+        get() = focusedSeconds + breakSeconds + pausedSeconds
+}
+
+internal fun pomodoroPauseStartedAt(autoStart: Boolean, nowMillis: Long): Long =
+    if (autoStart) 0L else nowMillis
+
 class TimerEngine private constructor(
     private val context: Context,
     private val repository: StudyRepository
@@ -90,6 +114,7 @@ class TimerEngine private constructor(
     private var priorFocusedSeconds: Long = 0L
     private var priorPausedSeconds: Long = 0L
     private var pauseSegmentStartMs: Long = 0L
+    private var completedPomodoroTotals = PomodoroSessionTotals()
 
     companion object {
         @Volatile
@@ -126,10 +151,13 @@ class TimerEngine private constructor(
             return // Don't reconfigure while running
         }
 
+        val safeDurationMinutes = durationMinutes.coerceAtLeast(1)
+        val safeFocusMinutes = pomodoroFocusMin.coerceAtLeast(1)
+        val safeRounds = pomodoroRounds.coerceAtLeast(1)
         val targetSec = when (mode) {
-            SessionMode.COUNTDOWN -> durationMinutes * 60L
+            SessionMode.COUNTDOWN -> safeDurationMinutes * 60L
             SessionMode.STOPWATCH -> 0L
-            SessionMode.POMODORO -> pomodoroFocusMin * 60L
+            SessionMode.POMODORO -> safeFocusMinutes * 60L
         }
 
         _uiState.value = _uiState.value.copy(
@@ -148,10 +176,10 @@ class TimerEngine private constructor(
             progress = 0f,
             pomodoroPhase = PomodoroPhase.FOCUS,
             currentRound = 1,
-            totalRounds = pomodoroRounds,
-            pomodoroFocusMinutes = pomodoroFocusMin,
-            pomodoroShortBreakMinutes = pomodoroShortBreakMin,
-            pomodoroLongBreakMinutes = pomodoroLongBreakMin,
+            totalRounds = safeRounds,
+            pomodoroFocusMinutes = safeFocusMinutes,
+            pomodoroShortBreakMinutes = pomodoroShortBreakMin.coerceAtLeast(0),
+            pomodoroLongBreakMinutes = pomodoroLongBreakMin.coerceAtLeast(0),
             autoStartBreaks = autoStartBreaks,
             autoStartFocus = autoStartFocus,
             distractionCount = 0,
@@ -165,12 +193,17 @@ class TimerEngine private constructor(
     }
 
     fun startSession() {
+        if (_uiState.value.status == TimerStatus.RUNNING || _uiState.value.status == TimerStatus.PAUSED) {
+            return
+        }
+
         val now = System.currentTimeMillis()
         sessionStartMs = now
         runningSegmentStartMs = now
         priorFocusedSeconds = 0L
         priorPausedSeconds = 0L
         pauseSegmentStartMs = 0L
+        completedPomodoroTotals = PomodoroSessionTotals()
 
         _uiState.value = _uiState.value.copy(
             status = TimerStatus.RUNNING,
@@ -222,6 +255,9 @@ class TimerEngine private constructor(
     }
 
     fun finishSession(isEarly: Boolean = false) {
+        if (_uiState.value.status != TimerStatus.RUNNING && _uiState.value.status != TimerStatus.PAUSED) {
+            return
+        }
         stopTicker()
         val now = System.currentTimeMillis()
         var finalFocused = priorFocusedSeconds
@@ -235,21 +271,34 @@ class TimerEngine private constructor(
 
         val totalDuration = finalFocused + finalPaused
         val currentState = _uiState.value
+        val sessionTotals = if (currentState.mode == SessionMode.POMODORO) {
+            completedPomodoroTotals.includePhase(currentState.pomodoroPhase, finalFocused, finalPaused)
+        } else {
+            PomodoroSessionTotals(
+                focusedSeconds = finalFocused,
+                pausedSeconds = finalPaused
+            )
+        }
+        val sessionDuration = if (currentState.mode == SessionMode.POMODORO) {
+            sessionTotals.durationSeconds
+        } else {
+            totalDuration
+        }
 
         val distractionSummary = currentState.distractions
             .groupBy { it.category }
             .map { "${it.key}: ${it.value.size}" }
             .joinToString(", ")
 
-        val safeFocused = finalFocused.coerceAtLeast(1L)
-        val safeDuration = totalDuration.coerceAtLeast(1L)
+        val safeFocused = sessionTotals.focusedSeconds.coerceAtLeast(1L)
+        val safeDuration = sessionDuration.coerceAtLeast(1L)
 
         val sessionEntity = StudySessionEntity(
             startTime = if (sessionStartMs > 0) sessionStartMs else now - (safeDuration * 1000),
             endTime = now,
             durationSeconds = safeDuration,
             actualFocusedSeconds = safeFocused,
-            pausedSeconds = finalPaused,
+            pausedSeconds = sessionTotals.pausedSeconds,
             sessionType = currentState.mode.name,
             subject = currentState.subject,
             topic = currentState.topic,
@@ -262,9 +311,9 @@ class TimerEngine private constructor(
 
         _uiState.value = currentState.copy(
             status = TimerStatus.COMPLETED,
-            focusedSeconds = finalFocused,
-            pausedSeconds = finalPaused,
-            elapsedSeconds = totalDuration,
+            focusedSeconds = sessionTotals.focusedSeconds,
+            pausedSeconds = sessionTotals.pausedSeconds,
+            elapsedSeconds = sessionDuration,
             showCompletionSheet = true,
             completedSessionData = sessionEntity
         )
@@ -419,6 +468,13 @@ class TimerEngine private constructor(
     private fun handlePomodoroPhaseTransition() {
         playCompletionSignals()
         val currentState = _uiState.value
+        if (currentState.pomodoroPhase != PomodoroPhase.LONG_BREAK) {
+            completedPomodoroTotals = completedPomodoroTotals.includePhase(
+                currentState.pomodoroPhase,
+                currentState.focusedSeconds,
+                currentState.pausedSeconds
+            )
+        }
         when (currentState.pomodoroPhase) {
             PomodoroPhase.FOCUS -> {
                 // Focus ended -> determine if short or long break
@@ -465,7 +521,7 @@ class TimerEngine private constructor(
         runningSegmentStartMs = now
         priorFocusedSeconds = 0L
         priorPausedSeconds = 0L
-        pauseSegmentStartMs = 0L
+        pauseSegmentStartMs = pomodoroPauseStartedAt(autoStart, now)
 
         if (autoStart) {
             _uiState.value = _uiState.value.copy(status = TimerStatus.RUNNING)
@@ -481,6 +537,10 @@ class TimerEngine private constructor(
             if (_uiState.value.soundEnabled) {
                 val toneGen = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 90)
                 toneGen.startTone(ToneGenerator.TONE_PROP_BEEP2, 400)
+                scope.launch {
+                    delay(500L)
+                    toneGen.release()
+                }
             }
             if (_uiState.value.vibrationEnabled) {
                 val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

@@ -20,6 +20,84 @@ import org.json.JSONObject
 import java.io.File
 import java.util.Calendar
 
+private fun android.util.JsonWriter.writeJsonValue(jsonValue: Any?) {
+    when (jsonValue) {
+        null, JSONObject.NULL -> nullValue()
+        is JSONObject -> {
+            beginObject()
+            val keys = jsonValue.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                name(key)
+                writeJsonValue(jsonValue.get(key))
+            }
+            endObject()
+        }
+        is JSONArray -> {
+            beginArray()
+            for (index in 0 until jsonValue.length()) {
+                writeJsonValue(jsonValue.get(index))
+            }
+            endArray()
+        }
+        is String -> value(jsonValue)
+        is Boolean -> value(jsonValue)
+        is Number -> value(jsonValue)
+        else -> value(jsonValue.toString())
+    }
+}
+
+internal fun encodeCsvRecord(fields: List<String>): String =
+    fields.joinToString(",") { field ->
+        if (field.any { it == ',' || it == '"' || it == '\r' || it == '\n' }) {
+            "\"${field.replace("\"", "\"\"")}\""
+        } else {
+            field
+        }
+    }
+
+internal fun parseCsvRecords(csv: String): List<List<String>> {
+    val records = mutableListOf<List<String>>()
+    val record = mutableListOf<String>()
+    val field = StringBuilder()
+    var inQuotes = false
+    var index = 0
+
+    while (index < csv.length) {
+        val character = csv[index]
+        when {
+            character == '"' && inQuotes && index + 1 < csv.length && csv[index + 1] == '"' -> {
+                field.append('"')
+                index += 2
+                continue
+            }
+            character == '"' -> inQuotes = !inQuotes
+            character == ',' && !inQuotes -> {
+                record.add(field.toString())
+                field.clear()
+            }
+            (character == '\n' || character == '\r') && !inQuotes -> {
+                record.add(field.toString())
+                field.clear()
+                records.add(record.toList())
+                record.clear()
+                if (character == '\r' && index + 1 < csv.length && csv[index + 1] == '\n') {
+                    index++
+                }
+            }
+            else -> field.append(character)
+        }
+        index++
+    }
+
+    require(!inQuotes) { "Unterminated quoted CSV field." }
+    if (record.isNotEmpty() || field.isNotEmpty()) {
+        record.add(field.toString())
+        records.add(record)
+    }
+    return records
+}
+
 class StudyRepository(private val database: AppDatabase, context: Context) {
     
     private val appContext = context.applicationContext
@@ -681,9 +759,30 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
             obj.put("subjectId", t.subjectId)
             obj.put("subjectName", t.subjectName)
             obj.put("name", t.name)
+            obj.put("description", t.description)
             topicsArray.put(obj)
         }
         root.put("topics", topicsArray)
+
+        val chaptersArray = JSONArray()
+        database.chapterDao().getAllChaptersFlow().first().forEach { chapter ->
+            val obj = JSONObject()
+            obj.put("id", chapter.id)
+            obj.put("subjectId", chapter.subjectId)
+            obj.put("subjectName", chapter.subjectName)
+            obj.put("chapterName", chapter.chapterName)
+            obj.put("tapCount", chapter.tapCount)
+            obj.put("status", chapter.status)
+            obj.put("lastStudiedTimestamp", chapter.lastStudiedTimestamp)
+            obj.put("completedTimestamp", chapter.completedTimestamp)
+            obj.put("totalClasses", chapter.totalClasses)
+            obj.put("completedClassesCount", chapter.completedClassesCount)
+            obj.put("isRevision1Completed", chapter.isRevision1Completed)
+            obj.put("isRevision2Completed", chapter.isRevision2Completed)
+            obj.put("orderIndex", chapter.orderIndex)
+            chaptersArray.put(obj)
+        }
+        root.put("chapters", chaptersArray)
 
         val presetsArray = JSONArray()
         database.presetDao().getAllPresets().forEach { p ->
@@ -692,10 +791,15 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
             obj.put("type", p.type)
             obj.put("durationMinutes", p.durationMinutes)
             obj.put("subject", p.subject)
+            obj.put("topic", p.topic)
             obj.put("pomodoroFocusMin", p.pomodoroFocusMin)
             obj.put("pomodoroShortBreakMin", p.pomodoroShortBreakMin)
             obj.put("pomodoroLongBreakMin", p.pomodoroLongBreakMin)
             obj.put("pomodoroRounds", p.pomodoroRounds)
+            obj.put("soundEnabled", p.soundEnabled)
+            obj.put("vibrateEnabled", p.vibrateEnabled)
+            obj.put("keepScreenAwake", p.keepScreenAwake)
+            obj.put("tags", p.tags)
             presetsArray.put(obj)
         }
         root.put("presets", presetsArray)
@@ -705,6 +809,8 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
             val obj = JSONObject()
             obj.put("periodType", g.periodType)
             obj.put("targetMinutes", g.targetMinutes)
+            obj.put("subjectFilter", g.subjectFilter)
+            obj.put("active", g.active)
             goalsArray.put(obj)
         }
         root.put("goals", goalsArray)
@@ -724,14 +830,10 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
 
         // Include Flashcards and Exam Targets stored in settings
         val flashcardsJson = getSetting("flashcards_json", "")
-        if (flashcardsJson.isNotBlank()) {
-            root.put("flashcards", JSONArray(flashcardsJson))
-        }
+        root.put("flashcards", if (flashcardsJson.isBlank()) JSONArray() else JSONArray(flashcardsJson))
 
         val examTargetsJson = getSetting("exam_targets_json", "")
-        if (examTargetsJson.isNotBlank()) {
-            root.put("examTargets", JSONArray(examTargetsJson))
-        }
+        root.put("examTargets", if (examTargetsJson.isBlank()) JSONArray() else JSONArray(examTargetsJson))
 
         root.toString()
     }
@@ -794,6 +896,28 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
                 jWriter.name("subjectId").value(t.subjectId)
                 jWriter.name("subjectName").value(t.subjectName)
                 jWriter.name("name").value(t.name)
+                jWriter.name("description").value(t.description)
+                jWriter.endObject()
+            }
+            jWriter.endArray()
+
+            jWriter.name("chapters")
+            jWriter.beginArray()
+            database.chapterDao().getAllChaptersFlow().first().forEach { chapter ->
+                jWriter.beginObject()
+                jWriter.name("id").value(chapter.id)
+                jWriter.name("subjectId").value(chapter.subjectId)
+                jWriter.name("subjectName").value(chapter.subjectName)
+                jWriter.name("chapterName").value(chapter.chapterName)
+                jWriter.name("tapCount").value(chapter.tapCount)
+                jWriter.name("status").value(chapter.status)
+                jWriter.name("lastStudiedTimestamp").value(chapter.lastStudiedTimestamp)
+                jWriter.name("completedTimestamp").value(chapter.completedTimestamp)
+                jWriter.name("totalClasses").value(chapter.totalClasses)
+                jWriter.name("completedClassesCount").value(chapter.completedClassesCount)
+                jWriter.name("isRevision1Completed").value(chapter.isRevision1Completed)
+                jWriter.name("isRevision2Completed").value(chapter.isRevision2Completed)
+                jWriter.name("orderIndex").value(chapter.orderIndex)
                 jWriter.endObject()
             }
             jWriter.endArray()
@@ -806,10 +930,15 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
                 jWriter.name("type").value(p.type)
                 jWriter.name("durationMinutes").value(p.durationMinutes)
                 jWriter.name("subject").value(p.subject)
+                jWriter.name("topic").value(p.topic)
                 jWriter.name("pomodoroFocusMin").value(p.pomodoroFocusMin)
                 jWriter.name("pomodoroShortBreakMin").value(p.pomodoroShortBreakMin)
                 jWriter.name("pomodoroLongBreakMin").value(p.pomodoroLongBreakMin)
                 jWriter.name("pomodoroRounds").value(p.pomodoroRounds)
+                jWriter.name("soundEnabled").value(p.soundEnabled)
+                jWriter.name("vibrateEnabled").value(p.vibrateEnabled)
+                jWriter.name("keepScreenAwake").value(p.keepScreenAwake)
+                jWriter.name("tags").value(p.tags)
                 jWriter.endObject()
             }
             jWriter.endArray()
@@ -820,6 +949,8 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
                 jWriter.beginObject()
                 jWriter.name("periodType").value(g.periodType)
                 jWriter.name("targetMinutes").value(g.targetMinutes)
+                jWriter.name("subjectFilter").value(g.subjectFilter)
+                jWriter.name("active").value(g.active)
                 jWriter.endObject()
             }
             jWriter.endArray()
@@ -838,26 +969,27 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
             }
             jWriter.endArray()
 
-            jWriter.name("chapters")
+            val flashcardsJson = getSetting("flashcards_json", "")
+            val flashcards = if (flashcardsJson.isBlank()) JSONArray() else JSONArray(flashcardsJson)
+            jWriter.name("flashcards")
+            jWriter.writeJsonValue(flashcards)
+
+            val examTargetsJson = getSetting("exam_targets_json", "")
+            val targets = if (examTargetsJson.isBlank()) JSONArray() else JSONArray(examTargetsJson)
+            jWriter.name("examTargets")
             jWriter.beginArray()
-            database.chapterDao().getAllChaptersFlow().first().forEach { ch ->
+            for (index in 0 until targets.length()) {
+                val target = targets.getJSONObject(index)
                 jWriter.beginObject()
-                jWriter.name("id").value(ch.id)
-                jWriter.name("subjectId").value(ch.subjectId)
-                jWriter.name("subjectName").value(ch.subjectName)
-                jWriter.name("chapterName").value(ch.chapterName)
-                jWriter.name("totalClasses").value(ch.totalClasses)
-                jWriter.name("completedClassesCount").value(ch.completedClassesCount)
-                jWriter.name("isRevision1Completed").value(ch.isRevision1Completed)
-                jWriter.name("isRevision2Completed").value(ch.isRevision2Completed)
+                jWriter.name("id").value(target.optString("id"))
+                jWriter.name("title").value(target.optString("title"))
+                jWriter.name("targetDateEpochMs").value(target.optLong("targetDateEpochMs"))
+                jWriter.name("targetHours").value(target.optDouble("targetHours", 50.0))
+                jWriter.name("subject").value(target.optString("subject", "General"))
+                jWriter.name("notes").value(target.optString("notes"))
                 jWriter.endObject()
             }
             jWriter.endArray()
-
-            val examTargetsJson = getSetting("exam_targets_json", "")
-            if (examTargetsJson.isNotBlank()) {
-                jWriter.name("examTargets").value(examTargetsJson)
-            }
 
             jWriter.endObject()
         }
@@ -866,9 +998,36 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
     suspend fun exportSessionsCsv(): String = withContext(Dispatchers.IO) {
         val sessions = database.sessionDao().getAllSessions()
         val sb = StringBuilder()
-        sb.append("ID,Start Time,End Time,Total Duration (s),Focused Duration (s),Paused Duration (s),Type,Subject,Topic,Productivity,Distractions,Mood,Energy,Notes\n")
+        sb.append(
+            encodeCsvRecord(
+                listOf(
+                    "ID", "Start Time", "End Time", "Total Duration (s)", "Focused Duration (s)",
+                    "Paused Duration (s)", "Type", "Subject", "Topic", "Productivity",
+                    "Distractions", "Mood", "Energy", "Notes"
+                )
+            )
+        ).append('\n')
         sessions.forEach { s ->
-            sb.append("${s.id},${s.startTime},${s.endTime},${s.durationSeconds},${s.actualFocusedSeconds},${s.pausedSeconds},\"${s.sessionType}\",\"${s.subject}\",\"${s.topic}\",${s.productivityRating},${s.distractionCount},\"${s.mood}\",\"${s.energyLevel}\",\"${s.notes.replace("\"", "\"\"")}\"\n")
+            sb.append(
+                encodeCsvRecord(
+                    listOf(
+                        s.id.toString(),
+                        s.startTime.toString(),
+                        s.endTime.toString(),
+                        s.durationSeconds.toString(),
+                        s.actualFocusedSeconds.toString(),
+                        s.pausedSeconds.toString(),
+                        s.sessionType,
+                        s.subject,
+                        s.topic,
+                        s.productivityRating.toString(),
+                        s.distractionCount.toString(),
+                        s.mood,
+                        s.energyLevel,
+                        s.notes
+                    )
+                )
+            ).append('\n')
         }
         sb.toString()
     }
@@ -878,11 +1037,63 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
             val trimmed = jsonString.trim()
             if (trimmed.isEmpty()) return@withContext false
 
-            if (replaceExisting) {
-                database.sessionDao().clearAllSessions()
+            val rootObject = if (trimmed.startsWith("{")) JSONObject(trimmed) else null
+            val rootArray = if (trimmed.startsWith("[")) JSONArray(trimmed) else null
+            if (rootObject == null && rootArray == null) return@withContext false
+            if (rootObject != null) {
+                val supportedArrayNames = listOf(
+                    "sessions", "subjects", "topics", "presets", "goals", "reminders",
+                    "flashcards", "examTargets", "chapters"
+                )
+                val hasSessionFields = rootObject.has("startTime") ||
+                    rootObject.has("subject") || rootObject.has("durationSeconds")
+                if (!hasSessionFields && supportedArrayNames.none(rootObject::has)) {
+                    return@withContext false
+                }
+                if (supportedArrayNames.any { name ->
+                        rootObject.has(name) &&
+                            rootObject.optJSONArray(name) == null &&
+                            !(name == "examTargets" && rootObject.opt(name) is String)
+                    }
+                ) {
+                    return@withContext false
+                }
+                (supportedArrayNames - "flashcards").forEach { name ->
+                    val array = rootObject.optJSONArray(name)
+                        ?: if (name == "examTargets" && rootObject.opt(name) is String) {
+                            JSONArray(rootObject.getString(name))
+                        } else {
+                            null
+                        }
+                    if (array != null) {
+                        for (index in 0 until array.length()) {
+                            array.getJSONObject(index)
+                        }
+                    }
+                }
+            }
+            rootArray?.let { array ->
+                for (i in 0 until array.length()) {
+                    array.getJSONObject(i)
+                }
             }
 
-            val sessionList = mutableListOf<StudySessionEntity>()
+            database.withTransaction {
+                if (replaceExisting) {
+                    database.sessionDao().clearAllSessions()
+                    if (rootObject?.has("subjects") == true) {
+                        database.subjectDao().clearAllSubjects()
+                        database.topicDao().clearAllTopics()
+                        database.chapterDao().deleteAllChapters()
+                    }
+                    if (rootObject?.has("topics") == true) database.topicDao().clearAllTopics()
+                    if (rootObject?.has("chapters") == true) database.chapterDao().deleteAllChapters()
+                    if (rootObject?.has("presets") == true) database.presetDao().clearAllPresets()
+                    if (rootObject?.has("goals") == true) database.goalDao().clearAllGoals()
+                    if (rootObject?.has("reminders") == true) database.reminderDao().clearAllReminders()
+                }
+
+                val sessionList = mutableListOf<StudySessionEntity>()
 
             fun parseSessionObject(obj: JSONObject): StudySessionEntity {
                 val sTime = obj.optLong("startTime", System.currentTimeMillis())
@@ -914,8 +1125,10 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
                 )
             }
 
-            if (trimmed.startsWith("{")) {
+                if (trimmed.startsWith("{")) {
                 val root = JSONObject(trimmed)
+                val importedSubjectIds = mutableMapOf<Long, Long>()
+                val existingSubjects = database.subjectDao().getAllSubjects().toMutableList()
                 if (root.has("sessions")) {
                     val sessionsArray = root.getJSONArray("sessions")
                     for (i in 0 until sessionsArray.length()) {
@@ -934,7 +1147,10 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
                         val obj = subjectsArray.getJSONObject(i)
                         val sName = obj.optString("name", "")
                         if (sName.isNotBlank()) {
-                            database.subjectDao().insertSubject(
+                            val existing = existingSubjects.firstOrNull {
+                                it.name.equals(sName, ignoreCase = true)
+                            }
+                            val importedId = existing?.id ?: database.subjectDao().insertSubject(
                                 SubjectEntity(
                                     name = sName,
                                     colorHex = obj.optString("colorHex", "#6366F1"),
@@ -943,6 +1159,20 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
                                     description = obj.optString("description", "")
                                 )
                             )
+                            if (existing == null) {
+                                existingSubjects.add(
+                                    SubjectEntity(
+                                        id = importedId,
+                                        name = sName,
+                                        colorHex = obj.optString("colorHex", "#6366F1"),
+                                        iconName = obj.optString("iconName", "School"),
+                                        targetHours = obj.optDouble("targetHours", 0.0).toFloat(),
+                                        description = obj.optString("description", "")
+                                    )
+                                )
+                            }
+                            val sourceId = obj.optLong("id", 0L)
+                            if (sourceId > 0L) importedSubjectIds[sourceId] = importedId
                         }
                     }
                 }
@@ -955,13 +1185,57 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
                         val tName = obj.optString("name", "")
                         val sName = obj.optString("subjectName", "General")
                         if (tName.isNotBlank()) {
+                            val sourceSubjectId = obj.optLong("subjectId", 0L)
+                            val subjectId = importedSubjectIds[sourceSubjectId]
+                                ?: existingSubjects.firstOrNull { it.name.equals(sName, ignoreCase = true) }?.id
+                                ?: sourceSubjectId
                             database.topicDao().insertTopic(
                                 TopicEntity(
-                                    subjectId = obj.optLong("subjectId", 0L),
+                                    subjectId = subjectId,
                                     subjectName = sName,
-                                    name = tName
+                                    name = tName,
+                                    description = obj.optString("description", "")
                                 )
                             )
+                        }
+                    }
+                }
+
+                if (root.has("chapters")) {
+                    val chaptersArray = root.getJSONArray("chapters")
+                    val existingChapters = database.chapterDao().getAllChaptersFlow().first()
+                    for (i in 0 until chaptersArray.length()) {
+                        val obj = chaptersArray.getJSONObject(i)
+                        val subjectName = obj.optString("subjectName", "General")
+                        val sourceSubjectId = obj.optLong("subjectId", 0L)
+                        val subjectId = importedSubjectIds[sourceSubjectId]
+                            ?: existingSubjects.firstOrNull {
+                                it.name.equals(subjectName, ignoreCase = true)
+                            }?.id ?: sourceSubjectId
+                        val chapterName = obj.optString("chapterName", "")
+                        if (chapterName.isBlank()) continue
+                        val existing = existingChapters.firstOrNull {
+                            it.subjectId == subjectId && it.chapterName == chapterName
+                        }
+                        val chapter = ChapterEntity(
+                            id = existing?.id ?: 0L,
+                            subjectId = subjectId,
+                            subjectName = subjectName,
+                            chapterName = chapterName,
+                            tapCount = obj.optInt("tapCount", 0),
+                            status = obj.optString("status", "পড়া শুরু হয় নাই"),
+                            lastStudiedTimestamp = obj.optLong("lastStudiedTimestamp", 0L),
+                            completedTimestamp = obj.optLong("completedTimestamp", 0L),
+                            totalClasses = obj.optInt("totalClasses", 10),
+                            completedClassesCount = obj.optInt("completedClassesCount", 0),
+                            isRevision1Completed = obj.optBoolean("isRevision1Completed", false),
+                            isRevision2Completed = obj.optBoolean("isRevision2Completed", false),
+                            orderIndex = obj.optInt("orderIndex", 0)
+                        )
+                        if (existing == null) {
+                            database.chapterDao().insertChapter(chapter)
+                        } else {
+                            database.chapterDao().updateChapter(chapter)
                         }
                     }
                 }
@@ -979,10 +1253,15 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
                                     type = obj.optString("type", "COUNTDOWN"),
                                     durationMinutes = obj.optInt("durationMinutes", 25),
                                     subject = obj.optString("subject", "General"),
+                                    topic = obj.optString("topic", ""),
                                     pomodoroFocusMin = obj.optInt("pomodoroFocusMin", 25),
                                     pomodoroShortBreakMin = obj.optInt("pomodoroShortBreakMin", 5),
                                     pomodoroLongBreakMin = obj.optInt("pomodoroLongBreakMin", 15),
-                                    pomodoroRounds = obj.optInt("pomodoroRounds", 4)
+                                    pomodoroRounds = obj.optInt("pomodoroRounds", 4),
+                                    soundEnabled = obj.optBoolean("soundEnabled", true),
+                                    vibrateEnabled = obj.optBoolean("vibrateEnabled", true),
+                                    keepScreenAwake = obj.optBoolean("keepScreenAwake", true),
+                                    tags = obj.optString("tags", "")
                                 )
                             )
                         }
@@ -999,7 +1278,9 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
                             database.goalDao().insertGoal(
                                 StudyGoalEntity(
                                     periodType = periodType,
-                                    targetMinutes = obj.optInt("targetMinutes", 480)
+                                    targetMinutes = obj.optInt("targetMinutes", 480),
+                                    subjectFilter = obj.optString("subjectFilter", ""),
+                                    active = obj.optBoolean("active", true)
                                 )
                             )
                         }
@@ -1036,26 +1317,28 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
 
                 // Restore exam targets if present
                 if (root.has("examTargets")) {
+                    val examTargets = root.optJSONArray("examTargets")
+                        ?: JSONArray(root.getString("examTargets"))
                     database.settingDao().setSetting(
-                        com.niloy.focentra.data.local.entity.SettingEntity("exam_targets_json", root.getJSONArray("examTargets").toString())
+                        com.niloy.focentra.data.local.entity.SettingEntity("exam_targets_json", examTargets.toString())
                     )
                 }
 
-            } else if (trimmed.startsWith("[")) {
+                } else if (trimmed.startsWith("[")) {
                 // Array of sessions
                 val sessionsArray = JSONArray(trimmed)
                 for (i in 0 until sessionsArray.length()) {
                     val obj = sessionsArray.getJSONObject(i)
                     sessionList.add(parseSessionObject(obj))
                 }
-            } else {
-                return@withContext false
-            }
+                } else {
+                    Unit
+                }
 
-            if (sessionList.isNotEmpty()) {
-                // Chunk batch insertions to prevent SQLite transaction limits and memory spikes
-                sessionList.chunked(500).forEach { chunk ->
-                    database.sessionDao().insertSessions(chunk)
+                if (sessionList.isNotEmpty()) {
+                    sessionList.chunked(500).forEach { chunk ->
+                        database.sessionDao().insertSessions(chunk)
+                    }
                 }
             }
             checkAndUnlockAchievements()
@@ -1067,158 +1350,32 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
     }
 
     suspend fun importDataJsonStream(inputStream: java.io.InputStream, replaceExisting: Boolean): Boolean = withContext(Dispatchers.IO) {
-        try {
-            if (replaceExisting) {
-                database.sessionDao().clearAllSessions()
-            }
-
-            val reader = android.util.JsonReader(inputStream.bufferedReader(Charsets.UTF_8))
-            val sessionList = mutableListOf<StudySessionEntity>()
-
-            fun readSessionObject(jReader: android.util.JsonReader): StudySessionEntity {
-                var sTime = System.currentTimeMillis()
-                var dur = 1500L
-                var actDur = 1500L
-                var eTime = 0L
-                var sType = "COUNTDOWN"
-                var subj = "General"
-                var top = ""
-                var cat = "Study"
-                var gl = ""
-                var nts = ""
-                var tgs = ""
-                var prod = 4
-                var distCount = 0
-                var distDetails = ""
-                var md = "GOOD"
-                var energy = "HIGH"
-                var loc = "Desk"
-                var compStatus = "COMPLETED"
-
-                jReader.beginObject()
-                while (jReader.hasNext()) {
-                    when (jReader.nextName()) {
-                        "startTime" -> sTime = jReader.nextLong()
-                        "durationSeconds" -> dur = jReader.nextLong()
-                        "actualFocusedSeconds" -> actDur = jReader.nextLong()
-                        "endTime" -> eTime = jReader.nextLong()
-                        "sessionType" -> sType = jReader.nextString()
-                        "subject" -> subj = jReader.nextString()
-                        "topic" -> top = jReader.nextString()
-                        "category" -> cat = jReader.nextString()
-                        "goal" -> gl = jReader.nextString()
-                        "notes" -> nts = jReader.nextString()
-                        "tags" -> tgs = jReader.nextString()
-                        "productivityRating" -> prod = jReader.nextInt().coerceIn(1, 5)
-                        "distractionCount" -> distCount = jReader.nextInt()
-                        "distractionDetails" -> distDetails = jReader.nextString()
-                        "mood" -> md = jReader.nextString()
-                        "energyLevel" -> energy = jReader.nextString()
-                        "location" -> loc = jReader.nextString()
-                        "completionStatus" -> compStatus = jReader.nextString()
-                        else -> jReader.skipValue()
-                    }
-                }
-                jReader.endObject()
-
-                if (eTime == 0L) eTime = sTime + (actDur * 1000L)
-
-                return StudySessionEntity(
-                    startTime = sTime,
-                    endTime = eTime,
-                    durationSeconds = dur,
-                    actualFocusedSeconds = actDur,
-                    pausedSeconds = 0L,
-                    sessionType = sType,
-                    subject = subj,
-                    topic = top,
-                    category = cat,
-                    goal = gl,
-                    notes = nts,
-                    tags = tgs,
-                    productivityRating = prod,
-                    distractionCount = distCount,
-                    distractionDetails = distDetails,
-                    mood = md,
-                    energyLevel = energy,
-                    location = loc,
-                    completionStatus = compStatus
-                )
-            }
-
-            reader.beginObject()
-            while (reader.hasNext()) {
-                val name = reader.nextName()
-                if (name == "sessions") {
-                    reader.beginArray()
-                    while (reader.hasNext()) {
-                        val session = readSessionObject(reader)
-                        sessionList.add(session)
-                        if (sessionList.size >= 500) {
-                            database.sessionDao().insertSessions(sessionList)
-                            sessionList.clear()
-                        }
-                    }
-                    reader.endArray()
-                } else {
-                    reader.skipValue()
-                }
-            }
-            reader.endObject()
-
-            if (sessionList.isNotEmpty()) {
-                database.sessionDao().insertSessions(sessionList)
-            }
-            checkAndUnlockAchievements()
-            true
-        } catch (e: Exception) {
-            e.printStackTrace()
-            // Fallback for simple/other JSON formats
-            try {
-                val content = inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-                importDataJson(content, replaceExisting)
-            } catch (e2: Exception) {
-                e2.printStackTrace()
-                false
-            }
-        }
+        val content = inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+        importDataJson(content, replaceExisting)
     }
 
-    suspend fun importSessionsCsvStream(inputStream: java.io.InputStream): Boolean = withContext(Dispatchers.IO) {
+    suspend fun importSessionsCsvStream(
+        inputStream: java.io.InputStream,
+        replaceExisting: Boolean = false
+    ): Boolean = withContext(Dispatchers.IO) {
         try {
-            val reader = inputStream.bufferedReader(Charsets.UTF_8)
-            val lines = reader.readLines()
-            if (lines.isEmpty()) return@withContext false
+            val records = inputStream.bufferedReader(Charsets.UTF_8).use { reader ->
+                parseCsvRecords(reader.readText())
+            }
+            if (records.isEmpty()) return@withContext false
 
             val sessionList = mutableListOf<StudySessionEntity>()
-            // Header skipped or checked
-            val dataLines = if (lines.first().contains("Start Time", ignoreCase = true) || lines.first().contains("Subject", ignoreCase = true)) {
-                lines.drop(1)
-            } else {
-                lines
-            }
-
-            fun parseCsvLine(line: String): List<String> {
-                val result = mutableListOf<String>()
-                val cur = StringBuilder()
-                var inQuotes = false
-                for (ch in line) {
-                    if (ch == '"') {
-                        inQuotes = !inQuotes
-                    } else if (ch == ',' && !inQuotes) {
-                        result.add(cur.toString().trim())
-                        cur.clear()
-                    } else {
-                        cur.append(ch)
-                    }
+            val dataRecords = if (records.first().any {
+                    it.contains("Start Time", ignoreCase = true) || it.contains("Subject", ignoreCase = true)
                 }
-                result.add(cur.toString().trim())
-                return result
+            ) {
+                records.drop(1)
+            } else {
+                records
             }
 
-            for (line in dataLines) {
-                if (line.isBlank()) continue
-                val parts = parseCsvLine(line)
+            for (parts in dataRecords) {
+                if (parts.all(String::isBlank)) continue
                 if (parts.size >= 8) {
                     // Standard columns: ID,Start Time,End Time,Total Duration (s),Focused Duration (s),Paused Duration (s),Type,Subject,Topic,Productivity,Distractions,Mood,Energy,Notes
                     val sTime = parts.getOrNull(1)?.toLongOrNull() ?: System.currentTimeMillis()
@@ -1259,15 +1416,15 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
                         )
                     )
 
-                    if (sessionList.size >= 500) {
-                        database.sessionDao().insertSessions(sessionList)
-                        sessionList.clear()
-                    }
                 }
             }
 
-            if (sessionList.isNotEmpty()) {
-                database.sessionDao().insertSessions(sessionList)
+            if (sessionList.isEmpty()) return@withContext false
+            database.withTransaction {
+                if (replaceExisting) database.sessionDao().clearAllSessions()
+                sessionList.chunked(500).forEach { chunk ->
+                    database.sessionDao().insertSessions(chunk)
+                }
             }
             checkAndUnlockAchievements()
             true
@@ -1326,25 +1483,33 @@ fun calculateStreak(sessions: List<StudySessionEntity>): StreakInfo {
     val sortedDates = datesWithStudy.sorted()
     var longestStreak = 0
     var tempStreak = 0
-    var prevCal: Calendar? = null
+    var previousDate: String? = null
 
     for (dStr in sortedDates) {
-        val parts = dStr.split("-").map { it.toInt() }
-        val c = Calendar.getInstance().apply {
-            set(parts[0], parts[1] - 1, parts[2], 0, 0, 0)
-        }
-        if (prevCal == null) {
+        val previous = previousDate
+        if (previous == null) {
             tempStreak = 1
         } else {
-            val diff = (c.timeInMillis - prevCal.timeInMillis) / (1000 * 60 * 60 * 24)
-            if (diff == 1L) {
+            val parts = previous.split("-").map { it.toInt() }
+            val nextDate = Calendar.getInstance().apply {
+                clear()
+                set(parts[0], parts[1] - 1, parts[2])
+                add(Calendar.DAY_OF_YEAR, 1)
+            }
+            val expectedDate = String.format(
+                "%04d-%02d-%02d",
+                nextDate.get(Calendar.YEAR),
+                nextDate.get(Calendar.MONTH) + 1,
+                nextDate.get(Calendar.DAY_OF_MONTH)
+            )
+            if (dStr == expectedDate) {
                 tempStreak++
             } else {
                 tempStreak = 1
             }
         }
         if (tempStreak > longestStreak) longestStreak = tempStreak
-        prevCal = c
+        previousDate = dStr
     }
 
     if (currentStreak > longestStreak) longestStreak = currentStreak

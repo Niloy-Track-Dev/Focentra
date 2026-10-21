@@ -205,6 +205,7 @@ fun SettingsScreen(
                     } else false
 
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        if (success) viewModel.rescheduleReminders()
                         isImporting = false
                         importStatusMessage = if (success) "JSON Import completed successfully!" else "JSON Import failed. Please check file format."
                     }
@@ -353,7 +354,7 @@ fun SettingsScreen(
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = importReplace, onCheckedChange = { importReplace = it })
-                        Text("Replace all content", style = MaterialTheme.typography.bodySmall)
+                        Text("Replace sessions", style = MaterialTheme.typography.bodySmall)
                     }
 
                     if (csvError != null) {
@@ -377,11 +378,11 @@ fun SettingsScreen(
                         showCsvTextImportDialog = false
                         coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
                             try {
-                                if (importReplace) {
-                                    viewModel.repository.clearAllSessions()
-                                }
                                 val inputStream = importCsvText.byteInputStream(Charsets.UTF_8)
-                                val success = viewModel.repository.importSessionsCsvStream(inputStream)
+                                val success = viewModel.repository.importSessionsCsvStream(
+                                    inputStream,
+                                    replaceExisting = importReplace
+                                )
                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                                     isImporting = false
                                     importStatusMessage = if (success) "CSV Text Import completed successfully!" else "CSV Text Import failed. Please check formatting."

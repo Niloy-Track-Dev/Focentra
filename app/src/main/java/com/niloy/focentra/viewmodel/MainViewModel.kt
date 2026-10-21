@@ -95,6 +95,23 @@ private fun toBanglaDigits(input: String): String {
     return input.map { map[it] ?: it }.joinToString("")
 }
 
+internal fun isRevisionTopic(topic: String): Boolean =
+    topic.contains("revision", ignoreCase = true)
+
+internal fun revisionCompletionKey(session: StudySessionEntity): String =
+    "${session.startTime}:${session.endTime}:${session.subject}:${session.topic}"
+
+internal fun chapterAfterRevision(chapter: ChapterEntity, revisedAt: Long): ChapterEntity {
+    val isComplete = chapter.tapCount >= 3 || chapter.status == "অধ্যায় Completely শেষ"
+    val originalCompletionTime = chapter.completedTimestamp.takeIf { it > 0L }
+        ?: chapter.lastStudiedTimestamp.takeIf { isComplete }
+        ?: chapter.completedTimestamp
+    return chapter.copy(
+        lastStudiedTimestamp = revisedAt,
+        completedTimestamp = originalCompletionTime
+    )
+}
+
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val app = application as FocentraApp
@@ -647,13 +664,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
         if (matchingChapter != null) {
             val now = System.currentTimeMillis()
-            val isComplete = matchingChapter.tapCount >= 3 || matchingChapter.status == "অধ্যায় Completely শেষ"
-            updateChapter(
-                matchingChapter.copy(
-                    lastStudiedTimestamp = now,
-                    completedTimestamp = if (isComplete) now else matchingChapter.completedTimestamp
-                )
-            )
+            updateChapter(chapterAfterRevision(matchingChapter, now))
         }
     }
 
@@ -689,10 +700,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             var lastHandledSessionId: String? = null
             timerEngine.uiState.collect { state ->
-                if (state.status == TimerStatus.COMPLETED && state.completedSessionData != null) {
+                if (state.status == TimerStatus.COMPLETED &&
+                    state.completedSessionData != null &&
+                    isRevisionTopic(state.topic)
+                ) {
                     val session = state.completedSessionData
-                    if (session != null && session.id.toString() != lastHandledSessionId) {
-                        lastHandledSessionId = session.id.toString()
+                    val sessionKey = revisionCompletionKey(session)
+                    if (sessionKey != lastHandledSessionId) {
+                        lastHandledSessionId = sessionKey
                         val chapterName = if (state.selectedChapter.isNotBlank()) state.selectedChapter else (if (session.topic.isNotBlank()) session.topic else "General Chapter")
                         val durMins = (session.actualFocusedSeconds / 60).toInt().coerceAtLeast(1)
                         recordRevision(
@@ -964,6 +979,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _currentTab.value = NavigationTab.TIMER
     }
 
+    fun startRevisionTimer(durationMinutes: Int, subject: String, chapter: String) {
+        timerEngine.configureSession(
+            mode = SessionMode.COUNTDOWN,
+            subject = subject,
+            selectedChapter = chapter,
+            topic = "Revision",
+            durationMinutes = durationMinutes
+        )
+        timerEngine.startSession()
+        _currentTab.value = NavigationTab.TIMER
+    }
+
     // Subject operations
     fun createSubject(name: String, colorHex: String, iconName: String, targetHours: Float, description: String) {
         viewModelScope.launch {
@@ -1147,18 +1174,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val updated = reminder.copy(enabled = !reminder.enabled)
             repository.updateReminder(updated)
-            if (!updated.enabled) StudyReminderScheduler.cancel(getApplication(), reminder.id)
+            StudyReminderScheduler.schedule(getApplication(), updated)
             _snackbarMessage.emit(if (updated.enabled) "Reminder enabled." else "Reminder disabled.")
         }
     }
 
     fun saveReminder(reminder: ReminderEntity) {
         viewModelScope.launch {
-            if (reminder.id == 0L) {
-                repository.insertReminder(reminder)
+            val savedReminder = if (reminder.id == 0L) {
+                reminder.copy(id = repository.insertReminder(reminder))
             } else {
                 repository.updateReminder(reminder)
+                reminder
             }
+            StudyReminderScheduler.schedule(getApplication(), savedReminder)
             _snackbarMessage.emit("Reminder saved.")
         }
     }
@@ -1182,11 +1211,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     suspend fun importJson(json: String, replace: Boolean): Boolean {
         val success = repository.importDataJson(json, replace)
         if (success) {
+            rescheduleReminders()
             _snackbarMessage.emit("Backup imported successfully.")
         } else {
             _snackbarMessage.emit("Import failed: Invalid backup format.")
         }
         return success
+    }
+
+    fun rescheduleReminders() {
+        viewModelScope.launch {
+            StudyReminderScheduler.scheduleAll(
+                getApplication(),
+                repository.allReminders.first()
+            )
+        }
     }
 
     // Brain Dump & Focus Notes Feature

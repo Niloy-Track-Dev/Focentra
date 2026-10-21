@@ -6,6 +6,16 @@ plugins {
   alias(libs.plugins.secrets)
 }
 
+val releaseKeystorePath = System.getenv("KEYSTORE_PATH")
+val releaseStorePassword = System.getenv("STORE_PASSWORD")
+val releaseKeyAlias = System.getenv("KEY_ALIAS")
+val releaseKeyPassword = System.getenv("KEY_PASSWORD")
+val releaseKeystoreFile = releaseKeystorePath?.let(::file)
+val releaseSigningConfigured = releaseKeystoreFile?.isFile == true &&
+  !releaseStorePassword.isNullOrBlank() &&
+  !releaseKeyAlias.isNullOrBlank() &&
+  !releaseKeyPassword.isNullOrBlank()
+
 android {
   namespace = "com.niloy.focentra"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
@@ -22,27 +32,12 @@ android {
 
   signingConfigs {
     create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/release-keystore.jks"
-      val ksFile = file(keystorePath)
-      if (ksFile.exists()) {
-        storeFile = ksFile
-        storePassword = System.getenv("STORE_PASSWORD") ?: "focentra123456"
-        keyAlias = System.getenv("KEY_ALIAS") ?: "focentra"
-        keyPassword = System.getenv("KEY_PASSWORD") ?: "focentra123456"
-      } else {
-        storeFile = file("${rootDir}/debug.keystore")
-        storePassword = "android"
-        keyAlias = "androiddebugkey"
-        keyPassword = "android"
+      if (releaseSigningConfigured) {
+        storeFile = releaseKeystoreFile
+        storePassword = releaseStorePassword
+        keyAlias = releaseKeyAlias
+        keyPassword = releaseKeyPassword
       }
-      isV1SigningEnabled = true
-      isV2SigningEnabled = true
-    }
-    create("debugConfig") {
-      storeFile = file("${rootDir}/debug.keystore")
-      storePassword = "android"
-      keyAlias = "androiddebugkey"
-      keyPassword = "android"
       isV1SigningEnabled = true
       isV2SigningEnabled = true
     }
@@ -53,10 +48,8 @@ android {
       isCrunchPngs = false
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      val relConfig = signingConfigs.getByName("release")
-      signingConfig = if (relConfig.storeFile?.exists() == true) relConfig else signingConfigs.getByName("debugConfig")
+      signingConfig = signingConfigs.getByName("release")
     }
-    debug { signingConfig = signingConfigs.getByName("debugConfig") }
   }
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_11
@@ -75,6 +68,22 @@ android {
   dependenciesInfo {
     includeInApk = false
     includeInBundle = true
+  }
+}
+
+val validateReleaseSigning = tasks.register("validateReleaseSigning") {
+  doLast {
+    if (!releaseSigningConfigured) {
+      throw GradleException(
+        "Release signing is not configured. Set KEYSTORE_PATH, STORE_PASSWORD, KEY_ALIAS, and KEY_PASSWORD to a valid persistent keystore."
+      )
+    }
+  }
+}
+
+tasks.configureEach {
+  if (name.endsWith("Release")) {
+    dependsOn(validateReleaseSigning)
   }
 }
 
