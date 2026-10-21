@@ -79,7 +79,6 @@ private fun postSystemNotification(context: Context, notif: com.niloy.focentra.v
         .setSmallIcon(R.drawable.ic_notification_logo)
         .setContentTitle(notif.title)
         .setContentText(notif.message)
-        .setStyle(NotificationCompat.BigTextStyle().bigText(notif.message))
         .setPriority(NotificationCompat.PRIORITY_DEFAULT)
         .setAutoCancel(true)
         .setContentIntent(pendingIntent)
@@ -298,8 +297,11 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
 
-                                    // More Menu items (hidden when in Revision Hub or Notifications)
-                                    if (currentTab != NavigationTab.REVISION_HUB && currentTab != NavigationTab.NOTIFICATIONS) {
+                                    // More Menu items (hidden when in Revision Hub, Subjects, or Achievements)
+                                    if (currentTab != NavigationTab.REVISION_HUB &&
+                                        currentTab != NavigationTab.SUBJECTS &&
+                                        currentTab != NavigationTab.ACHIEVEMENTS
+                                    ) {
                                         var showMenu by remember { mutableStateOf(false) }
                                         IconButton(onClick = { showMenu = true }) {
                                             Icon(

@@ -1,7 +1,9 @@
 package com.niloy.focentra.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -142,6 +144,47 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
 
     var pendingSaveData by remember { mutableStateOf<Triple<String, String, Int>?>(null) }
     var showSaveDialog by remember { mutableStateOf(false) }
+    var showCancelConfirmDialog by remember { mutableStateOf(false) }
+
+    if (showCancelConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showCancelConfirmDialog = false },
+            title = {
+                Text(
+                    text = "Cancel Revision Session?",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to stop and cancel this revision session? Progress will not be recorded.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.timerEngine.cancelSession()
+                        viewModel.timerEngine.dismissCompletionSheet()
+                        showCancelConfirmDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Cancel Session")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCancelConfirmDialog = false }) {
+                    Text("Continue Session")
+                }
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
 
     if (showSelectionWarningDialog) {
         AlertDialog(
@@ -242,8 +285,7 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
                             showSaveDialog = true
                         },
                         onCancelClick = {
-                            viewModel.timerEngine.cancelSession()
-                            viewModel.timerEngine.dismissCompletionSheet()
+                            showCancelConfirmDialog = true
                         },
                         onLogDistractionClick = { viewModel.timerEngine.addDistraction("Other") },
                         onToggleFullScreen = { viewModel.setFullScreenFocus(true) },
@@ -453,13 +495,22 @@ fun RevisionSaveDialog(
 @Composable
 private fun UpcomingScheduledRevisionsSection(viewModel: MainViewModel) {
     val chapters by viewModel.chapters.collectAsStateWithLifecycle()
+    val subjects by viewModel.subjects.collectAsStateWithLifecycle()
 
-    val scheduledList = remember(chapters) {
+    var selectedSubjectFilter by remember { mutableStateOf("All") }
+
+    val scheduledList = remember(chapters, selectedSubjectFilter) {
         val list = mutableListOf<ScheduledRevisionItem>()
         val now = System.currentTimeMillis()
         val ONE_DAY = 86400000L
 
-        chapters.filter { it.tapCount >= 3 || it.status == "অধ্যায় Completely শেষ" }.forEach { ch ->
+        val filteredChapters = if (selectedSubjectFilter == "All") {
+            chapters
+        } else {
+            chapters.filter { it.subjectName.equals(selectedSubjectFilter, ignoreCase = true) }
+        }
+
+        filteredChapters.filter { it.tapCount >= 3 || it.status == "অধ্যায় Completely শেষ" }.forEach { ch ->
             val compTime = if (ch.completedTimestamp > 0) ch.completedTimestamp else ch.lastStudiedTimestamp
 
             val stages = listOf(
@@ -479,61 +530,97 @@ private fun UpcomingScheduledRevisionsSection(viewModel: MainViewModel) {
         list.sortedBy { it.dueDateMs }
     }
 
-    if (scheduledList.isEmpty()) {
-        Box(
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Subject Filter Chips Row
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .padding(bottom = 12.dp)
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.EventAvailable,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.size(64.dp)
+            item {
+                FilterChip(
+                    selected = selectedSubjectFilter == "All",
+                    onClick = { selectedSubjectFilter = "All" },
+                    label = { Text("All") },
+                    shape = RoundedCornerShape(12.dp)
                 )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "কোনো শিডিউল্ড রিভিশন নেই",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "অধ্যায় শেষ করার পর ১, ৩, ৭ এবং ১৫তম দিনের সায়েন্টিফিক রিভিশন শিডিউল এখানে দেখা যাবে।",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    textAlign = TextAlign.Center
+            }
+            items(subjects) { sub ->
+                val isSelected = sub.name.equals(selectedSubjectFilter, ignoreCase = true)
+                FilterChip(
+                    selected = isSelected,
+                    onClick = { selectedSubjectFilter = sub.name },
+                    label = { Text(sub.name) },
+                    leadingIcon = {
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(parseColorHex(sub.colorHex))
+                        )
+                    },
+                    shape = RoundedCornerShape(12.dp)
                 )
             }
         }
-    } else {
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(bottom = 100.dp)
-        ) {
-            items(scheduledList) { item ->
-                ScheduledRevisionCard(
-                    item = item,
-                    onStart = {
-                        if (viewModel.timerEngine.uiState.value.status == TimerStatus.RUNNING || viewModel.timerEngine.uiState.value.status == TimerStatus.PAUSED) {
-                            viewModel.timerEngine.cancelSession()
-                            viewModel.timerEngine.dismissCompletionSheet()
+
+        if (scheduledList.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.EventAvailable,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.size(64.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No Scheduled Revisions",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "After completing a chapter, scientific revision schedules for days 1, 3, 7, and 15 will appear here.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(bottom = 100.dp)
+            ) {
+                items(scheduledList) { item ->
+                    ScheduledRevisionCard(
+                        item = item,
+                        onStart = {
+                            if (viewModel.timerEngine.uiState.value.status == TimerStatus.RUNNING || viewModel.timerEngine.uiState.value.status == TimerStatus.PAUSED) {
+                                viewModel.timerEngine.cancelSession()
+                                viewModel.timerEngine.dismissCompletionSheet()
+                            }
+                            viewModel.timerEngine.configureSession(
+                                mode = SessionMode.STOPWATCH,
+                                subject = item.chapter.subjectName,
+                                selectedChapter = item.chapter.chapterName,
+                                topic = item.stageName
+                            )
+                            viewModel.timerEngine.startSession()
                         }
-                        viewModel.timerEngine.configureSession(
-                            mode = SessionMode.STOPWATCH,
-                            subject = item.chapter.subjectName,
-                            selectedChapter = item.chapter.chapterName,
-                            topic = item.stageName
-                        )
-                        viewModel.timerEngine.startSession()
-                    }
-                )
+                    )
+                }
             }
         }
     }
@@ -647,6 +734,46 @@ private fun RevisionHistorySection(viewModel: MainViewModel) {
     val subjects by viewModel.subjects.collectAsStateWithLifecycle()
 
     var selectedSubjectFilter by remember { mutableStateOf("All") }
+    var itemToDelete by remember { mutableStateOf<RevisionRecord?>(null) }
+
+    if (itemToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { itemToDelete = null },
+            title = {
+                Text(
+                    text = "Delete Revision History Item?",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            text = {
+                Text(
+                    text = "Are you sure you want to delete «${itemToDelete?.subjectName} - ${itemToDelete?.chapterName}» from history?",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        itemToDelete?.let { viewModel.deleteRevisionRecord(it.id) }
+                        itemToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { itemToDelete = null }) {
+                    Text("Cancel")
+                }
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
 
     val filteredHistory = remember(history, selectedSubjectFilter) {
         if (selectedSubjectFilter == "All") {
@@ -710,14 +837,14 @@ private fun RevisionHistorySection(viewModel: MainViewModel) {
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "কোনো রিভিশন হিস্ট্রি নেই",
+                        text = "No Revision History",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "আপনার সম্পন্ন করা সকল রিভিশনের তথ্য ও হিস্ট্রি লগ এখানে সংরক্ষিত হবে।",
+                        text = "Completed revision session logs will be stored here.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         textAlign = TextAlign.Center
@@ -730,15 +857,22 @@ private fun RevisionHistorySection(viewModel: MainViewModel) {
                 contentPadding = PaddingValues(bottom = 100.dp)
             ) {
                 items(filteredHistory, key = { it.id }) { rec ->
-                    RevisionHistoryCard(record = rec)
+                    RevisionHistoryCard(
+                        record = rec,
+                        onLongClick = { itemToDelete = rec }
+                    )
                 }
             }
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun RevisionHistoryCard(record: RevisionRecord) {
+private fun RevisionHistoryCard(
+    record: RevisionRecord,
+    onLongClick: () -> Unit
+) {
     val dateAndRangeStr = remember(record.startTime, record.endTime, record.timestamp) {
         val dateSdf = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
         val timeSdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
@@ -755,7 +889,13 @@ private fun RevisionHistoryCard(record: RevisionRecord) {
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
         ),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .combinedClickable(
+                onClick = {},
+                onLongClick = onLongClick
+            )
     ) {
         Row(
             modifier = Modifier
