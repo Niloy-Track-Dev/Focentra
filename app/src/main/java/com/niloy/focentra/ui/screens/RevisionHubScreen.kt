@@ -170,7 +170,7 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(onClick = { showCancelConfirmDialog = false }) {
-                        Text("Continue Session")
+                        Text("Continue")
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
@@ -182,7 +182,7 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                         shape = RoundedCornerShape(10.dp)
                     ) {
-                        Text("Cancel Session")
+                        Text("Cancel")
                     }
                 }
             },

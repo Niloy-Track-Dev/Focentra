@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.niloy.focentra.BuildConfig
 import com.niloy.focentra.data.local.entity.ReminderEntity
 import com.niloy.focentra.ui.components.SectionHeader
 import com.niloy.focentra.viewmodel.MainViewModel
@@ -1087,7 +1088,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Focentra v5.3.0 uses on-device Room SQLite database. Your study sessions, personal records, and goals never leave your device.",
+                        text = "Focentra v${BuildConfig.VERSION_NAME} uses on-device Room SQLite database. Your study sessions, personal records, and goals never leave your device.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -1440,4 +1441,3 @@ fun AddReminderDialog(
         }
     )
 }
-
