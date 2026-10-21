@@ -44,7 +44,7 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
         val syllabiToSeed = listOf(
             SyllabusData(
                 name = "বাংলা ১ম পত্র",
-                colorHex = "#E11D48",
+                colorHex = "#0D9488",
                 iconName = "MenuBook",
                 targetHours = 30f,
                 description = "উচ্চমাধ্যমিক বাংলা প্রথম পত্র সিলেবাস",
