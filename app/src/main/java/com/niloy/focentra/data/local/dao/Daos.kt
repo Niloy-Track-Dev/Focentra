@@ -21,6 +21,9 @@ interface StudySessionDao {
     @Query("SELECT * FROM study_sessions WHERE id = :id")
     suspend fun getSessionById(id: Long): StudySessionEntity?
 
+    @Query("UPDATE study_sessions SET subject = :newName WHERE subject = :oldName")
+    suspend fun updateSubjectName(oldName: String, newName: String)
+
     @Query("SELECT * FROM study_sessions WHERE notes LIKE '%' || :query || '%' OR subject LIKE '%' || :query || '%' OR topic LIKE '%' || :query || '%' OR tags LIKE '%' || :query || '%' ORDER BY startTime DESC")
     fun searchSessionsFlow(query: String): Flow<List<StudySessionEntity>>
 
@@ -53,6 +56,9 @@ interface SubjectDao {
 
     @Query("SELECT * FROM subjects ORDER BY orderIndex ASC, name ASC")
     suspend fun getAllSubjects(): List<SubjectEntity>
+
+    @Query("SELECT * FROM subjects WHERE id = :subjectId")
+    suspend fun getSubjectById(subjectId: Long): SubjectEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSubject(subject: SubjectEntity): Long
@@ -92,6 +98,12 @@ interface TopicDao {
 
     @Delete
     suspend fun deleteTopic(topic: TopicEntity)
+
+    @Query("UPDATE topics SET subjectName = :subjectName WHERE subjectId = :subjectId")
+    suspend fun updateSubjectName(subjectId: Long, subjectName: String)
+
+    @Query("DELETE FROM topics WHERE subjectId = :subjectId")
+    suspend fun deleteTopicsForSubject(subjectId: Long)
 
     @Query("DELETE FROM topics WHERE id = :id")
     suspend fun deleteTopicById(id: Long)
@@ -141,6 +153,9 @@ interface PresetDao {
     @Update
     suspend fun updatePreset(preset: PresetEntity)
 
+    @Query("UPDATE presets SET subject = :newName WHERE subject = :oldName")
+    suspend fun updateSubjectName(oldName: String, newName: String)
+
     @Delete
     suspend fun deletePreset(preset: PresetEntity)
 
@@ -177,6 +192,9 @@ interface ReminderDao {
     @Query("SELECT * FROM reminders ORDER BY hour ASC, minute ASC")
     fun getAllRemindersFlow(): Flow<List<ReminderEntity>>
 
+    @Query("SELECT * FROM reminders WHERE id = :id LIMIT 1")
+    suspend fun getReminderById(id: Long): ReminderEntity?
+
     @Query("SELECT * FROM reminders")
     suspend fun getAllReminders(): List<ReminderEntity>
 
@@ -207,6 +225,9 @@ interface StudyTaskDao {
     @Update
     suspend fun updateTask(task: StudyTaskEntity)
 
+    @Query("UPDATE daily_tasks SET subject = :newName WHERE subject = :oldName")
+    suspend fun updateSubjectName(oldName: String, newName: String)
+
     @Delete
     suspend fun deleteTask(task: StudyTaskEntity)
 
@@ -233,6 +254,9 @@ interface ChapterDao {
 
     @Query("DELETE FROM chapters WHERE subjectId = :subjectId")
     suspend fun deleteChaptersForSubject(subjectId: Long)
+
+    @Query("UPDATE chapters SET subjectName = :subjectName WHERE subjectId = :subjectId")
+    suspend fun updateSubjectName(subjectId: Long, subjectName: String)
 }
 
 @Dao

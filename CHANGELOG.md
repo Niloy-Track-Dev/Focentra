@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [7.1.2] - 2026-10-21
+
+- **Reliable Study Reminders**: Added scheduled Android notifications that survive app restarts and reboot, follow selected weekdays, and are canceled when reminders are disabled or deleted.
+- **Notification State Fixes**: Queue system notifications until the app can deliver them, persist only successfully posted alerts, and correctly mark notifications seen after loading.
+- **Subjects & Topics Management**: Exposed topic add/list/delete controls, synchronized linked topics and chapters when subjects are renamed, and delete linked data with its subject.
+- **Chapter Revision Tracking**: Keep chapter progress and study/completion timestamps in sync, with an explicit delete action and correct revision-alert resets.
+- **Version Bump**: Updated `versionCode` to `48` and `versionName` to `7.1.2`.
+
 ## [7.1.1] - 2026-10-21
 
 - **Revision Hub Timer Controls**: Improved responsive spacing between stopwatch actions and shortened cancel dialog buttons to "Continue" and "Cancel".

@@ -2,6 +2,7 @@ package com.niloy.focentra.data.repository
 
 import android.content.Context
 import android.content.Intent
+import androidx.room.withTransaction
 import com.niloy.focentra.data.local.AppDatabase
 import com.niloy.focentra.data.local.SyllabusData
 import com.niloy.focentra.data.local.entity.*
@@ -451,12 +452,25 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
     }
 
     suspend fun updateSubject(subject: SubjectEntity) = withContext(Dispatchers.IO) {
-        database.subjectDao().updateSubject(subject)
+        database.withTransaction {
+            val existingSubject = database.subjectDao().getSubjectById(subject.id)
+            database.subjectDao().updateSubject(subject)
+            if (existingSubject != null && existingSubject.name != subject.name) {
+                database.topicDao().updateSubjectName(subject.id, subject.name)
+                database.chapterDao().updateSubjectName(subject.id, subject.name)
+                database.sessionDao().updateSubjectName(existingSubject.name, subject.name)
+                database.taskDao().updateSubjectName(existingSubject.name, subject.name)
+                database.presetDao().updateSubjectName(existingSubject.name, subject.name)
+            }
+        }
     }
 
     suspend fun deleteSubject(subject: SubjectEntity) = withContext(Dispatchers.IO) {
-        database.chapterDao().deleteChaptersForSubject(subject.id)
-        database.subjectDao().deleteSubject(subject)
+        database.withTransaction {
+            database.topicDao().deleteTopicsForSubject(subject.id)
+            database.chapterDao().deleteChaptersForSubject(subject.id)
+            database.subjectDao().deleteSubject(subject)
+        }
     }
 
     // Topics
