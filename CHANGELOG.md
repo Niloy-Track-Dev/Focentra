@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [7.1.1] - 2026-10-21
+
+- **Revision Hub Timer Controls**: Improved responsive spacing between stopwatch actions and shortened cancel dialog buttons to "Continue" and "Cancel".
+- **Version Bump**: Updated `versionCode` to `47` and `versionName` to `7.1.1`.
+
 ## [5.3.0] - 2026-10-19
 
 - **Restored Core Midnight Dark Theme**: Reverted application theme to Focentra's core AMOLED Midnight Dark aesthetic (`#090A10` canvas, `#131522` surfaces, `#818CF8` primary indigo accent).

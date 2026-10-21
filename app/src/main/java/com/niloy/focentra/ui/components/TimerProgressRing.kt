@@ -286,93 +286,104 @@ fun TimerProgressRing(
         Spacer(modifier = Modifier.height(24.dp))
 
         // Timer Action Controls
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Cancel / Reset Button
-            IconButton(
-                onClick = onCancelClick,
-                modifier = Modifier
-                    .size(50.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Cancel session",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val controlSpacing = 8.dp
+            val primaryButtonSize = minOf(76.dp, maxWidth * 0.24f)
+            val secondaryButtonSize = minOf(
+                50.dp,
+                (maxWidth - primaryButtonSize - controlSpacing * 4) / 4
+            )
 
-            // Distraction Logger
-            IconButton(
-                onClick = onLogDistractionClick,
-                modifier = Modifier
-                    .size(50.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(controlSpacing, Alignment.CenterHorizontally),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.WarningAmber,
-                    contentDescription = "Log Distraction",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+                // Cancel / Reset Button
+                IconButton(
+                    onClick = onCancelClick,
+                    modifier = Modifier
+                        .size(secondaryButtonSize)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Cancel session",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
-            // Primary Play / Pause Button (Hero)
-            Button(
-                onClick = {
-                    if (isRunning) onPauseClick() else onResumeClick()
-                },
-                modifier = Modifier
-                    .size(76.dp)
-                    .shadow(elevation = 8.dp, shape = CircleShape, spotColor = MaterialTheme.colorScheme.primary),
-                shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                contentPadding = PaddingValues(0.dp)
-            ) {
-                Icon(
-                    imageVector = if (isRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (isRunning) "Pause" else "Start/Resume",
-                    modifier = Modifier.size(36.dp)
-                )
-            }
+                // Distraction Logger
+                IconButton(
+                    onClick = onLogDistractionClick,
+                    modifier = Modifier
+                        .size(secondaryButtonSize)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.WarningAmber,
+                        contentDescription = "Log Distraction",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
-            // Finish Button
-            IconButton(
-                onClick = onFinishClick,
-                modifier = Modifier
-                    .size(50.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = "Finish session",
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
+                // Primary Play / Pause Button (Hero)
+                Button(
+                    onClick = {
+                        if (isRunning) onPauseClick() else onResumeClick()
+                    },
+                    modifier = Modifier
+                        .size(primaryButtonSize)
+                        .shadow(
+                            elevation = 8.dp,
+                            shape = CircleShape,
+                            spotColor = MaterialTheme.colorScheme.primary
+                        ),
+                    shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (isRunning) "Pause" else "Start/Resume",
+                        modifier = Modifier.size(primaryButtonSize * 0.47f)
+                    )
+                }
 
-            // Full-screen Focus Mode Toggle
-            IconButton(
-                onClick = onToggleFullScreen,
-                modifier = Modifier
-                    .size(50.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Fullscreen,
-                    contentDescription = "Full Screen Focus",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                // Finish Button
+                IconButton(
+                    onClick = onFinishClick,
+                    modifier = Modifier
+                        .size(secondaryButtonSize)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Finish session",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+
+                // Full-screen Focus Mode Toggle
+                IconButton(
+                    onClick = onToggleFullScreen,
+                    modifier = Modifier
+                        .size(secondaryButtonSize)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Fullscreen,
+                        contentDescription = "Full Screen Focus",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
