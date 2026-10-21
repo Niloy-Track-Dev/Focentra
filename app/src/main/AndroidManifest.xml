@@ -42,7 +42,11 @@
             android:name=".service.StudyTimerService"
             android:exported="false"
             android:foregroundServiceType="specialUse"
-            tools:ignore="ForegroundServicePermission" />
+            tools:ignore="ForegroundServicePermission">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Maintains the user's active study timer and its notification controls." />
+        </service>
 
         <receiver
             android:name=".service.StudyReminderReceiver"

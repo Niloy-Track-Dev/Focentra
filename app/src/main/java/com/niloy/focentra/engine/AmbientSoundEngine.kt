@@ -3,6 +3,7 @@ package com.niloy.focentra.engine
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
+import android.util.Log
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +28,7 @@ class AmbientSoundEngine private constructor() {
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private var generatorJob: Job? = null
     private var audioTrack: AudioTrack? = null
+    private val audioTrackLock = Any()
 
     private val _currentSound = MutableStateFlow(AmbientSoundType.NONE)
     val currentSound: StateFlow<AmbientSoundType> = _currentSound.asStateFlow()
@@ -60,24 +62,26 @@ class AmbientSoundEngine private constructor() {
     fun setVolume(vol: Float) {
         val clamped = vol.coerceIn(0f, 1f)
         _volume.value = clamped
-        audioTrack?.setVolume(clamped)
+        synchronized(audioTrackLock) {
+            audioTrack?.setVolume(clamped)
+        }
     }
 
     fun stop() {
         _currentSound.value = AmbientSoundType.NONE
         generatorJob?.cancel()
         generatorJob = null
+        val track = synchronized(audioTrackLock) {
+            audioTrack.also { audioTrack = null }
+        }
         try {
-            audioTrack?.apply {
+            track?.apply {
                 if (playState == AudioTrack.PLAYSTATE_PLAYING) {
                     stop()
                 }
-                release()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
-        } finally {
-            audioTrack = null
+            Log.w("AmbientSoundEngine", "Failed to stop ambient audio.", e)
         }
     }
 
@@ -90,27 +94,28 @@ class AmbientSoundEngine private constructor() {
                 AudioFormat.ENCODING_PCM_16BIT
             ).coerceAtLeast(4096)
 
-            val track = AudioTrack.Builder()
-                .setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_MEDIA)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                        .build()
-                )
-                .setAudioFormat(
-                    AudioFormat.Builder()
-                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                        .setSampleRate(sampleRate)
-                        .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
-                        .build()
-                )
-                .setBufferSizeInBytes(bufferSize)
-                .setTransferMode(AudioTrack.MODE_STREAM)
-                .build()
-
-            track.setVolume(_volume.value)
-            track.play()
-            audioTrack = track
+            val track = try {
+                AudioTrack.Builder()
+                    .setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .build()
+                    )
+                    .setAudioFormat(
+                        AudioFormat.Builder()
+                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                            .setSampleRate(sampleRate)
+                            .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
+                            .build()
+                    )
+                    .setBufferSizeInBytes(bufferSize)
+                    .setTransferMode(AudioTrack.MODE_STREAM)
+                    .build()
+            } catch (exception: Exception) {
+                Log.e("AmbientSoundEngine", "Failed to initialize ambient audio.", exception)
+                return@launch
+            }
 
             val buffer = ShortArray(bufferSize / 2) // Short is 2 bytes
             var phaseLeft = 0.0
@@ -120,6 +125,12 @@ class AmbientSoundEngine private constructor() {
             var pinkB2 = 0.0
 
             try {
+                synchronized(audioTrackLock) {
+                    if (!isActive) return@launch
+                    audioTrack = track
+                    track.setVolume(_volume.value)
+                    track.play()
+                }
                 while (isActive) {
                     when (soundType) {
                         AmbientSoundType.WHITE_NOISE -> {
@@ -239,8 +250,22 @@ class AmbientSoundEngine private constructor() {
                     }
                     track.write(buffer, 0, buffer.size)
                 }
+            } catch (cancellation: CancellationException) {
+                throw cancellation
             } catch (e: Exception) {
-                // Cancelled or stopped
+                Log.e("AmbientSoundEngine", "Ambient audio playback failed for $soundType.", e)
+            } finally {
+                synchronized(audioTrackLock) {
+                    if (audioTrack === track) audioTrack = null
+                }
+                try {
+                    if (track.playState == AudioTrack.PLAYSTATE_PLAYING) {
+                        track.stop()
+                    }
+                    track.release()
+                } catch (exception: Exception) {
+                    Log.w("AmbientSoundEngine", "Failed to release ambient audio resources.", exception)
+                }
             }
         }
     }

@@ -279,67 +279,55 @@ object StatisticsEngine {
         val now = Calendar.getInstance()
         val startCal = Calendar.getInstance()
 
+        fun setStartOfDay(calendar: Calendar) {
+            calendar.set(Calendar.HOUR_OF_DAY, 0)
+            calendar.set(Calendar.MINUTE, 0)
+            calendar.set(Calendar.SECOND, 0)
+            calendar.set(Calendar.MILLISECOND, 0)
+        }
+
         when (period) {
             TimePeriod.TODAY -> {
-                startCal.set(Calendar.HOUR_OF_DAY, 0)
-                startCal.set(Calendar.MINUTE, 0)
-                startCal.set(Calendar.SECOND, 0)
-                startCal.set(Calendar.MILLISECOND, 0)
-                return sessions.filter { it.startTime >= startCal.timeInMillis }
+                setStartOfDay(startCal)
+                return sessions.filter { it.startTime in startCal.timeInMillis..now.timeInMillis }
             }
             TimePeriod.YESTERDAY -> {
+                setStartOfDay(startCal)
                 startCal.add(Calendar.DAY_OF_YEAR, -1)
-                startCal.set(Calendar.HOUR_OF_DAY, 0)
-                startCal.set(Calendar.MINUTE, 0)
-                startCal.set(Calendar.SECOND, 0)
-                val start = startCal.timeInMillis
-                val endCal = Calendar.getInstance().apply {
-                    add(Calendar.DAY_OF_YEAR, -1)
-                    set(Calendar.HOUR_OF_DAY, 23)
-                    set(Calendar.MINUTE, 59)
-                    set(Calendar.SECOND, 59)
-                }
-                return sessions.filter { it.startTime in start..endCal.timeInMillis }
+                val end = startCal.timeInMillis - 1L
+                return sessions.filter { it.startTime in startCal.timeInMillis..end }
             }
             TimePeriod.THIS_WEEK -> {
                 startCal.set(Calendar.DAY_OF_WEEK, startCal.firstDayOfWeek)
-                startCal.set(Calendar.HOUR_OF_DAY, 0)
-                startCal.set(Calendar.MINUTE, 0)
-                startCal.set(Calendar.SECOND, 0)
-                return sessions.filter { it.startTime >= startCal.timeInMillis }
+                setStartOfDay(startCal)
+                return sessions.filter { it.startTime in startCal.timeInMillis..now.timeInMillis }
             }
             TimePeriod.LAST_WEEK -> {
                 startCal.set(Calendar.DAY_OF_WEEK, startCal.firstDayOfWeek)
+                setStartOfDay(startCal)
+                val end = startCal.timeInMillis - 1L
                 startCal.add(Calendar.WEEK_OF_YEAR, -1)
-                startCal.set(Calendar.HOUR_OF_DAY, 0)
-                startCal.set(Calendar.MINUTE, 0)
                 val start = startCal.timeInMillis
-                val end = start + (7 * 24 * 3600 * 1000L) - 1
                 return sessions.filter { it.startTime in start..end }
             }
             TimePeriod.THIS_MONTH -> {
                 startCal.set(Calendar.DAY_OF_MONTH, 1)
-                startCal.set(Calendar.HOUR_OF_DAY, 0)
-                startCal.set(Calendar.MINUTE, 0)
-                return sessions.filter { it.startTime >= startCal.timeInMillis }
+                setStartOfDay(startCal)
+                return sessions.filter { it.startTime in startCal.timeInMillis..now.timeInMillis }
             }
             TimePeriod.LAST_MONTH -> {
+                startCal.set(Calendar.DAY_OF_MONTH, 1)
+                setStartOfDay(startCal)
+                val end = startCal.timeInMillis - 1L
                 startCal.add(Calendar.MONTH, -1)
                 startCal.set(Calendar.DAY_OF_MONTH, 1)
-                startCal.set(Calendar.HOUR_OF_DAY, 0)
-                startCal.set(Calendar.MINUTE, 0)
                 val start = startCal.timeInMillis
-                val endCal = Calendar.getInstance().apply {
-                    set(Calendar.DAY_OF_MONTH, 1)
-                    add(Calendar.MILLISECOND, -1)
-                }
-                return sessions.filter { it.startTime in start..endCal.timeInMillis }
+                return sessions.filter { it.startTime in start..end }
             }
             TimePeriod.THIS_YEAR -> {
                 startCal.set(Calendar.DAY_OF_YEAR, 1)
-                startCal.set(Calendar.HOUR_OF_DAY, 0)
-                startCal.set(Calendar.MINUTE, 0)
-                return sessions.filter { it.startTime >= startCal.timeInMillis }
+                setStartOfDay(startCal)
+                return sessions.filter { it.startTime in startCal.timeInMillis..now.timeInMillis }
             }
             TimePeriod.ALL_TIME -> return sessions
         }
@@ -430,7 +418,7 @@ object StatisticsEngine {
         weeksBack: Int = 16,
         dailyGoalMinutes: Int = 480
     ): List<HeatmapCell> {
-        val studyByDate = mutableMapOf<String, Long>()
+        val focusedSecondsByDate = mutableMapOf<String, Long>()
         val countByDate = mutableMapOf<String, Int>()
         val topSubByDate = mutableMapOf<String, String>()
 
@@ -438,7 +426,7 @@ object StatisticsEngine {
         sessions.forEach { s ->
             cal.timeInMillis = s.startTime
             val k = String.format("%04d-%02d-%02d", cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH))
-            studyByDate[k] = (studyByDate[k] ?: 0L) + (s.actualFocusedSeconds / 60)
+            focusedSecondsByDate[k] = (focusedSecondsByDate[k] ?: 0L) + s.actualFocusedSeconds
             countByDate[k] = (countByDate[k] ?: 0) + 1
             topSubByDate[k] = s.subject
         }
@@ -466,7 +454,7 @@ object StatisticsEngine {
             val dow = temp.get(Calendar.DAY_OF_WEEK)
             val k = String.format("%04d-%02d-%02d", y, m, d)
 
-            val studyMins = studyByDate[k] ?: 0L
+            val studyMins = (focusedSecondsByDate[k] ?: 0L) / 60
             val sessionCnt = countByDate[k] ?: 0
             val topSubject = topSubByDate[k] ?: ""
 
@@ -505,15 +493,30 @@ object StatisticsEngine {
 
         // Day with max study
         val dayMap = mutableMapOf<String, Long>()
+        val weekMap = mutableMapOf<String, Long>()
         val cal = Calendar.getInstance()
         sessions.forEach { s ->
             cal.timeInMillis = s.startTime
             val k = String.format("%04d-%02d-%02d", cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH))
-            dayMap[k] = (dayMap[k] ?: 0L) + (s.actualFocusedSeconds / 60)
+            dayMap[k] = (dayMap[k] ?: 0L) + s.actualFocusedSeconds
+
+            cal.set(Calendar.DAY_OF_WEEK, cal.firstDayOfWeek)
+            cal.set(Calendar.HOUR_OF_DAY, 0)
+            cal.set(Calendar.MINUTE, 0)
+            cal.set(Calendar.SECOND, 0)
+            cal.set(Calendar.MILLISECOND, 0)
+            val weekKey = String.format(
+                "%04d-%02d-%02d",
+                cal.get(Calendar.YEAR),
+                cal.get(Calendar.MONTH) + 1,
+                cal.get(Calendar.DAY_OF_MONTH)
+            )
+            weekMap[weekKey] = (weekMap[weekKey] ?: 0L) + s.actualFocusedSeconds
         }
         val maxDayEntry = dayMap.maxByOrNull { it.value }
-        val maxDayMins = maxDayEntry?.value ?: 0L
+        val maxDayMins = (maxDayEntry?.value ?: 0L) / 60
         val maxDayDate = maxDayEntry?.key ?: "-"
+        val maxWeekMinutes = (weekMap.values.maxOrNull() ?: 0L) / 60
 
         val streak = calculateStreak(sessions)
         val totalAllTimeMinutes = sessions.sumOf { it.actualFocusedSeconds } / 60
@@ -523,7 +526,7 @@ object StatisticsEngine {
             longestSessionSubject = longestSub,
             maxDayMinutes = maxDayMins,
             maxDayDate = maxDayDate,
-            maxWeekMinutes = (maxDayMins * 4).coerceAtLeast(maxDayMins),
+            maxWeekMinutes = maxWeekMinutes,
             longestStreakDays = streak.longestStreak,
             totalAllTimeMinutes = totalAllTimeMinutes,
             totalAllTimeSessions = sessions.size

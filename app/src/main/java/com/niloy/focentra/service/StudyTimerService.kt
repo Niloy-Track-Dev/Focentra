@@ -100,10 +100,14 @@ class StudyTimerService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent == null) {
+            stopSelf(startId)
+            return START_NOT_STICKY
+        }
         val action = intent?.action
         if (action != null) {
             handleNotificationAction(action)
-            return START_STICKY
+            return START_NOT_STICKY
         }
 
         val subject = intent?.getStringExtra(EXTRA_SUBJECT) ?: "Focus Study"
@@ -140,7 +144,7 @@ class StudyTimerService : Service() {
             e.printStackTrace()
         }
 
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     private fun handleNotificationAction(action: String) {
