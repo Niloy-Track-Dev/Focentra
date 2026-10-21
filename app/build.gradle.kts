@@ -1,3 +1,5 @@
+import java.io.File
+
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.kotlin.compose)
@@ -24,8 +26,8 @@ android {
     applicationId = "com.niloy.focentra"
     minSdk = 24
     targetSdk = 36
-    versionCode = 48
-    versionName = "7.1.2"
+    versionCode = 49
+    versionName = "7.1.3"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -73,7 +75,14 @@ android {
 
 val validateReleaseSigning = tasks.register("validateReleaseSigning") {
   doLast {
-    if (!releaseSigningConfigured) {
+    val keystorePath = System.getenv("KEYSTORE_PATH")
+    val hasSigningCredentials =
+      !keystorePath.isNullOrBlank() &&
+        File(keystorePath).isFile &&
+        !System.getenv("STORE_PASSWORD").isNullOrBlank() &&
+        !System.getenv("KEY_ALIAS").isNullOrBlank() &&
+        !System.getenv("KEY_PASSWORD").isNullOrBlank()
+    if (!hasSigningCredentials) {
       throw GradleException(
         "Release signing is not configured. Set KEYSTORE_PATH, STORE_PASSWORD, KEY_ALIAS, and KEY_PASSWORD to a valid persistent keystore."
       )
