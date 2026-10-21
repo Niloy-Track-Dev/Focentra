@@ -6,9 +6,11 @@ import android.content.SharedPreferences
 import com.niloy.focentra.data.local.AppDatabase
 import com.niloy.focentra.data.repository.StudyRepository
 import com.niloy.focentra.engine.TimerEngine
+import com.niloy.focentra.service.StudyReminderScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class FocentraApp : Application() {
@@ -44,7 +46,7 @@ class FocentraApp : Application() {
         applicationScope.launch {
             // Check and update achievements on app start
             repository.checkAndUnlockAchievements()
+            StudyReminderScheduler.scheduleAll(this@FocentraApp, repository.allReminders.first())
         }
     }
 }
-

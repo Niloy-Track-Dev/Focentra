@@ -24,6 +24,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
@@ -775,7 +777,7 @@ fun SettingsScreen(
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = reminder.title.lowercase(),
+                                            text = reminder.title,
                                             style = MaterialTheme.typography.bodyMedium.copy(
                                                 fontWeight = FontWeight.Normal,
                                                 fontSize = 15.sp
@@ -1349,6 +1351,10 @@ fun AddReminderDialog(
     var minute by remember { mutableStateOf("00") }
     var isPm by remember { mutableStateOf(true) }
     var selectedFrequency by remember { mutableStateOf("Every day") }
+    val parsedHour12 = hour12.toIntOrNull()
+    val parsedMinute = minute.toIntOrNull()
+    val hasValidTime = parsedHour12 != null && parsedHour12 in 1..12 &&
+            parsedMinute != null && parsedMinute in 0..59
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1362,27 +1368,38 @@ fun AddReminderDialog(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = hour12,
                         onValueChange = { hour12 = it.filter { ch -> ch.isDigit() }.take(2) },
                         label = { Text("Hour (1-12)") },
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        isError = parsedHour12 == null || parsedHour12 !in 1..12
                     )
                     OutlinedTextField(
                         value = minute,
                         onValueChange = { minute = it.filter { ch -> ch.isDigit() }.take(2) },
                         label = { Text("Minute (0-59)") },
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        isError = parsedMinute == null || parsedMinute !in 0..59
                     )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     FilterChip(
                         selected = !isPm,
                         onClick = { isPm = false },
                         label = { Text("AM") },
                         shape = RoundedCornerShape(8.dp)
                     )
+                    Spacer(modifier = Modifier.width(12.dp))
                     FilterChip(
                         selected = isPm,
                         onClick = { isPm = true },
@@ -1409,9 +1426,11 @@ fun AddReminderDialog(
         },
         confirmButton = {
             Button(
+                enabled = label.isNotBlank() && hasValidTime,
                 onClick = {
-                    val parsedH12 = (hour12.toIntOrNull() ?: 7).coerceIn(1, 12)
-                    val m = (minute.toIntOrNull() ?: 0).coerceIn(0, 59)
+                    if (!hasValidTime) return@Button
+                    val parsedH12 = requireNotNull(parsedHour12)
+                    val m = requireNotNull(parsedMinute)
                     val h24 = when {
                         isPm && parsedH12 < 12 -> parsedH12 + 12
                         !isPm && parsedH12 == 12 -> 0

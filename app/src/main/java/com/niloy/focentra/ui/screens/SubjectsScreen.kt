@@ -1,14 +1,14 @@
 package com.niloy.focentra.ui.screens
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -165,7 +165,7 @@ fun SubjectsScreen(
         AlertDialog(
             onDismissRequest = { subjectToDelete = null },
             title = { Text("Delete Subject?") },
-            text = { Text("Are you sure you want to delete «${subjectToDelete!!.name}»? Existing study sessions for this subject will remain in history.") },
+            text = { Text("Are you sure you want to delete «${subjectToDelete!!.name}»? Its topics and chapters will also be deleted; existing study sessions will remain in history.") },
             confirmButton = {
                 Button(
                     onClick = {
@@ -210,13 +210,13 @@ fun SubjectsScreen(
                 }
 
                 items(subjects, key = { it.id }) { subject ->
-                    val subTopics = topics.filter { it.subjectName.equals(subject.name, ignoreCase = true) }
+                    val subTopics = topics.filter { it.subjectId == subject.id }
                     val studiedMins = studyMinsBySubject[subject.name] ?: 0L
                     val studiedHrs = studiedMins / 60f
                     val targetHrs = subject.targetHours.coerceAtLeast(1f)
                     val progress = (studiedHrs / targetHrs).coerceIn(0f, 1f)
 
-                    val subChapters = chapters.filter { it.subjectId == subject.id || it.subjectName.equals(subject.name, ignoreCase = true) }
+                    val subChapters = chapters.filter { it.subjectId == subject.id }
 
                     SubjectDetailCard(
                         subject = subject,
@@ -228,6 +228,8 @@ fun SubjectsScreen(
                         onAddTopicClick = { subjectToAddTopic = subject },
                         onAddChapterClick = { subjectToAddChapter = subject },
                         onUpdateChapter = { updatedChapter -> viewModel.updateChapter(updatedChapter) },
+                        onTapChapter = { chapter -> viewModel.handleChapterTap(chapter) },
+                        onUpdateChapterStatus = { chapter, status -> viewModel.updateChapterStatus(chapter, status) },
                         onEditChapter = { chapter -> chapterToEdit = chapter },
                         onDeleteChapter = { chapter -> chapterToDelete = chapter },
                         onDeleteTopic = { topic -> topicToDelete = topic },
@@ -401,6 +403,8 @@ fun SubjectDetailCard(
     onAddTopicClick: () -> Unit,
     onAddChapterClick: () -> Unit,
     onUpdateChapter: (ChapterEntity) -> Unit,
+    onTapChapter: (ChapterEntity) -> Unit,
+    onUpdateChapterStatus: (ChapterEntity, String) -> Unit,
     onEditChapter: (ChapterEntity) -> Unit,
     onDeleteChapter: (ChapterEntity) -> Unit,
     onDeleteTopic: (TopicEntity) -> Unit,
@@ -520,6 +524,80 @@ fun SubjectDetailCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Topics (${topics.size})",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(onClick = onAddTopicClick, modifier = Modifier.size(36.dp)) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Add Topic",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    if (topics.isEmpty()) {
+                        Text(
+                            text = "No topics yet. Add topics to organize this subject.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                    } else {
+                        topics.forEach { topic ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.SubdirectoryArrowRight,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = topic.name,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                IconButton(onClick = { onDeleteTopic(topic) }, modifier = Modifier.size(32.dp)) {
+                                    Icon(
+                                        imageVector = Icons.Default.DeleteOutline,
+                                        contentDescription = "Delete topic",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             // Dropdown / Expandable Chapters Section
             var isChapterDropdownExpanded by remember { mutableStateOf(false) }
 
@@ -603,6 +681,8 @@ fun SubjectDetailCard(
                                     ChapterSequentialTrackerView(
                                         chapter = chapter,
                                         onUpdate = onUpdateChapter,
+                                        onTap = { onTapChapter(chapter) },
+                                        onStatusChange = { status -> onUpdateChapterStatus(chapter, status) },
                                         onEdit = { onEditChapter(chapter) },
                                         onDelete = { onDeleteChapter(chapter) }
                                     )
@@ -626,13 +706,14 @@ val CHAPTER_STATUS_OPTIONS = listOf(
     "অধ্যায় Completely শেষ"
 )
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChapterSequentialTrackerView(
     chapter: ChapterEntity,
     onUpdate: (ChapterEntity) -> Unit,
     onEdit: (() -> Unit)? = null,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onTap: (() -> Unit)? = null,
+    onStatusChange: ((String) -> Unit)? = null
 ) {
     var dropdownExpanded by remember { mutableStateOf(false) }
 
@@ -650,8 +731,12 @@ fun ChapterSequentialTrackerView(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .combinedClickable(
-                    onClick = {
+                .clickable {
+                    if (onTap != null) {
+                        onTap()
+                    } else {
+                        val now = System.currentTimeMillis()
+                        val isComplete = chapter.tapCount >= 3 || currentStatus == "অধ্যায় Completely শেষ"
                         val nextTap = if (chapter.tapCount >= 3) 0 else chapter.tapCount + 1
                         val nextStatus = when (nextTap) {
                             3 -> "অধ্যায় Completely শেষ"
@@ -659,10 +744,16 @@ fun ChapterSequentialTrackerView(
                             1 -> "পড়া শুরু হয়েছে"
                             else -> "পড়া শুরু হয় নাই"
                         }
-                        onUpdate(chapter.copy(tapCount = nextTap, status = nextStatus))
-                    },
-                    onLongClick = { onDelete() }
-                )
+                        onUpdate(
+                            chapter.copy(
+                                tapCount = if (isComplete) 0 else nextTap.coerceIn(0, 3),
+                                status = if (isComplete) "পড়া শুরু হয় নাই" else nextStatus,
+                                lastStudiedTimestamp = now,
+                                completedTimestamp = if (!isComplete && nextTap >= 3) now else 0L
+                            )
+                        )
+                    }
+                }
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -694,12 +785,22 @@ fun ChapterSequentialTrackerView(
                     )
                 }
 
-                if (onEdit != null) {
-                    IconButton(onClick = onEdit, modifier = Modifier.size(28.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (onEdit != null) {
+                        IconButton(onClick = onEdit, modifier = Modifier.size(28.dp)) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit Chapter",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                    IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
                         Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit Chapter",
-                            tint = MaterialTheme.colorScheme.primary,
+                            imageVector = Icons.Default.DeleteOutline,
+                            contentDescription = "Delete Chapter",
+                            tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -717,7 +818,10 @@ fun ChapterSequentialTrackerView(
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold,
                         color = if (isFinished) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    ),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f).padding(end = 8.dp)
                 )
 
                 Box {
@@ -754,13 +858,69 @@ fun ChapterSequentialTrackerView(
                                 },
                                 onClick = {
                                     dropdownExpanded = false
-                                    val newTapCount = if (option == "অধ্যায় Completely শেষ") 3 else chapter.tapCount
-                                    onUpdate(chapter.copy(status = option, tapCount = newTapCount))
+                                    if (onStatusChange != null) {
+                                        onStatusChange(option)
+                                    } else {
+                                        val now = System.currentTimeMillis()
+                                        val newTapCount = when (option) {
+                                            "পড়া শুরু হয় নাই" -> 0
+                                            "পড়া শুরু হয়েছে" -> 1
+                                            "অধ্যায় Completely শেষ" -> 3
+                                            else -> 2
+                                        }
+                                        val stillComplete = newTapCount == 3 &&
+                                                (chapter.tapCount >= 3 || currentStatus == "অধ্যায় Completely শেষ")
+                                        onUpdate(
+                                            chapter.copy(
+                                                status = option,
+                                                tapCount = newTapCount,
+                                                lastStudiedTimestamp = now,
+                                                completedTimestamp = when {
+                                                    newTapCount != 3 -> 0L
+                                                    stillComplete && chapter.completedTimestamp > 0L -> chapter.completedTimestamp
+                                                    else -> now
+                                                }
+                                            )
+                                        )
+                                    }
                                 }
                             )
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SubjectIconSelector(
+    icons: List<String>,
+    selectedIcon: String,
+    onIconSelected: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        icons.forEach { iconName ->
+            val isSelected = selectedIcon == iconName
+            IconButton(
+                onClick = { onIconSelected(iconName) },
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                        else MaterialTheme.colorScheme.surfaceVariant
+                    )
+            ) {
+                Icon(
+                    imageVector = getSubjectIcon(iconName),
+                    contentDescription = iconName,
+                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
             }
         }
     }
@@ -807,11 +967,15 @@ fun CreateSubjectDialog(
                     onValueChange = { targetHours = it },
                     label = { Text("Target Study Hours") },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(10.dp),
+                    isError = targetHours.toFloatOrNull()?.let { !it.isFinite() || it <= 0f } != false
                 )
 
                 Text("Color Theme", style = MaterialTheme.typography.labelSmall)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                     colors.forEach { c ->
                         val isSelected = selectedColor == c
                         Box(
@@ -826,13 +990,23 @@ fun CreateSubjectDialog(
                         )
                     }
                 }
+
+                Text("Subject Icon", style = MaterialTheme.typography.labelSmall)
+                SubjectIconSelector(
+                    icons = icons,
+                    selectedIcon = selectedIcon,
+                    onIconSelected = { selectedIcon = it }
+                )
             }
         },
         confirmButton = {
             Button(
+                enabled = name.isNotBlank() &&
+                        targetHours.toFloatOrNull()?.let { it.isFinite() && it > 0f } == true,
                 onClick = {
-                    if (name.isNotBlank()) {
-                        onCreate(name, selectedColor, selectedIcon, targetHours.toFloatOrNull() ?: 100f, desc)
+                    val validTargetHours = targetHours.toFloatOrNull()?.takeIf { it.isFinite() && it > 0f }
+                    if (name.isNotBlank() && validTargetHours != null) {
+                        onCreate(name.trim(), selectedColor, selectedIcon, validTargetHours, desc.trim())
                     }
                 }
             ) {
@@ -858,6 +1032,7 @@ fun EditSubjectDialog(
     var selectedIcon by remember { mutableStateOf(subject.iconName) }
 
     val colors = listOf("#6366F1", "#10B981", "#F59E0B", "#EC4899", "#8B5CF6", "#06B6D4", "#EF4444", "#3B82F6", "#14B8A6")
+    val icons = listOf("School", "Code", "Science", "Calculate", "Biotech", "MenuBook", "HistoryEdu", "Psychology", "Language")
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -885,11 +1060,15 @@ fun EditSubjectDialog(
                     onValueChange = { targetHours = it },
                     label = { Text("Target Study Hours") },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(10.dp),
+                    isError = targetHours.toFloatOrNull()?.let { !it.isFinite() || it <= 0f } != false
                 )
 
                 Text("Color Theme", style = MaterialTheme.typography.labelSmall)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                     colors.forEach { c ->
                         val isSelected = selectedColor == c
                         Box(
@@ -904,17 +1083,27 @@ fun EditSubjectDialog(
                         )
                     }
                 }
+
+                Text("Subject Icon", style = MaterialTheme.typography.labelSmall)
+                SubjectIconSelector(
+                    icons = icons,
+                    selectedIcon = selectedIcon,
+                    onIconSelected = { selectedIcon = it }
+                )
             }
         },
         confirmButton = {
             Button(
+                enabled = name.isNotBlank() &&
+                        targetHours.toFloatOrNull()?.let { it.isFinite() && it > 0f } == true,
                 onClick = {
-                    if (name.isNotBlank()) {
+                    val validTargetHours = targetHours.toFloatOrNull()?.takeIf { it.isFinite() && it > 0f }
+                    if (name.isNotBlank() && validTargetHours != null) {
                         onUpdate(
                             subject.copy(
-                                name = name,
-                                description = desc,
-                                targetHours = targetHours.toFloatOrNull() ?: subject.targetHours,
+                                name = name.trim(),
+                                description = desc.trim(),
+                                targetHours = validTargetHours,
                                 colorHex = selectedColor,
                                 iconName = selectedIcon
                             )

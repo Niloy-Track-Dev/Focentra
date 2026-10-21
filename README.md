@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⏱️Focentra (v7.1.1)
+# ⏱️Focentra (v7.1.2)
 
 ### *Distraction-Free Offline Study Timer & Deep Work Analytics for Android*
 
@@ -8,8 +8,8 @@
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0+-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-Material_3-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![Offline First](https://img.shields.io/badge/Architecture-100%25_Offline_First-00897B?style=for-the-badge&logo=sqlite&logoColor=white)](#-privacy--offline-first-guarantee)
-[![CI Status](https://img.shields.io/badge/CI-Passing-brightgreen?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/Niloy-Track-Dev/Focentra/actions)
-[![Release](https://img.shields.io/badge/Release-v7.1.1-8B5CF6?style=for-the-badge&logo=github)](https://github.com/Niloy-Track-Dev/Focentra/releases)
+[![CI Status](https://img.shields.io/badge/CI-Passing-brightgreen?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/craftplex/Focentra/actions)
+[![Release](https://img.shields.io/badge/Release-v7.1.2-8B5CF6?style=for-the-badge&logo=github)](https://github.com/craftplex/Focentra/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-F59E0B?style=for-the-badge)](LICENSE)
 
 <br/>
@@ -105,12 +105,12 @@ You can obtain the latest pre-compiled Android APK directly from this repository
 
 | Release Method | Location | Compatibility | Direct Link |
 | :--- | :--- | :--- | :--- |
-| **Official GitHub Release (v7.1.1)** | GitHub Releases Tab | Android 7.0+ (API 24+) | [**Releases Page**](https://github.com/Niloy-Track-Dev/Focentra/releases) |
-| **Automated Build (GitHub Actions)** | GitHub Actions Tab | Android 7.0+ (API 24+) | [**Actions Artifacts**](https://github.com/Niloy-Track-Dev/Focentra/actions) |
+| **Official GitHub Release (v7.1.2)** | GitHub Releases Tab | Android 7.0+ (API 24+) | [**Releases Page**](https://github.com/craftplex/Focentra/releases) |
+| **Automated Build (GitHub Actions)** | GitHub Actions Tab | Android 7.0+ (API 24+) | [**Actions Artifacts**](https://github.com/craftplex/Focentra/actions) |
 
 ### Installation Guide
-1. Go to [**GitHub Releases**](https://github.com/Niloy-Track-Dev/Focentra/releases) or the [**GitHub Actions**](https://github.com/Niloy-Track-Dev/Focentra/actions) tab.
-2. Download the APK file (`focentra-v7.1.1-release.apk` or `focentra-debug-apk`).
+1. Go to [**GitHub Releases**](https://github.com/craftplex/Focentra/releases) or the [**GitHub Actions**](https://github.com/craftplex/Focentra/actions) tab.
+2. Download the APK file (`focentra-v7.1.2-release.apk` or `focentra-debug-apk`).
 3. Open your device's **Downloads** folder and tap the APK file.
 4. If prompted, enable **"Install unknown apps"** in your Android Settings.
 5. Tap **Install** and launch **Focentra**.

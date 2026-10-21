@@ -38,65 +38,22 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.niloy.focentra.ui.components.FocentraFloatingNavBar
 import com.niloy.focentra.ui.screens.*
 import com.niloy.focentra.ui.theme.FocentraTheme
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.content.Context
-import android.content.Intent
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
+import com.niloy.focentra.service.StudyReminderNotifications
+import com.niloy.focentra.service.StudyReminderScheduler
 import com.niloy.focentra.viewmodel.MainViewModel
 import com.niloy.focentra.viewmodel.NavigationTab
-import kotlinx.coroutines.flow.collectLatest
 
-private fun createAlertsNotificationChannel(context: Context) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        val channel = NotificationChannel(
-            "focentra_alerts_channel",
-            "Focentra Study Alerts",
-            NotificationManager.IMPORTANCE_DEFAULT
-        ).apply {
-            description = "Notifications for revision due and study goals"
-        }
-        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-        manager?.createNotificationChannel(channel)
-    }
-}
-
-private fun postSystemNotification(context: Context, notif: com.niloy.focentra.viewmodel.AppNotification) {
-    createAlertsNotificationChannel(context)
-    val intent = Intent(context, MainActivity::class.java).apply {
-        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-    }
-    val pendingIntent = PendingIntent.getActivity(
-        context,
-        0,
-        intent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-    )
-
-    val builder = NotificationCompat.Builder(context, "focentra_alerts_channel")
-        .setSmallIcon(R.drawable.ic_notification_logo)
-        .setContentTitle(notif.title)
-        .setContentText(notif.message)
-        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-        .setAutoCancel(true)
-        .setContentIntent(pendingIntent)
-
-    try {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-        ) {
-            NotificationManagerCompat.from(context).notify(notif.id.hashCode(), builder.build())
-        }
-    } catch (e: SecurityException) {
-        e.printStackTrace()
-    }
-}
+private fun postSystemNotification(context: android.content.Context, notif: com.niloy.focentra.viewmodel.AppNotification): Boolean =
+    StudyReminderNotifications.post(context, notif.id.hashCode(), notif.title, notif.message)
 
 class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.retrySystemNotifications()
+    }
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -108,6 +65,7 @@ class MainActivity : ComponentActivity() {
             val currentTab by viewModel.currentTab.collectAsStateWithLifecycle()
             val isFullScreenFocus by viewModel.isFullScreenFocus.collectAsStateWithLifecycle()
             val timerState by viewModel.timerEngine.uiState.collectAsStateWithLifecycle()
+            val reminders by viewModel.reminders.collectAsStateWithLifecycle()
 
             val isBottomBarVisible = remember { mutableStateOf(true) }
             val nestedScrollConnection = remember {
@@ -139,7 +97,13 @@ class MainActivity : ComponentActivity() {
             val context = LocalContext.current
             val permissionLauncher = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.RequestPermission()
-            ) { _ -> }
+            ) { granted ->
+                if (granted) viewModel.retrySystemNotifications()
+            }
+
+            LaunchedEffect(reminders) {
+                StudyReminderScheduler.scheduleAll(context, reminders)
+            }
 
             LaunchedEffect(Unit) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -376,7 +340,8 @@ class MainActivity : ComponentActivity() {
 
                             LaunchedEffect(Unit) {
                                 viewModel.systemNotificationEvent.collect { notif ->
-                                    postSystemNotification(context, notif)
+                                    val posted = postSystemNotification(context, notif)
+                                    viewModel.acknowledgeSystemNotification(notif.id, posted)
                                 }
                             }
 

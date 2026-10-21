@@ -2,14 +2,20 @@ package com.niloy.focentra.viewmodel
 
 import android.app.Application
 import android.content.Intent
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.niloy.focentra.FocentraApp
 import com.niloy.focentra.data.local.entity.*
 import com.niloy.focentra.data.repository.calculateStreak
 import com.niloy.focentra.engine.*
+import com.niloy.focentra.service.StudyReminderScheduler
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
@@ -107,25 +113,67 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val dismissedNotificationIds: StateFlow<Set<String>> = _dismissedNotificationIds.asStateFlow()
 
     private val _postedNotificationIds = MutableStateFlow<Set<String>>(emptySet())
+    private val _notificationStateLoaded = MutableStateFlow(false)
+    val notificationStateLoaded: StateFlow<Boolean> = _notificationStateLoaded.asStateFlow()
+    private val notificationPersistenceMutex = Mutex()
+    private val pendingSystemNotificationIds = mutableSetOf<String>()
+    private val systemNotificationEvents = Channel<AppNotification>(Channel.UNLIMITED)
 
-    val systemNotificationEvent = kotlinx.coroutines.flow.MutableSharedFlow<AppNotification>(
-        extraBufferCapacity = 10
-    )
+    val systemNotificationEvent: Flow<AppNotification> = systemNotificationEvents.receiveAsFlow()
 
-    fun markNotificationsAsSeen() {
-        viewModelScope.launch {
-            val activeIds = activeNotifications.value.map { it.id }.toSet()
-            val updated = _seenNotificationIds.value + activeIds
-            _seenNotificationIds.value = updated
-            repository.setSetting("seen_notification_ids", updated.joinToString(","))
-        }
+    fun markNotificationsAsSeen(notificationIds: Set<String>) {
+        if (notificationIds.isEmpty()) return
+        val updated = _seenNotificationIds.value + notificationIds
+        _seenNotificationIds.value = updated
+        persistNotificationIds("seen_notification_ids", updated)
     }
 
     fun dismissNotification(id: String) {
+        val updated = _dismissedNotificationIds.value + id
+        _dismissedNotificationIds.value = updated
+        persistNotificationIds("dismissed_notification_ids", updated)
+    }
+
+    fun acknowledgeSystemNotification(id: String, wasPosted: Boolean) {
+        pendingSystemNotificationIds.remove(id)
+        if (!wasPosted) return
+
+        val updated = _postedNotificationIds.value + id
+        _postedNotificationIds.value = updated
+        persistNotificationIds("posted_notification_ids", updated)
+    }
+
+    fun retrySystemNotifications() {
+        if (!_notificationStateLoaded.value) return
+        activeNotifications.value.forEach(::enqueueSystemNotification)
+    }
+
+    private fun enqueueSystemNotification(notification: AppNotification) {
+        if (notification.id in _postedNotificationIds.value ||
+            !pendingSystemNotificationIds.add(notification.id)
+        ) return
+
+        val result = systemNotificationEvents.trySend(notification)
+        if (result.isFailure) {
+            pendingSystemNotificationIds.remove(notification.id)
+            Log.e("FocentraNotifications", "Failed to queue system notification ${notification.id}.", result.exceptionOrNull())
+        }
+    }
+
+    private fun persistNotificationIds(key: String, ids: Set<String>) {
         viewModelScope.launch {
-            val updated = _dismissedNotificationIds.value + id
-            _dismissedNotificationIds.value = updated
-            repository.setSetting("dismissed_notification_ids", updated.joinToString(","))
+            notificationPersistenceMutex.withLock {
+                try {
+                    val latestIds = when (key) {
+                        "seen_notification_ids" -> _seenNotificationIds.value
+                        "dismissed_notification_ids" -> _dismissedNotificationIds.value
+                        else -> _postedNotificationIds.value
+                    }
+                    repository.setSetting(key, latestIds.joinToString(","))
+                } catch (exception: Exception) {
+                    Log.e("FocentraNotifications", "Failed to persist notification state for $key.", exception)
+                }
+            }
         }
     }
 
@@ -201,14 +249,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun handleChapterTap(chapter: ChapterEntity) {
         val now = System.currentTimeMillis()
-        val newTapCount = if (chapter.tapCount >= 3) 0 else chapter.tapCount + 1
+        val currentlyComplete = chapter.tapCount >= 3 || chapter.status == "অধ্যায় Completely শেষ"
+        val newTapCount = if (currentlyComplete) 0 else chapter.tapCount.coerceIn(0, 2) + 1
         val newStatus = when (newTapCount) {
             3 -> "অধ্যায় Completely শেষ"
             2 -> "পড়া শেষ"
             1 -> "পড়া শুরু হয়েছে"
             else -> "পড়া শুরু হয় নাই"
         }
-        val compTime = if (newTapCount == 3) now else chapter.completedTimestamp
+        val compTime = if (newTapCount == 3) now else 0L
         viewModelScope.launch {
             repository.updateChapter(chapter.copy(tapCount = newTapCount, status = newStatus, lastStudiedTimestamp = now, completedTimestamp = compTime))
         }
@@ -216,8 +265,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updateChapterStatus(chapter: ChapterEntity, newStatus: String) {
         val now = System.currentTimeMillis()
-        val newTapCount = if (newStatus == "অধ্যায় Completely শেষ") 3 else chapter.tapCount
-        val compTime = if (newStatus == "অধ্যায় Completely শেষ") now else chapter.completedTimestamp
+        val newTapCount = when (newStatus) {
+            "পড়া শুরু হয় নাই" -> 0
+            "পড়া শুরু হয়েছে" -> 1
+            "পড়া চলছে", "পড়া শেষ পর্যায়ে", "পড়া শেষ", "রিভিশন চলছে" -> 2
+            "অধ্যায় Completely শেষ" -> 3
+            else -> chapter.tapCount.coerceIn(0, 3)
+        }
+        val wasComplete = chapter.tapCount >= 3 || chapter.status == "অধ্যায় Completely শেষ"
+        val compTime = if (newTapCount == 3) {
+            if (wasComplete && chapter.completedTimestamp > 0L) chapter.completedTimestamp else now
+        } else {
+            0L
+        }
         viewModelScope.launch {
             repository.updateChapter(chapter.copy(status = newStatus, tapCount = newTapCount, lastStudiedTimestamp = now, completedTimestamp = compTime))
         }
@@ -277,29 +337,41 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // Today's focused minutes
-    val todayFocusedMinutes = sessions.map { list ->
+    private val notificationClock = flow {
+        while (true) {
+            emit(System.currentTimeMillis())
+            delay(60_000L)
+        }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, System.currentTimeMillis())
+
+    val todayFocusedMinutes = combine(sessions, notificationClock) { list, now ->
         val cal = Calendar.getInstance().apply {
+            timeInMillis = now
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }
         val startOfToday = cal.timeInMillis
-        list.filter { it.startTime >= startOfToday }.sumOf { it.actualFocusedSeconds } / 60
+        list.filter { it.startTime in startOfToday..now }.sumOf { it.actualFocusedSeconds } / 60
     }.stateIn(viewModelScope, SharingStarted.Lazily, 0L)
 
+    private val notificationProgress = combine(todayFocusedMinutes, notificationClock) { minutes, now ->
+        minutes to now
+    }
+
     // Derived states optimized on Dispatchers.Default background threads
-    val activeNotifications = combine(chapters, sessions, goals, todayFocusedMinutes, _dismissedNotificationIds) { chapterList, sessionList, goalList, todayMins, dismissed ->
+    val activeNotifications = combine(chapters, sessions, goals, notificationProgress, _dismissedNotificationIds) { chapterList, sessionList, goalList, todayProgress, dismissed ->
         kotlinx.coroutines.withContext(Dispatchers.Default) {
             val list = mutableListOf<AppNotification>()
-            val now = System.currentTimeMillis()
+            val (todayMins, now) = todayProgress
             val ONE_DAY_MS = 24 * 60 * 60 * 1000L
             val THREE_DAYS_MS = 3 * ONE_DAY_MS
             val FIVE_DAYS_MS = 5 * ONE_DAY_MS
             val SEVEN_DAYS_MS = 7 * ONE_DAY_MS
             val FIFTEEN_DAYS_MS = 15 * ONE_DAY_MS
 
-            val todayDateStr = SimpleDateFormat("yyyy_MM_dd", Locale.getDefault()).format(Date())
+            val todayDateStr = SimpleDateFormat("yyyy_MM_dd", Locale.getDefault()).format(Date(now))
 
             val THIRTY_DAYS_MS = 30 * ONE_DAY_MS
 
@@ -397,7 +469,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
 
             // 2. Adaptive AI / Peak Focus Hour Reminder
-            val calNow = Calendar.getInstance()
+            val calNow = Calendar.getInstance().apply { timeInMillis = now }
             val currentHour = calNow.get(Calendar.HOUR_OF_DAY)
             val currentDayOfWeek = calNow.get(Calendar.DAY_OF_WEEK) // 1 = Sunday
 
@@ -445,7 +517,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             // 7. Weekly Digest & Productivity Benchmark (Sunday mornings)
             if (currentDayOfWeek == Calendar.SUNDAY && currentHour in 6..11) {
-                val totalWeeklyMins = sessionList.filter { (now - it.startTime) <= 7 * ONE_DAY_MS }.sumOf { it.actualFocusedSeconds } / 60
+                val weekStart = now - SEVEN_DAYS_MS
+                val totalWeeklyMins = sessionList
+                    .filter { it.startTime in weekStart..now }
+                    .sumOf { it.actualFocusedSeconds } / 60
                 val weeklyHrs = String.format(Locale.US, "%.1f", totalWeeklyMins / 60f)
                 val notifId = "weekly_digest_${todayDateStr}"
                 list.add(
@@ -490,8 +565,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    val unseenNotificationCount = combine(activeNotifications, _seenNotificationIds) { active, seen ->
-        active.count { it.id !in seen }
+    val unseenNotificationCount = combine(activeNotifications, _seenNotificationIds, _notificationStateLoaded) { active, seen, isLoaded ->
+        if (isLoaded) active.count { it.id !in seen } else 0
     }.stateIn(viewModelScope, SharingStarted.Lazily, 0)
 
     val streakInfo = sessions.map { sessionList ->
@@ -571,7 +646,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             it.chapterName.equals(chapterName, ignoreCase = true)
         }
         if (matchingChapter != null) {
-            updateChapter(matchingChapter.copy(lastStudiedTimestamp = System.currentTimeMillis()))
+            val now = System.currentTimeMillis()
+            val isComplete = matchingChapter.tapCount >= 3 || matchingChapter.status == "অধ্যায় Completely শেষ"
+            updateChapter(
+                matchingChapter.copy(
+                    lastStudiedTimestamp = now,
+                    completedTimestamp = if (isComplete) now else matchingChapter.completedTimestamp
+                )
+            )
         }
     }
 
@@ -625,20 +707,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         viewModelScope.launch {
-            activeNotifications.collect { list ->
-                val posted = _postedNotificationIds.value.toMutableSet()
-                var newlyAdded = false
-                list.forEach { notif ->
-                    if (notif.id !in posted) {
-                        posted.add(notif.id)
-                        newlyAdded = true
-                        systemNotificationEvent.emit(notif)
-                    }
-                }
-                if (newlyAdded) {
-                    _postedNotificationIds.value = posted
-                    repository.setSetting("posted_notification_ids", posted.joinToString(","))
-                }
+            combine(activeNotifications, _notificationStateLoaded) { notifications, isLoaded ->
+                if (isLoaded) notifications else emptyList()
+            }.collect { notifications ->
+                notifications.forEach(::enqueueSystemNotification)
             }
         }
     }
@@ -700,6 +772,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (postedStr.isNotBlank()) {
                 _postedNotificationIds.value = postedStr.split(",").filter { it.isNotBlank() }.toSet()
             }
+            _notificationStateLoaded.value = true
 
             // Load Revision History
             val rhJson = repository.getSetting("revision_history_json", "")
@@ -728,6 +801,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         } catch (e: Exception) {
             e.printStackTrace()
+            _notificationStateLoaded.value = true
         }
     }
 
@@ -894,6 +968,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun createSubject(name: String, colorHex: String, iconName: String, targetHours: Float, description: String) {
         viewModelScope.launch {
             val trimmedName = name.trim()
+            if (trimmedName.isBlank()) {
+                _snackbarMessage.emit("Subject name cannot be empty.")
+                return@launch
+            }
             val existing = subjects.value.find { it.name.trim().equals(trimmedName, ignoreCase = true) }
             if (existing != null) {
                 _snackbarMessage.emit("Subject «$trimmedName» already exists.")
@@ -915,8 +993,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updateSubject(subject: SubjectEntity) {
         viewModelScope.launch {
-            repository.updateSubject(subject)
-            _snackbarMessage.emit("Subject «${subject.name}» updated.")
+            val trimmedName = subject.name.trim()
+            if (trimmedName.isBlank()) {
+                _snackbarMessage.emit("Subject name cannot be empty.")
+                return@launch
+            }
+            val duplicate = subjects.value.any {
+                it.id != subject.id && it.name.trim().equals(trimmedName, ignoreCase = true)
+            }
+            if (duplicate) {
+                _snackbarMessage.emit("Subject «$trimmedName» already exists.")
+                return@launch
+            }
+            repository.updateSubject(subject.copy(name = trimmedName))
+            _snackbarMessage.emit("Subject «$trimmedName» updated.")
         }
     }
 
@@ -929,7 +1019,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun createTopic(subjectId: Long, subjectName: String, name: String) {
         viewModelScope.launch {
-            repository.insertTopic(TopicEntity(subjectId = subjectId, subjectName = subjectName, name = name))
+            val trimmedName = name.trim()
+            if (trimmedName.isBlank()) return@launch
+            val duplicate = topics.value.any {
+                it.subjectId == subjectId && it.name.trim().equals(trimmedName, ignoreCase = true)
+            }
+            if (duplicate) {
+                _snackbarMessage.emit("Topic «$trimmedName» already exists in $subjectName.")
+                return@launch
+            }
+            repository.insertTopic(TopicEntity(subjectId = subjectId, subjectName = subjectName, name = trimmedName))
+            _snackbarMessage.emit("Topic «$trimmedName» added.")
         }
     }
 
@@ -1031,16 +1131,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearAllAppData() {
         viewModelScope.launch {
+            reminders.value.forEach { StudyReminderScheduler.cancel(getApplication(), it.id) }
             repository.clearAllAppData()
             _brainDumpNotes.value = emptyList()
             _examTargets.value = emptyList()
+            StudyReminderScheduler.scheduleAll(
+                getApplication(),
+                repository.allReminders.first()
+            )
         }
     }
 
     // Reminders
     fun toggleReminder(reminder: ReminderEntity) {
         viewModelScope.launch {
-            repository.updateReminder(reminder.copy(enabled = !reminder.enabled))
+            val updated = reminder.copy(enabled = !reminder.enabled)
+            repository.updateReminder(updated)
+            if (!updated.enabled) StudyReminderScheduler.cancel(getApplication(), reminder.id)
+            _snackbarMessage.emit(if (updated.enabled) "Reminder enabled." else "Reminder disabled.")
         }
     }
 
@@ -1057,6 +1165,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun deleteReminder(reminder: ReminderEntity) {
         viewModelScope.launch {
+            StudyReminderScheduler.cancel(getApplication(), reminder.id)
             repository.deleteReminder(reminder)
         }
     }

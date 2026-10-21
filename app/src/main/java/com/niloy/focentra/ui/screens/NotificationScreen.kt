@@ -32,11 +32,12 @@ fun NotificationScreen(
 ) {
     val activeNotifications by viewModel.activeNotifications.collectAsStateWithLifecycle()
     val seenNotificationIds by viewModel.seenNotificationIds.collectAsStateWithLifecycle()
+    val notificationStateLoaded by viewModel.notificationStateLoaded.collectAsStateWithLifecycle()
 
-    val initialSeenIds = remember { seenNotificationIds }
-
-    LaunchedEffect(Unit) {
-        viewModel.markNotificationsAsSeen()
+    LaunchedEffect(notificationStateLoaded, activeNotifications.map { it.id }) {
+        if (notificationStateLoaded) {
+            viewModel.markNotificationsAsSeen(activeNotifications.map { it.id }.toSet())
+        }
     }
 
     Column(
@@ -83,7 +84,7 @@ fun NotificationScreen(
                 contentPadding = PaddingValues(bottom = 100.dp)
             ) {
                 items(activeNotifications, key = { it.id }) { notif ->
-                    val isUnseen = notif.id !in initialSeenIds
+                    val isUnseen = notificationStateLoaded && notif.id !in seenNotificationIds
                     NotificationCardItem(
                         notification = notif,
                         isUnseen = isUnseen,
@@ -130,8 +131,17 @@ private fun NotificationCardItem(
     }
 
     val timeFormatted = remember(notification.timestamp) {
-        val sdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
-        sdf.format(Date(notification.timestamp))
+        val notificationDate = Calendar.getInstance().apply { timeInMillis = notification.timestamp }
+        val today = Calendar.getInstance()
+        val pattern = if (
+            notificationDate.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
+            notificationDate.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
+        ) {
+            "hh:mm a"
+        } else {
+            "MMM d, hh:mm a"
+        }
+        SimpleDateFormat(pattern, Locale.getDefault()).format(Date(notification.timestamp))
     }
 
     Card(
@@ -175,7 +185,8 @@ private fun NotificationCardItem(
                         text = notification.title,
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
                 }
 
