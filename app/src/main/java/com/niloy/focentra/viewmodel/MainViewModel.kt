@@ -301,12 +301,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             val todayDateStr = SimpleDateFormat("yyyy_MM_dd", Locale.getDefault()).format(Date())
 
+            val THIRTY_DAYS_MS = 30 * ONE_DAY_MS
+
+            // 3. Ebbinghaus Forgetting Curve Alerts (1d, 3d, 7d, 15d, 30d)
             chapterList.forEach { ch ->
                 val isCompleted = ch.tapCount >= 3 || ch.status == "অধ্যায় Completely শেষ"
                 if (isCompleted) {
                     val compTime = if (ch.completedTimestamp > 0) ch.completedTimestamp else ch.lastStudiedTimestamp
                     val elapsed = now - compTime
                     val (title, msg, stage) = when {
+                        elapsed >= THIRTY_DAYS_MS -> Triple(
+                            "🧠 30th Day Master Review Cycle",
+                            "It's time for the 30th day master review cycle for «${ch.chapterName}» in ${ch.subjectName}. Solidify your memory for long term!",
+                            "30d"
+                        )
                         elapsed >= FIFTEEN_DAYS_MS -> Triple(
                             "🧠 15th Day Final Revision Test",
                             "It's time for the 15th day revision test for «${ch.chapterName}» in ${ch.subjectName}. Complete a 30-minute revision session!",
@@ -332,81 +340,150 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                     if (title.isNotEmpty()) {
                         val notifId = "rev_${ch.id}_${compTime}_${stage}"
-                        if (notifId !in dismissed) {
-                            list.add(
-                                AppNotification(
-                                    id = notifId,
-                                    type = NotificationType.REVISION_DUE,
-                                    title = title,
-                                    message = msg,
-                                    subjectName = ch.subjectName,
-                                    chapterName = ch.chapterName,
-                                    timestamp = compTime
-                                )
+                        list.add(
+                            AppNotification(
+                                id = notifId,
+                                type = NotificationType.REVISION_DUE,
+                                title = title,
+                                message = msg,
+                                subjectName = ch.subjectName,
+                                chapterName = ch.chapterName,
+                                timestamp = compTime
                             )
-                        }
+                        )
                     }
                 } else if (ch.status != "পড়া শুরু হয় নাই" && ch.status.isNotBlank()) {
                     val lastStudy = ch.lastStudiedTimestamp
                     if (lastStudy > 0 && (now - lastStudy >= FIVE_DAYS_MS)) {
                         val notifId = "inact_${ch.id}_${todayDateStr}"
-                        if (notifId !in dismissed) {
-                            list.add(
-                                AppNotification(
-                                    id = notifId,
-                                    type = NotificationType.INACTIVITY_WARNING,
-                                    title = "🔥 Completion Reminder",
-                                    message = "«${ch.chapterName}» in ${ch.subjectName} hasn't been studied for 5 days. Start a focus session to finish it today!",
-                                    subjectName = ch.subjectName,
-                                    chapterName = ch.chapterName,
-                                    timestamp = lastStudy
-                                )
+                        list.add(
+                            AppNotification(
+                                id = notifId,
+                                type = NotificationType.INACTIVITY_WARNING,
+                                title = "🔥 Completion Reminder",
+                                message = "«${ch.chapterName}» in ${ch.subjectName} hasn't been studied for 5 days. Start a focus session to finish it today!",
+                                subjectName = ch.subjectName,
+                                chapterName = ch.chapterName,
+                                timestamp = lastStudy
                             )
-                        }
+                        )
                     }
                 }
             }
 
+            // 8. Dynamic Progress Bar in Daily Target Tracker
             val dailyGoal = goalList.find { it.periodType == "DAILY" }?.targetMinutes ?: 480
             val remainingMins = (dailyGoal - todayMins).coerceAtLeast(0L)
-            if (remainingMins > 0) {
-                val hours = remainingMins / 60
-                val mins = remainingMins % 60
-                val goalMessage = if (hours > 0 && mins > 0) {
-                    "You need ${hours}h ${mins}m more study to achieve today's Daily Goal."
-                } else if (hours > 0) {
-                    "You need ${hours}h more study to achieve today's Daily Goal."
-                } else {
-                    "You need ${mins}m more study to achieve today's Daily Goal."
-                }
-                val notifId = "goal_warning_${todayDateStr}"
-                if (notifId !in dismissed) {
-                    list.add(
-                        AppNotification(
-                            id = notifId,
-                            type = NotificationType.GOAL_WARNING,
-                            title = "🎯 Daily Target Tracker",
-                            message = goalMessage
-                        )
+
+            val totalGoalMins = dailyGoal.toFloat().coerceAtLeast(1f)
+            val completedRatio = (todayMins / totalGoalMins).coerceIn(0f, 1f)
+            val filledBlocks = (completedRatio * 10).toInt()
+            val emptyBlocks = 10 - filledBlocks
+            val progressBarText = "[${"▓".repeat(filledBlocks)}${"░".repeat(emptyBlocks)}]"
+            val percentInt = (completedRatio * 100).toInt()
+
+            val todayHrsText = String.format(Locale.US, "%.1f", todayMins / 60f)
+            val goalHrsText = String.format(Locale.US, "%.1f", dailyGoal / 60f)
+
+            val goalMessage = "Daily Goal: ${todayHrsText} / ${goalHrsText}h $progressBarText $percentInt% completed! (${remainingMins / 60}h ${remainingMins % 60}m remaining)"
+            val goalNotifId = "goal_warning_${todayDateStr}"
+            list.add(
+                AppNotification(
+                    id = goalNotifId,
+                    type = NotificationType.GOAL_WARNING,
+                    title = "🎯 Daily Target Tracker",
+                    message = goalMessage
+                )
+            )
+
+            // 2. Adaptive AI / Peak Focus Hour Reminder
+            val calNow = Calendar.getInstance()
+            val currentHour = calNow.get(Calendar.HOUR_OF_DAY)
+            val currentDayOfWeek = calNow.get(Calendar.DAY_OF_WEEK) // 1 = Sunday
+
+            if (currentHour in 21..23 || currentHour in 6..8) {
+                val notifId = "peak_hour_${todayDateStr}_${currentHour}"
+                list.add(
+                    AppNotification(
+                        id = notifId,
+                        type = NotificationType.MOTIVATION,
+                        title = "⚡ Peak Focus Hour Started!",
+                        message = "Your peak productivity window is starting now. Launch a focus session to make the most of it!",
+                        timestamp = now
                     )
-                }
+                )
             }
+
+            // 4. Streak Saver / Evening Intervention (after 7 PM if 0 mins studied today)
+            if (currentHour >= 19 && todayMins == 0L) {
+                val currentStreakVal = calculateStreak(sessionList).currentStreak
+                val notifId = "streak_saver_${todayDateStr}"
+                list.add(
+                    AppNotification(
+                        id = notifId,
+                        type = NotificationType.INACTIVITY_WARNING,
+                        title = "⚠️ Study Streak at Risk!",
+                        message = "Your ${currentStreakVal}-day study streak is in danger! Complete at least a 10-minute focus session now to save your streak.",
+                        timestamp = now
+                    )
+                )
+            }
+
+            // 6. Brain Dump & Daily Reflection Prompt (after 10 PM)
+            if (currentHour >= 22) {
+                val notifId = "brain_dump_prompt_${todayDateStr}"
+                list.add(
+                    AppNotification(
+                        id = notifId,
+                        type = NotificationType.MOTIVATION,
+                        title = "💡 Night Reflection & Brain Dump",
+                        message = "Clear your mind before sleep! Unload remaining thoughts or study notes into Brain Dump for a fresh start tomorrow.",
+                        timestamp = now
+                    )
+                )
+            }
+
+            // 7. Weekly Digest & Productivity Benchmark (Sunday mornings)
+            if (currentDayOfWeek == Calendar.SUNDAY && currentHour in 6..11) {
+                val totalWeeklyMins = sessionList.filter { (now - it.startTime) <= 7 * ONE_DAY_MS }.sumOf { it.actualFocusedSeconds } / 60
+                val weeklyHrs = String.format(Locale.US, "%.1f", totalWeeklyMins / 60f)
+                val notifId = "weekly_digest_${todayDateStr}"
+                list.add(
+                    AppNotification(
+                        id = notifId,
+                        type = NotificationType.MOTIVATION,
+                        title = "📊 Weekly Focus Digest",
+                        message = "Great effort this week! You completed $weeklyHrs hours of focused study across the past 7 days.",
+                        timestamp = now
+                    )
+                )
+            }
+
+            // 10. Ambient Vibe Quick Launch Notification
+            val ambientNotifId = "ambient_vibe_${todayDateStr}"
+            list.add(
+                AppNotification(
+                    id = ambientNotifId,
+                    type = NotificationType.MOTIVATION,
+                    title = "🎧 Ambient Focus Environment",
+                    message = "Set the perfect study mood! Launch a focus session with deep focus background soundscapes.",
+                    timestamp = now
+                )
+            )
 
             // Achievement notifications
             val totalHours = sessionList.sumOf { it.actualFocusedSeconds } / 3600f
             if (totalHours >= 10f) {
                 val notifId = "ach_10h_${todayDateStr}"
-                if (notifId !in dismissed) {
-                    list.add(
-                        AppNotification(
-                            id = notifId,
-                            type = NotificationType.MOTIVATION,
-                            title = "🏆 Milestone Achieved!",
-                            message = "You have completed over 10 hours of focused study! Keep up the momentum.",
-                            timestamp = now
-                        )
+                list.add(
+                    AppNotification(
+                        id = notifId,
+                        type = NotificationType.MOTIVATION,
+                        title = "🏆 Milestone Achieved!",
+                        message = "You have completed over 10 hours of focused study! Keep up the momentum.",
+                        timestamp = now
                     )
-                }
+                )
             }
 
             list.toList()

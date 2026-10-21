@@ -164,23 +164,29 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
                 )
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.timerEngine.cancelSession()
-                        viewModel.timerEngine.dismissCompletionSheet()
-                        showCancelConfirmDialog = false
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                    shape = RoundedCornerShape(10.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Cancel Session")
+                    TextButton(onClick = { showCancelConfirmDialog = false }) {
+                        Text("Continue Session")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            viewModel.timerEngine.cancelSession()
+                            viewModel.timerEngine.dismissCompletionSheet()
+                            showCancelConfirmDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Cancel Session")
+                    }
                 }
             },
-            dismissButton = {
-                TextButton(onClick = { showCancelConfirmDialog = false }) {
-                    Text("Continue Session")
-                }
-            },
+            dismissButton = null,
             shape = RoundedCornerShape(20.dp),
             containerColor = MaterialTheme.colorScheme.surface
         )
