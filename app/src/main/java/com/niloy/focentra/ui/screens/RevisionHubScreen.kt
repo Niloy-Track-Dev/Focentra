@@ -1,5 +1,7 @@
 package com.niloy.focentra.ui.screens
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -121,10 +123,29 @@ fun RevisionHubScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        when (selectedTab) {
-            0 -> RevisionTimerSection(viewModel = viewModel)
-            1 -> UpcomingScheduledRevisionsSection(viewModel = viewModel)
-            2 -> RevisionHistorySection(viewModel = viewModel)
+        AnimatedContent(
+            targetState = selectedTab,
+            transitionSpec = {
+                val isForward = targetState > initialState
+                (
+                    fadeIn(animationSpec = tween(260, easing = androidx.compose.animation.core.FastOutSlowInEasing)) +
+                        slideInHorizontally(
+                            animationSpec = tween(320, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                        ) { width -> if (isForward) width / 12 else -width / 12 }
+                ) togetherWith (
+                    fadeOut(animationSpec = tween(180, easing = androidx.compose.animation.core.FastOutSlowInEasing)) +
+                        slideOutHorizontally(
+                            animationSpec = tween(280, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                        ) { width -> if (isForward) -width / 12 else width / 12 }
+                )
+            },
+            label = "revision_hub_tab_transition"
+        ) { tab ->
+            when (tab) {
+                0 -> RevisionTimerSection(viewModel = viewModel)
+                1 -> UpcomingScheduledRevisionsSection(viewModel = viewModel)
+                2 -> RevisionHistorySection(viewModel = viewModel)
+            }
         }
     }
 }
