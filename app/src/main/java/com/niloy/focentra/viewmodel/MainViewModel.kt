@@ -359,7 +359,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             emit(System.currentTimeMillis())
             delay(60_000L)
         }
-    }.stateIn(viewModelScope, SharingStarted.Lazily, System.currentTimeMillis())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), System.currentTimeMillis())
 
     val todayFocusedMinutes = combine(sessions, notificationClock) { list, now ->
         val cal = Calendar.getInstance().apply {
