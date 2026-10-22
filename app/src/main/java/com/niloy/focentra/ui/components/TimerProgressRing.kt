@@ -1,5 +1,6 @@
 package com.niloy.focentra.ui.components
 
+import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -45,9 +46,14 @@ fun TimerProgressRing(
     val isRunning = state.status == TimerStatus.RUNNING
     val isPaused = state.status == TimerStatus.PAUSED
 
+    val progressTarget = if (state.mode == SessionMode.STOPWATCH) {
+        (state.focusedSeconds % 60L) / 60f
+    } else {
+        state.progress
+    }
     val animatedProgress by animateFloatAsState(
-        targetValue = state.progress,
-        animationSpec = tween(durationMillis = 600),
+        targetValue = progressTarget,
+        animationSpec = tween(durationMillis = 850, easing = FastOutSlowInEasing),
         label = "timer_progress"
     )
 
@@ -62,8 +68,47 @@ fun TimerProgressRing(
         label = "pulse_alpha"
     )
 
-    val primaryColor = MaterialTheme.colorScheme.primary
+    val targetPrimaryColor = MaterialTheme.colorScheme.primary
+    val primaryColor by animateColorAsState(
+        targetValue = targetPrimaryColor,
+        animationSpec = tween(240),
+        label = "timer_ring_color"
+    )
     val trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+    val badgeColorTarget = when {
+        isPaused -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.9f)
+        state.mode == SessionMode.POMODORO && state.pomodoroPhase != PomodoroPhase.FOCUS ->
+            MaterialTheme.colorScheme.secondaryContainer
+        isRunning -> MaterialTheme.colorScheme.primaryContainer
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+    val badgeColor by animateColorAsState(
+        targetValue = badgeColorTarget,
+        animationSpec = tween(240),
+        label = "timer_status_background"
+    )
+    val textColorTarget = when {
+        isPaused -> MaterialTheme.colorScheme.onErrorContainer
+        state.mode == SessionMode.POMODORO && state.pomodoroPhase != PomodoroPhase.FOCUS ->
+            MaterialTheme.colorScheme.onSecondaryContainer
+        isRunning -> MaterialTheme.colorScheme.onPrimaryContainer
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val animatedTextColor by animateColorAsState(
+        targetValue = textColorTarget,
+        animationSpec = tween(240),
+        label = "timer_status_text"
+    )
+    val statusDotColorTarget = when {
+        isPaused -> MaterialTheme.colorScheme.error
+        isRunning -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.outline
+    }
+    val animatedStatusDotColor by animateColorAsState(
+        targetValue = statusDotColorTarget,
+        animationSpec = tween(240),
+        label = "timer_status_dot"
+    )
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -72,31 +117,21 @@ fun TimerProgressRing(
         // Status & Phase Badge
         Surface(
             shape = RoundedCornerShape(20.dp),
-            color = when {
-                isPaused -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.9f)
-                state.mode == SessionMode.POMODORO && state.pomodoroPhase != PomodoroPhase.FOCUS ->
-                    MaterialTheme.colorScheme.secondaryContainer
-                isRunning -> MaterialTheme.colorScheme.primaryContainer
-                else -> MaterialTheme.colorScheme.surfaceVariant
-            },
+            color = badgeColor,
             modifier = Modifier
                 .padding(bottom = 16.dp)
+                .animateContentSize(tween(220, easing = FastOutSlowInEasing))
                 .shadow(elevation = 2.dp, shape = RoundedCornerShape(20.dp))
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 7.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val statusDotColor = when {
-                    isPaused -> MaterialTheme.colorScheme.error
-                    isRunning -> MaterialTheme.colorScheme.primary
-                    else -> MaterialTheme.colorScheme.outline
-                }
                 Box(
                     modifier = Modifier
                         .size(8.dp)
                         .clip(CircleShape)
-                        .background(statusDotColor)
+                        .background(animatedStatusDotColor)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 val badgeText = when {
@@ -112,19 +147,13 @@ fun TimerProgressRing(
                     isRunning -> "FOCUSING IN THE ZONE"
                     else -> "READY"
                 }
-                val textColor = when {
-                    isPaused -> MaterialTheme.colorScheme.onErrorContainer
-                    state.mode == SessionMode.POMODORO && state.pomodoroPhase != PomodoroPhase.FOCUS -> MaterialTheme.colorScheme.onSecondaryContainer
-                    isRunning -> MaterialTheme.colorScheme.onPrimaryContainer
-                    else -> MaterialTheme.colorScheme.onSurfaceVariant
-                }
                 Text(
                     text = badgeText,
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
                     ),
-                    color = textColor
+                    color = animatedTextColor
                 )
             }
         }
@@ -154,7 +183,7 @@ fun TimerProgressRing(
 
                 // Progress Arc
                 val sweepAngle = if (state.mode == SessionMode.STOPWATCH) {
-                    360f
+                    animatedProgress * 360f
                 } else {
                     (1.0f - animatedProgress) * 360f
                 }
@@ -189,15 +218,24 @@ fun TimerProgressRing(
                     }
                 }
 
-                Text(
-                    text = timeString,
-                    style = MaterialTheme.typography.displayMedium.copy(
-                        fontWeight = FontWeight.Black,
-                        fontFamily = FontFamily.Monospace,
-                        letterSpacing = (-1.5).sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                AnimatedContent(
+                    targetState = timeString,
+                    transitionSpec = {
+                        (slideInVertically(tween(160)) { it / 3 } + fadeIn(tween(140))) togetherWith
+                            (slideOutVertically(tween(140)) { -it / 3 } + fadeOut(tween(120)))
+                    },
+                    label = "timer_readout"
+                ) { displayedTime ->
+                    Text(
+                        text = displayedTime,
+                        style = MaterialTheme.typography.displayMedium.copy(
+                            fontWeight = FontWeight.Black,
+                            fontFamily = FontFamily.Monospace,
+                            letterSpacing = (-1.5).sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(4.dp))
 
@@ -267,17 +305,21 @@ fun TimerProgressRing(
                 for (r in 1..state.totalRounds) {
                     val isDone = r < state.currentRound
                     val isCurrent = r == state.currentRound
+                    val dotColor by animateColorAsState(
+                        targetValue = when {
+                            isDone -> MaterialTheme.colorScheme.primary
+                            isCurrent -> MaterialTheme.colorScheme.secondary
+                            else -> MaterialTheme.colorScheme.surfaceVariant
+                        },
+                        animationSpec = tween(220),
+                        label = "pomodoro_round_$r"
+                    )
                     Box(
                         modifier = Modifier
                             .size(if (isCurrent) 14.dp else 10.dp)
+                            .animateContentSize(tween(220, easing = FastOutSlowInEasing))
                             .clip(CircleShape)
-                            .background(
-                                when {
-                                    isDone -> MaterialTheme.colorScheme.primary
-                                    isCurrent -> MaterialTheme.colorScheme.secondary
-                                    else -> MaterialTheme.colorScheme.surfaceVariant
-                                }
-                            )
+                            .background(dotColor)
                     )
                 }
             }

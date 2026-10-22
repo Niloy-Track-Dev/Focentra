@@ -1,6 +1,6 @@
 package com.niloy.focentra.ui.screens
 
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -206,7 +206,21 @@ fun TimerScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        if (timerState.status == TimerStatus.RUNNING || timerState.status == TimerStatus.PAUSED) {
+        AnimatedContent(
+            targetState = timerState.status == TimerStatus.RUNNING || timerState.status == TimerStatus.PAUSED,
+            transitionSpec = {
+                val enteringSession = targetState
+                if (enteringSession) {
+                    (fadeIn(tween(220)) + slideInVertically(tween(280)) { it / 12 }) togetherWith
+                        (fadeOut(tween(160)) + slideOutVertically(tween(220)) { -it / 12 })
+                } else {
+                    (fadeIn(tween(220)) + slideInVertically(tween(280)) { -it / 12 }) togetherWith
+                        (fadeOut(tween(160)) + slideOutVertically(tween(220)) { it / 12 })
+                }
+            },
+            label = "timer_session_transition"
+        ) { isSessionActive ->
+        if (isSessionActive) {
             // Active Timer View
             Column(
                 modifier = Modifier
@@ -232,7 +246,8 @@ fun TimerScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 16.dp)
-                    .verticalScroll(rememberScrollState()),
+                        .verticalScroll(rememberScrollState())
+                        .animateContentSize(tween(260, easing = FastOutSlowInEasing)),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Spacer(modifier = Modifier.height(4.dp))
@@ -350,6 +365,7 @@ fun TimerScreen(
                         }
                     }
                 }
+                }
 
                 // Topic & Goal
                 Row(
@@ -377,6 +393,9 @@ fun TimerScreen(
                 }
 
                 // Mode-specific configuration
+                Column(
+                    modifier = Modifier.animateContentSize(tween(220, easing = FastOutSlowInEasing))
+                ) {
                 when (selectedMode) {
                     SessionMode.COUNTDOWN -> {
                         Column {
@@ -450,7 +469,6 @@ fun TimerScreen(
                                         IconButton(onClick = { if (pomodoroShortBreakMin < 30) pomodoroShortBreakMin += 1 }) {
                                             Icon(Icons.Default.AddCircleOutline, contentDescription = null)
                                         }
-                                    }
                                 }
 
                                 Row(
@@ -467,6 +485,7 @@ fun TimerScreen(
                                         IconButton(onClick = { if (pomodoroRounds < 12) pomodoroRounds += 1 }) {
                                             Icon(Icons.Default.AddCircleOutline, contentDescription = null)
                                         }
+                                    }
                                     }
                                 }
                             }
@@ -500,6 +519,7 @@ fun TimerScreen(
                             }
                         }
                     }
+                }
                 }
 
                 // Presets quick picks
