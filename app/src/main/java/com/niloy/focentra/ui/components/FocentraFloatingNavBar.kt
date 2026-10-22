@@ -140,12 +140,19 @@ private fun FloatingNavItem(
 ) {
     val iconColor by animateColorAsState(
         targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
         label = "icon_color"
     )
 
     val pillBackground by animateColorAsState(
         targetValue = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
         label = "pill_bg"
+    )
+    val iconScale by animateFloatAsState(
+        targetValue = if (isSelected) 1.08f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "icon_scale"
     )
 
     Box(
@@ -169,7 +176,7 @@ private fun FloatingNavItem(
                 imageVector = if (isSelected) item.activeIcon else item.inactiveIcon,
                 contentDescription = item.label,
                 tint = iconColor,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(20.dp).scale(iconScale)
             )
 
             Spacer(modifier = Modifier.height(2.dp))

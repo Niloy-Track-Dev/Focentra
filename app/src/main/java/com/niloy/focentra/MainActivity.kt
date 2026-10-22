@@ -13,6 +13,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -126,7 +127,12 @@ class MainActivity : ComponentActivity() {
             }
 
             FocentraTheme(themeName = currentTheme) {
-                if (isFullScreenFocus) {
+                Crossfade(
+                    targetState = isFullScreenFocus,
+                    animationSpec = tween(260, easing = FastOutSlowInEasing),
+                    label = "focus_mode_transition"
+                ) { showFocusMode ->
+                if (showFocusMode) {
                     FullScreenFocusScreen(viewModel = viewModel)
                 } else {
                     Scaffold(
@@ -316,7 +322,18 @@ class MainActivity : ComponentActivity() {
                             AnimatedContent(
                                 targetState = currentTab,
                                 transitionSpec = {
-                                    fadeIn(animationSpec = tween(200)) togetherWith fadeOut(animationSpec = tween(150))
+                                    val isForward = targetState.ordinal > initialState.ordinal
+                                    (
+                                        fadeIn(animationSpec = tween(260, easing = FastOutSlowInEasing)) +
+                                            slideInHorizontally(
+                                                animationSpec = tween(320, easing = FastOutSlowInEasing)
+                                            ) { width -> if (isForward) width / 12 else -width / 12 }
+                                    ) togetherWith (
+                                        fadeOut(animationSpec = tween(180, easing = FastOutSlowInEasing)) +
+                                            slideOutHorizontally(
+                                                animationSpec = tween(280, easing = FastOutSlowInEasing)
+                                            ) { width -> if (isForward) -width / 12 else width / 12 }
+                                    )
                                 },
                                 label = "tab_navigation",
                                 modifier = Modifier
@@ -370,4 +387,5 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
 }

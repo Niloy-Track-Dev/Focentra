@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [7.1.4] - 2026-10-22
+
+- **Smooth App Navigation**: Added directional fade-and-slide transitions between screens and a scale/fade transition for full-screen focus mode.
+- **Timer Motion**: Animated timer setup/session changes, mode-specific layout resizing, second-by-second readout, ring progress, status colors, and Pomodoro round indicators.
+- **Navigation Feedback**: Added a soft spring scale response to the selected bottom navigation icon.
+- **Release Signing**: Continues using the permanent release key introduced in v7.1.3. This signer differs from v7.1.2; existing installs may require reinstall. Back up local app data before uninstalling.
+- **Version Bump**: Updated `versionCode` to `50` and `versionName` to `7.1.4`.
+
 ## [7.1.3] - 2026-10-21
 
 - **App-Wide Bug Fixes**: Corrected timer accounting, study statistics, reminder scheduling, backup/restore behavior, and audio/foreground-service lifecycle issues.
