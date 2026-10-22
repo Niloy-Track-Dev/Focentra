@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [7.1.5] - 2026-10-22
+
+- **Timer Setup Layout**: Fixed a misplaced layout scope that caused timer setup controls and the Start button to overlap.
+- **Timer Counter Motion**: Slowed the digit transition slightly while keeping the timer's real-time clock unchanged.
+- **Version Bump**: Updated `versionCode` to `51` and `versionName` to `7.1.5`.
+
 ## [7.1.4] - 2026-10-22
 
 - **Smooth App Navigation**: Added directional fade-and-slide transitions between screens and a scale/fade transition for full-screen focus mode.
