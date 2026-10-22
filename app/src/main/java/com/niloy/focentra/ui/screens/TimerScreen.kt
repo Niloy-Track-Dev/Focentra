@@ -364,7 +364,6 @@ fun TimerScreen(
                         }
                     }
                 }
-                }
 
                 // Topic & Goal
                 Row(
@@ -468,6 +467,7 @@ fun TimerScreen(
                                         IconButton(onClick = { if (pomodoroShortBreakMin < 30) pomodoroShortBreakMin += 1 }) {
                                             Icon(Icons.Default.AddCircleOutline, contentDescription = null)
                                         }
+                                    }
                                 }
 
                                 Row(
@@ -484,7 +484,6 @@ fun TimerScreen(
                                         IconButton(onClick = { if (pomodoroRounds < 12) pomodoroRounds += 1 }) {
                                             Icon(Icons.Default.AddCircleOutline, contentDescription = null)
                                         }
-                                    }
                                     }
                                 }
                             }
@@ -744,4 +743,5 @@ fun TimerScreen(
             }
         }
     }
+}
 }

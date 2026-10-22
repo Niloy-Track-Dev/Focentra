@@ -221,8 +221,8 @@ fun TimerProgressRing(
                 AnimatedContent(
                     targetState = timeString,
                     transitionSpec = {
-                        (slideInVertically(tween(260)) { it / 5 } + fadeIn(tween(220))) togetherWith
-                            (slideOutVertically(tween(220)) { -it / 5 } + fadeOut(tween(180)))
+                        (slideInVertically(tween(450, easing = FastOutSlowInEasing)) { it / 6 } + fadeIn(tween(400))) togetherWith
+                            (slideOutVertically(tween(400, easing = FastOutSlowInEasing)) { -it / 6 } + fadeOut(tween(350)))
                     },
                     label = "timer_readout"
                 ) { displayedTime ->
