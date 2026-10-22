@@ -211,11 +211,11 @@ fun TimerScreen(
             transitionSpec = {
                 val enteringSession = targetState
                 if (enteringSession) {
-                    (fadeIn(tween(220)) + slideInVertically(tween(280)) { it / 12 }) togetherWith
-                        (fadeOut(tween(160)) + slideOutVertically(tween(220)) { -it / 12 })
+                    (fadeIn(tween(260, easing = FastOutSlowInEasing)) + slideInHorizontally(tween(320, easing = FastOutSlowInEasing)) { it / 12 }) togetherWith
+                        (fadeOut(tween(180, easing = FastOutSlowInEasing)) + slideOutHorizontally(tween(280, easing = FastOutSlowInEasing)) { -it / 12 })
                 } else {
-                    (fadeIn(tween(220)) + slideInVertically(tween(280)) { -it / 12 }) togetherWith
-                        (fadeOut(tween(160)) + slideOutVertically(tween(220)) { it / 12 })
+                    (fadeIn(tween(260, easing = FastOutSlowInEasing)) + slideInHorizontally(tween(320, easing = FastOutSlowInEasing)) { -it / 12 }) togetherWith
+                        (fadeOut(tween(180, easing = FastOutSlowInEasing)) + slideOutHorizontally(tween(280, easing = FastOutSlowInEasing)) { it / 12 })
                 }
             },
             label = "timer_session_transition"
@@ -391,133 +391,148 @@ fun TimerScreen(
                 }
 
                 // Mode-specific configuration
-                Column(
-                    modifier = Modifier.animateContentSize(tween(220, easing = FastOutSlowInEasing))
-                ) {
-                when (selectedMode) {
-                    SessionMode.COUNTDOWN -> {
-                        Column {
-                            Text(
-                                text = "Duration",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            val durationOptions = listOf(5, 10, 15, 25, 30, 45, 60, 90, 120)
-                            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                items(durationOptions) { mins ->
-                                    val isSelected = selectedDurationMinutes == mins
-                                    FilterChip(
-                                        selected = isSelected,
-                                        onClick = { selectedDurationMinutes = mins },
-                                        label = { Text("${mins}m") },
-                                        shape = RoundedCornerShape(12.dp)
+                AnimatedContent(
+                    targetState = selectedMode,
+                    transitionSpec = {
+                        val isForward = targetState.ordinal > initialState.ordinal
+                        (
+                            fadeIn(animationSpec = tween(260, easing = FastOutSlowInEasing)) +
+                                slideInHorizontally(
+                                    animationSpec = tween(320, easing = FastOutSlowInEasing)
+                                ) { width -> if (isForward) width / 12 else -width / 12 }
+                        ) togetherWith (
+                            fadeOut(animationSpec = tween(180, easing = FastOutSlowInEasing)) +
+                                slideOutHorizontally(
+                                    animationSpec = tween(280, easing = FastOutSlowInEasing)
+                                ) { width -> if (isForward) -width / 12 else width / 12 }
+                        )
+                    },
+                    label = "timer_mode_transition"
+                ) { mode ->
+                    when (mode) {
+                        SessionMode.COUNTDOWN -> {
+                            Column {
+                                Text(
+                                    text = "Duration",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                val durationOptions = listOf(5, 10, 15, 25, 30, 45, 60, 90, 120)
+                                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    items(durationOptions) { mins ->
+                                        val isSelected = selectedDurationMinutes == mins
+                                        FilterChip(
+                                            selected = isSelected,
+                                            onClick = { selectedDurationMinutes = mins },
+                                            label = { Text("${mins}m") },
+                                            shape = RoundedCornerShape(12.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        SessionMode.POMODORO -> {
+                            Card(
+                                shape = RoundedCornerShape(18.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Text(
+                                        text = "Pomodoro Intervals",
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("Focus Duration", style = MaterialTheme.typography.bodyMedium)
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            IconButton(onClick = { if (pomodoroFocusMin > 5) pomodoroFocusMin -= 5 }) {
+                                                Icon(Icons.Default.RemoveCircleOutline, contentDescription = null)
+                                            }
+                                            Text("${pomodoroFocusMin}m", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                                            IconButton(onClick = { if (pomodoroFocusMin < 120) pomodoroFocusMin += 5 }) {
+                                                Icon(Icons.Default.AddCircleOutline, contentDescription = null)
+                                            }
+                                        }
+                                    }
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("Short Break", style = MaterialTheme.typography.bodyMedium)
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            IconButton(onClick = { if (pomodoroShortBreakMin > 1) pomodoroShortBreakMin -= 1 }) {
+                                                Icon(Icons.Default.RemoveCircleOutline, contentDescription = null)
+                                            }
+                                            Text("${pomodoroShortBreakMin}m", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                                            IconButton(onClick = { if (pomodoroShortBreakMin < 30) pomodoroShortBreakMin += 1 }) {
+                                                Icon(Icons.Default.AddCircleOutline, contentDescription = null)
+                                            }
+                                        }
+                                    }
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("Total Rounds", style = MaterialTheme.typography.bodyMedium)
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            IconButton(onClick = { if (pomodoroRounds > 1) pomodoroRounds -= 1 }) {
+                                                Icon(Icons.Default.RemoveCircleOutline, contentDescription = null)
+                                            }
+                                            Text("$pomodoroRounds", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                                            IconButton(onClick = { if (pomodoroRounds < 12) pomodoroRounds += 1 }) {
+                                                Icon(Icons.Default.AddCircleOutline, contentDescription = null)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        SessionMode.STOPWATCH -> {
+                            Card(
+                                shape = RoundedCornerShape(18.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(
+                                        text = "Stopwatch counts open-ended study time. You can pause or finish anytime.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
                         }
                     }
-                    SessionMode.POMODORO -> {
-                        Card(
-                            shape = RoundedCornerShape(18.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                            )
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Text(
-                                    text = "Pomodoro Intervals",
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("Focus Duration", style = MaterialTheme.typography.bodyMedium)
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        IconButton(onClick = { if (pomodoroFocusMin > 5) pomodoroFocusMin -= 5 }) {
-                                            Icon(Icons.Default.RemoveCircleOutline, contentDescription = null)
-                                        }
-                                        Text("${pomodoroFocusMin}m", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                                        IconButton(onClick = { if (pomodoroFocusMin < 120) pomodoroFocusMin += 5 }) {
-                                            Icon(Icons.Default.AddCircleOutline, contentDescription = null)
-                                        }
-                                    }
-                                }
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("Short Break", style = MaterialTheme.typography.bodyMedium)
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        IconButton(onClick = { if (pomodoroShortBreakMin > 1) pomodoroShortBreakMin -= 1 }) {
-                                            Icon(Icons.Default.RemoveCircleOutline, contentDescription = null)
-                                        }
-                                        Text("${pomodoroShortBreakMin}m", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                                        IconButton(onClick = { if (pomodoroShortBreakMin < 30) pomodoroShortBreakMin += 1 }) {
-                                            Icon(Icons.Default.AddCircleOutline, contentDescription = null)
-                                        }
-                                    }
-                                }
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("Total Rounds", style = MaterialTheme.typography.bodyMedium)
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        IconButton(onClick = { if (pomodoroRounds > 1) pomodoroRounds -= 1 }) {
-                                            Icon(Icons.Default.RemoveCircleOutline, contentDescription = null)
-                                        }
-                                        Text("$pomodoroRounds", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                                        IconButton(onClick = { if (pomodoroRounds < 12) pomodoroRounds += 1 }) {
-                                            Icon(Icons.Default.AddCircleOutline, contentDescription = null)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    SessionMode.STOPWATCH -> {
-                        Card(
-                            shape = RoundedCornerShape(18.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                            )
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Info,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    text = "Stopwatch counts open-ended study time. You can pause or finish anytime.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
                 }
 
                 // Presets quick picks

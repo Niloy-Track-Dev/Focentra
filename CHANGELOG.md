@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [7.1.7] - 2026-10-22
+
+- **Screen-Matching Motion**: Added smooth AnimatedContent transitions matching main screen tab animations when switching modes inside Timer Screen and Revision Hub.
+- **Version Bump**: Updated `versionCode` to `53` and `versionName` to `7.1.7`.
+
 ## [7.1.6] - 2026-10-22
 
 - **Timer Screen Layout Fix**: Restored setup controls, preset templates, ambient sound options, and the main Start button inside the main scrollable Column layout to fix component overlapping.
