@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [7.1.6] - 2026-10-22
+
+- **Timer Screen Layout Fix**: Restored setup controls, preset templates, ambient sound options, and the main Start button inside the main scrollable Column layout to fix component overlapping.
+- **Smooth Time Readout Motion**: Adjusted time digit readout transition animation speed to a moderate, smooth pace (400-450ms duration).
+- **Version Bump**: Updated `versionCode` to `52` and `versionName` to `7.1.6`.
+
 ## [7.1.5] - 2026-10-22
 
 - **Timer Setup Layout**: Fixed a misplaced layout scope that caused timer setup controls and the Start button to overlap.
