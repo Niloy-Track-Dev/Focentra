@@ -465,6 +465,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
 
+            val todayStartMs = Calendar.getInstance().apply {
+                timeInMillis = now
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+
             // 8. Dynamic Progress Bar in Daily Target Tracker
             val dailyGoal = goalList.find { it.periodType == "DAILY" }?.targetMinutes ?: 480
             val remainingMins = (dailyGoal - todayMins).coerceAtLeast(0L)
@@ -479,14 +487,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val todayHrsText = String.format(Locale.US, "%.1f", todayMins / 60f)
             val goalHrsText = String.format(Locale.US, "%.1f", dailyGoal / 60f)
 
-            val goalMessage = "Daily Goal: ${todayHrsText} / ${goalHrsText}h $progressBarText $percentInt% completed! (${remainingMins / 60}h ${remainingMins % 60}m remaining)"
+            val remainingHours = remainingMins / 60
+            val remainingMinutes = remainingMins % 60
+            val remainingTimeText = if (remainingMinutes == 0L) {
+                "${remainingHours}h remaining"
+            } else if (remainingHours == 0L) {
+                "${remainingMinutes}m remaining"
+            } else {
+                "${remainingHours}h ${remainingMinutes}m remaining"
+            }
+
+            val goalMessage = "Daily Goal: ${todayHrsText} / ${goalHrsText}h $progressBarText $percentInt% completed! ($remainingTimeText)"
             val goalNotifId = "goal_warning_${todayDateStr}"
             list.add(
                 AppNotification(
                     id = goalNotifId,
                     type = NotificationType.GOAL_WARNING,
                     title = "Daily Target Tracker",
-                    message = goalMessage
+                    message = goalMessage,
+                    timestamp = todayStartMs + (7 * 3600 * 1000L)
                 )
             )
 
@@ -500,10 +519,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 list.add(
                     AppNotification(
                         id = notifId,
-                        type = NotificationType.MOTIVATION,
+                        type = NotificationType.DAILY_TARGET,
                         title = "Peak Focus Hour Started!",
                         message = "Your peak productivity window is starting now. Launch a focus session to make the most of it!",
-                        timestamp = now
+                        timestamp = todayStartMs + (currentHour * 3600 * 1000L)
                     )
                 )
             }
@@ -518,7 +537,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         type = NotificationType.INACTIVITY_WARNING,
                         title = "Study Streak at Risk!",
                         message = "Your ${currentStreakVal}-day study streak is in danger! Complete at least a 10-minute focus session now to save your streak.",
-                        timestamp = now
+                        timestamp = todayStartMs + (19 * 3600 * 1000L)
                     )
                 )
             }
@@ -529,10 +548,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 list.add(
                     AppNotification(
                         id = notifId,
-                        type = NotificationType.MOTIVATION,
+                        type = NotificationType.DAILY_TARGET,
                         title = "Night Reflection & Brain Dump",
                         message = "Clear your mind before sleep! Unload remaining thoughts or study notes into Brain Dump for a fresh start tomorrow.",
-                        timestamp = now
+                        timestamp = todayStartMs + (22 * 3600 * 1000L)
                     )
                 )
             }
@@ -548,10 +567,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 list.add(
                     AppNotification(
                         id = notifId,
-                        type = NotificationType.MOTIVATION,
+                        type = NotificationType.DAILY_TARGET,
                         title = "Weekly Focus Digest",
                         message = "Great effort this week! You completed $weeklyHrs hours of focused study across the past 7 days.",
-                        timestamp = now
+                        timestamp = todayStartMs + (8 * 3600 * 1000L)
                     )
                 )
             }
@@ -561,10 +580,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             list.add(
                 AppNotification(
                     id = ambientNotifId,
-                    type = NotificationType.MOTIVATION,
+                    type = NotificationType.DAILY_TARGET,
                     title = "Ambient Focus Environment",
                     message = "Set the perfect study mood! Launch a focus session with deep focus background soundscapes.",
-                    timestamp = now
+                    timestamp = todayStartMs + (9 * 3600 * 1000L)
                 )
             )
 

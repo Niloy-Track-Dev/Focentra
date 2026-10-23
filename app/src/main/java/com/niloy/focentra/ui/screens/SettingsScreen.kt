@@ -114,7 +114,7 @@ fun SettingsScreen(
             },
             text = {
                 Text(
-                    text = "Are you sure you want to delete all study sessions, subjects, presets, goals, flashcards, and exam milestones? This action cannot be undone.",
+                    text = "Are you sure you want to delete all study sessions, subjects, presets, goals, and exam milestones? This action cannot be undone.",
                     style = MaterialTheme.typography.bodyMedium
                 )
             },

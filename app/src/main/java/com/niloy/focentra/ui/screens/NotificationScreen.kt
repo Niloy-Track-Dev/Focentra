@@ -38,22 +38,33 @@ fun NotificationScreen(
     var selectedFilter by remember { mutableStateOf("All") }
 
     val allList = remember(dbNotifications, activeNotifications) {
-        val mappedDb = dbNotifications.map { entity ->
-            val type = try {
-                NotificationType.valueOf(entity.type.trim().uppercase(Locale.ROOT))
+        fun resolveType(rawType: String, title: String): NotificationType {
+            val titleLower = title.lowercase(Locale.ROOT)
+            if (titleLower.contains("ambient focus") ||
+                titleLower.contains("peak focus") ||
+                titleLower.contains("night reflection") ||
+                titleLower.contains("weekly focus digest") ||
+                titleLower.contains("daily target") ||
+                titleLower.contains("goal")
+            ) {
+                return NotificationType.DAILY_TARGET
+            }
+            return try {
+                val parsed = NotificationType.valueOf(rawType.trim().uppercase(Locale.ROOT))
+                if (parsed == NotificationType.GOAL_WARNING) NotificationType.DAILY_TARGET else parsed
             } catch (e: Exception) {
-                val typeStr = entity.type.uppercase(Locale.ROOT)
-                val titleStr = entity.title.lowercase(Locale.ROOT)
                 when {
-                    typeStr.contains("TARGET") || typeStr.contains("GOAL") || titleStr.contains("target") || titleStr.contains("goal") -> NotificationType.DAILY_TARGET
-                    typeStr.contains("RECAP") || titleStr.contains("recap") -> NotificationType.RECAP_REMINDER
-                    typeStr.contains("REVISION") || typeStr.contains("INACTIVITY") || titleStr.contains("revision") -> NotificationType.REVISION_DUE
+                    rawType.contains("RECAP") || titleLower.contains("recap") -> NotificationType.RECAP_REMINDER
+                    rawType.contains("REVISION") || rawType.contains("INACTIVITY") || titleLower.contains("revision") || titleLower.contains("streak") -> NotificationType.REVISION_DUE
                     else -> NotificationType.MOTIVATION
                 }
             }
+        }
+
+        val mappedDb = dbNotifications.map { entity ->
             AppNotification(
                 id = entity.id,
-                type = type,
+                type = resolveType(entity.type, entity.title),
                 title = entity.title,
                 message = entity.message,
                 subjectName = entity.subjectName,
@@ -61,7 +72,14 @@ fun NotificationScreen(
                 timestamp = entity.timestamp
             )
         }
-        (mappedDb + activeNotifications).distinctBy { it.id }.sortedByDescending { it.timestamp }
+
+        val mappedActive = activeNotifications.map { notif ->
+            notif.copy(type = resolveType(notif.type.name, notif.title))
+        }
+
+        val dbMap = mappedDb.associateBy { it.id }
+        val combined = (mappedActive.map { dbMap[it.id] ?: it } + mappedDb).distinctBy { it.id }
+        combined.sortedByDescending { it.timestamp }
     }
 
     val filteredNotifications = remember(allList, selectedFilter) {
