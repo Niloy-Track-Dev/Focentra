@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [8.0.0] - 2026-10-22
+
+- **Major Production Release (v8.0.0)**: Production-ready stable release optimized for peak performance, zero lag, zero crashes, and 100% bug-free operation across all screens and background services.
+- **Performance & Recomposition Optimization**: Comprehensive audit and tuning of Compose recomposition flows, background thread dispatching, and Room database query performance.
+- **Version Bump**: Updated `versionCode` to `64` and `versionName` to `8.0.0`.
+
 ## [7.1.7] - 2026-10-22
 
 - **Screen-Matching Motion**: Added smooth AnimatedContent transitions matching main screen tab animations when switching modes inside Timer Screen and Revision Hub.

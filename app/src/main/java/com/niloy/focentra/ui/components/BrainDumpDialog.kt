@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -119,7 +120,7 @@ fun BrainDumpDialog(
                     },
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Icon(Icons.Default.Send, contentDescription = "Add")
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Add")
                 }
             }
 
