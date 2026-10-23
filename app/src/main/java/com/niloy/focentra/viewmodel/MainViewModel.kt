@@ -9,6 +9,7 @@ import com.niloy.focentra.FocentraApp
 import com.niloy.focentra.data.local.entity.*
 import com.niloy.focentra.data.repository.calculateStreak
 import com.niloy.focentra.engine.*
+import com.niloy.focentra.service.StudyReminderNotifications
 import com.niloy.focentra.service.StudyReminderScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -23,6 +24,8 @@ import java.util.*
 
 enum class NotificationType {
     REVISION_DUE,
+    DAILY_TARGET,
+    RECAP_REMINDER,
     INACTIVITY_WARNING,
     GOAL_WARNING,
     MOTIVATION
@@ -248,6 +251,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val settings = repository.allSettings.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val dailyTasks = repository.allTasks.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     val chapters = repository.allChapters.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val dbNotifications = repository.allNotifications.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    val dbRevisionSkips = repository.allRevisionSkips.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun addChapter(subjectId: Long, subjectName: String, chapterName: String) {
         if (chapterName.isBlank()) return
@@ -400,27 +405,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val elapsed = now - compTime
                     val (title, msg, stage) = when {
                         elapsed >= THIRTY_DAYS_MS -> Triple(
-                            "🧠 30th Day Master Review Cycle",
+                            "30th Day Master Review Cycle",
                             "It's time for the 30th day master review cycle for «${ch.chapterName}» in ${ch.subjectName}. Solidify your memory for long term!",
                             "30d"
                         )
                         elapsed >= FIFTEEN_DAYS_MS -> Triple(
-                            "🧠 15th Day Final Revision Test",
+                            "15th Day Final Revision Test",
                             "It's time for the 15th day revision test for «${ch.chapterName}» in ${ch.subjectName}. Complete a 30-minute revision session!",
                             "15d"
                         )
                         elapsed >= SEVEN_DAYS_MS -> Triple(
-                            "📝 7th Day Problem Solving Revision",
+                            "7th Day Problem Solving Revision",
                             "«${ch.chapterName}» in ${ch.subjectName} was studied 7 days ago. Start a 30-minute revision session to reinforce memory!",
                             "7d"
                         )
                         elapsed >= THREE_DAYS_MS -> Triple(
-                            "⚡ 3rd Day Scientific Revision",
+                            "3rd Day Scientific Revision",
                             "The 3-day scientific revision cycle for «${ch.chapterName}» in ${ch.subjectName} has begun. Refresh your memory with a 30-minute session!",
                             "3d"
                         )
                         elapsed >= ONE_DAY_MS -> Triple(
-                            "🔄 1st Day Quick Recap Revision",
+                            "1st Day Quick Recap Revision",
                             "You recently completed «${ch.chapterName}» in ${ch.subjectName}. Do a quick recap revision now to retain key concepts!",
                             "1d"
                         )
@@ -449,7 +454,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             AppNotification(
                                 id = notifId,
                                 type = NotificationType.INACTIVITY_WARNING,
-                                title = "🔥 Completion Reminder",
+                                title = "Completion Reminder",
                                 message = "«${ch.chapterName}» in ${ch.subjectName} hasn't been studied for 5 days. Start a focus session to finish it today!",
                                 subjectName = ch.subjectName,
                                 chapterName = ch.chapterName,
@@ -480,7 +485,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 AppNotification(
                     id = goalNotifId,
                     type = NotificationType.GOAL_WARNING,
-                    title = "🎯 Daily Target Tracker",
+                    title = "Daily Target Tracker",
                     message = goalMessage
                 )
             )
@@ -496,7 +501,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     AppNotification(
                         id = notifId,
                         type = NotificationType.MOTIVATION,
-                        title = "⚡ Peak Focus Hour Started!",
+                        title = "Peak Focus Hour Started!",
                         message = "Your peak productivity window is starting now. Launch a focus session to make the most of it!",
                         timestamp = now
                     )
@@ -511,7 +516,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     AppNotification(
                         id = notifId,
                         type = NotificationType.INACTIVITY_WARNING,
-                        title = "⚠️ Study Streak at Risk!",
+                        title = "Study Streak at Risk!",
                         message = "Your ${currentStreakVal}-day study streak is in danger! Complete at least a 10-minute focus session now to save your streak.",
                         timestamp = now
                     )
@@ -525,7 +530,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     AppNotification(
                         id = notifId,
                         type = NotificationType.MOTIVATION,
-                        title = "💡 Night Reflection & Brain Dump",
+                        title = "Night Reflection & Brain Dump",
                         message = "Clear your mind before sleep! Unload remaining thoughts or study notes into Brain Dump for a fresh start tomorrow.",
                         timestamp = now
                     )
@@ -544,7 +549,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     AppNotification(
                         id = notifId,
                         type = NotificationType.MOTIVATION,
-                        title = "📊 Weekly Focus Digest",
+                        title = "Weekly Focus Digest",
                         message = "Great effort this week! You completed $weeklyHrs hours of focused study across the past 7 days.",
                         timestamp = now
                     )
@@ -557,7 +562,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 AppNotification(
                     id = ambientNotifId,
                     type = NotificationType.MOTIVATION,
-                    title = "🎧 Ambient Focus Environment",
+                    title = "Ambient Focus Environment",
                     message = "Set the perfect study mood! Launch a focus session with deep focus background soundscapes.",
                     timestamp = now
                 )
@@ -571,7 +576,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     AppNotification(
                         id = notifId,
                         type = NotificationType.MOTIVATION,
-                        title = "🏆 Milestone Achieved!",
+                        title = "Milestone Achieved!",
                         message = "You have completed over 10 hours of focused study! Keep up the momentum.",
                         timestamp = now
                     )
@@ -629,6 +634,97 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // Revision History Log Feature
     private val _revisionHistory = MutableStateFlow<List<RevisionRecord>>(emptyList())
     val revisionHistory: StateFlow<List<RevisionRecord>> = _revisionHistory.asStateFlow()
+
+    fun recordRevisionSkip(
+        subjectName: String,
+        chapterName: String,
+        reason: String,
+        scheduledRecapTimestamp: Long,
+        onResult: (Boolean, String) -> Unit
+    ) {
+        viewModelScope.launch {
+            val currentSkips = dbRevisionSkips.value.count {
+                it.subjectName.equals(subjectName, ignoreCase = true) &&
+                it.chapterName.equals(chapterName, ignoreCase = true)
+            }
+            if (currentSkips >= 5) {
+                onResult(false, "Maximum 5 skips allowed for this chapter! You must complete 15 hours of revision for «$chapterName» before starting other subjects.")
+                return@launch
+            }
+
+            val skipEntity = RevisionSkipEntity(
+                id = UUID.randomUUID().toString(),
+                subjectName = subjectName,
+                chapterName = chapterName,
+                reason = reason.trim(),
+                skippedAtTimestamp = System.currentTimeMillis(),
+                scheduledRecapTimestamp = scheduledRecapTimestamp
+            )
+            repository.insertRevisionSkip(skipEntity)
+
+            StudyReminderNotifications.scheduleRecapReminders(
+                getApplication(),
+                subjectName,
+                chapterName,
+                scheduledRecapTimestamp
+            )
+
+            val recapNotif = NotificationEntity(
+                id = "recap_scheduled_${skipEntity.id}",
+                type = NotificationType.RECAP_REMINDER.name,
+                title = "Revision Recap Scheduled",
+                message = "Revision for «$chapterName» ($subjectName) skipped and scheduled for recap.",
+                subjectName = subjectName,
+                chapterName = chapterName,
+                timestamp = System.currentTimeMillis()
+            )
+            repository.insertNotification(recapNotif)
+
+            _snackbarMessage.emit("Revision skipped. Recap scheduled successfully!")
+            onResult(true, "Skip recorded successfully.")
+        }
+    }
+
+    fun isTimerBlockedFor(targetSubject: String, targetChapter: String): Pair<Boolean, String> {
+        val pendingRevisions = activeNotifications.value.filter { it.type == NotificationType.REVISION_DUE }
+        val skips = dbRevisionSkips.value
+        val now = System.currentTimeMillis()
+
+        for (item in pendingRevisions) {
+            val matchingSkips = skips.filter {
+                it.subjectName.equals(item.subjectName, ignoreCase = true) &&
+                it.chapterName.equals(item.chapterName, ignoreCase = true)
+            }
+            val skipCount = matchingSkips.size
+
+            // If there's an active scheduled recap in the future and skip count < 5, skipping is active!
+            val hasActiveSkip = skipCount < 5 && matchingSkips.any { it.scheduledRecapTimestamp > now }
+            if (hasActiveSkip) {
+                continue // Unblocked because user explicitly skipped it and recap time has not arrived
+            }
+
+            val requiredMins = if (skipCount >= 5) 900 else 60
+            val completedMins = revisionHistory.value.filter {
+                it.subjectName.equals(item.subjectName, ignoreCase = true) &&
+                it.chapterName.equals(item.chapterName, ignoreCase = true) &&
+                it.timestamp >= item.timestamp
+            }.sumOf { it.durationMinutes }
+
+            if (completedMins < requiredMins) {
+                val isTargetMatching = targetSubject.trim().equals(item.subjectName.trim(), ignoreCase = true) &&
+                        targetChapter.trim().equals(item.chapterName.trim(), ignoreCase = true)
+                if (!isTargetMatching) {
+                    val reqHoursText = if (requiredMins >= 60) "${requiredMins / 60}h" else "${requiredMins}m"
+                    val skipMsg = if (skipCount >= 5) " (Maximum 5 skips reached - 15h study required)" else ""
+                    return Pair(
+                        true,
+                        "You must complete at least $reqHoursText of revision for «${item.chapterName}» in ${item.subjectName} or skip it before starting timer for other subjects.$skipMsg"
+                    )
+                }
+            }
+        }
+        return Pair(false, "")
+    }
 
     fun recordRevision(
         subjectName: String,
@@ -725,7 +821,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             combine(activeNotifications, _notificationStateLoaded) { notifications, isLoaded ->
                 if (isLoaded) notifications else emptyList()
             }.collect { notifications ->
-                notifications.forEach(::enqueueSystemNotification)
+                notifications.forEach { notif ->
+                    enqueueSystemNotification(notif)
+                    repository.insertNotification(
+                        NotificationEntity(
+                            id = notif.id,
+                            type = notif.type.name,
+                            title = notif.title,
+                            message = notif.message,
+                            subjectName = notif.subjectName,
+                            chapterName = notif.chapterName,
+                            timestamp = notif.timestamp
+                        )
+                    )
+                }
             }
         }
     }

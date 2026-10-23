@@ -113,6 +113,40 @@ class StudyRepository(private val database: AppDatabase, context: Context) {
     val allSettings: Flow<List<SettingEntity>> = database.settingDao().getAllSettingsFlow()
     val allTasks: Flow<List<StudyTaskEntity>> = database.taskDao().getAllTasksFlow()
     val allChapters: Flow<List<ChapterEntity>> = database.chapterDao().getAllChaptersFlow()
+    val allNotifications: Flow<List<NotificationEntity>> = database.notificationDao().getAllNotificationsFlow()
+    val allRevisionSkips: Flow<List<RevisionSkipEntity>> = database.revisionSkipDao().getAllSkipsFlow()
+
+    suspend fun insertNotification(notification: NotificationEntity) = withContext(Dispatchers.IO) {
+        database.notificationDao().insertNotification(notification)
+    }
+
+    suspend fun markAllNotificationsAsRead() = withContext(Dispatchers.IO) {
+        database.notificationDao().markAllAsRead()
+    }
+
+    suspend fun deleteNotificationById(id: String) = withContext(Dispatchers.IO) {
+        database.notificationDao().deleteNotificationById(id)
+    }
+
+    suspend fun clearAllNotifications() = withContext(Dispatchers.IO) {
+        database.notificationDao().clearAllNotifications()
+    }
+
+    suspend fun insertRevisionSkip(skip: RevisionSkipEntity) = withContext(Dispatchers.IO) {
+        database.revisionSkipDao().insertSkip(skip)
+    }
+
+    suspend fun getSkipCountForChapter(subjectName: String, chapterName: String): Int = withContext(Dispatchers.IO) {
+        database.revisionSkipDao().getSkipCountForChapter(subjectName, chapterName)
+    }
+
+    suspend fun deleteRevisionSkip(skip: RevisionSkipEntity) = withContext(Dispatchers.IO) {
+        database.revisionSkipDao().deleteSkip(skip)
+    }
+
+    suspend fun clearAllRevisionSkips() = withContext(Dispatchers.IO) {
+        database.revisionSkipDao().clearAllSkips()
+    }
 
     suspend fun ensureBanglaSyllabusSeeded() = withContext(Dispatchers.IO) {
         // First, clean up duplicate subjects in Room DB if any exist

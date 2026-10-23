@@ -712,20 +712,27 @@ fun TimerScreen(
                             warningMessage = "Please select a chapter before starting your focus session."
                             showSelectionWarningDialog = true
                         } else {
-                            viewModel.timerEngine.configureSession(
-                                mode = selectedMode,
-                                subject = selectedSubject,
-                                selectedChapter = selectedChapter,
-                                topic = topicText,
-                                goal = goalText,
-                                durationMinutes = selectedDurationMinutes,
-                                pomodoroFocusMin = pomodoroFocusMin,
-                                pomodoroShortBreakMin = pomodoroShortBreakMin,
-                                pomodoroLongBreakMin = pomodoroLongBreakMin,
-                                pomodoroRounds = pomodoroRounds,
-                                autoStartBreaks = autoStartBreaks
-                            )
-                            viewModel.timerEngine.startSession()
+                            val (isBlocked, blockReason) = viewModel.isTimerBlockedFor(selectedSubject, selectedChapter)
+                            if (isBlocked) {
+                                warningTitle = "Mandatory Revision Required"
+                                warningMessage = blockReason
+                                showSelectionWarningDialog = true
+                            } else {
+                                viewModel.timerEngine.configureSession(
+                                    mode = selectedMode,
+                                    subject = selectedSubject,
+                                    selectedChapter = selectedChapter,
+                                    topic = topicText,
+                                    goal = goalText,
+                                    durationMinutes = selectedDurationMinutes,
+                                    pomodoroFocusMin = pomodoroFocusMin,
+                                    pomodoroShortBreakMin = pomodoroShortBreakMin,
+                                    pomodoroLongBreakMin = pomodoroLongBreakMin,
+                                    pomodoroRounds = pomodoroRounds,
+                                    autoStartBreaks = autoStartBreaks
+                                )
+                                viewModel.timerEngine.startSession()
+                            }
                         }
                     },
                     modifier = Modifier
