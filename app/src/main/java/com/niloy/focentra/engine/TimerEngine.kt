@@ -322,6 +322,109 @@ class TimerEngine private constructor(
         playCompletionSignals()
     }
 
+    fun finishAndSaveSessionDirectly(isEarly: Boolean = false) {
+        if (_uiState.value.status != TimerStatus.RUNNING && _uiState.value.status != TimerStatus.PAUSED) {
+            return
+        }
+        stopTicker()
+        val now = System.currentTimeMillis()
+        var finalFocused = priorFocusedSeconds
+        var finalPaused = priorPausedSeconds
+
+        if (_uiState.value.status == TimerStatus.RUNNING) {
+            finalFocused += (now - runningSegmentStartMs) / 1000
+        } else if (_uiState.value.status == TimerStatus.PAUSED) {
+            finalPaused += (now - pauseSegmentStartMs) / 1000
+        }
+
+        val totalDuration = finalFocused + finalPaused
+        val currentState = _uiState.value
+        val sessionTotals = if (currentState.mode == SessionMode.POMODORO) {
+            completedPomodoroTotals.includePhase(currentState.pomodoroPhase, finalFocused, finalPaused)
+        } else {
+            PomodoroSessionTotals(
+                focusedSeconds = finalFocused,
+                pausedSeconds = finalPaused
+            )
+        }
+        val sessionDuration = if (currentState.mode == SessionMode.POMODORO) {
+            sessionTotals.durationSeconds
+        } else {
+            totalDuration
+        }
+
+        val distractionSummary = currentState.distractions
+            .groupBy { it.category }
+            .map { "${it.key}: ${it.value.size}" }
+            .joinToString(", ")
+
+        val safeFocused = sessionTotals.focusedSeconds.coerceAtLeast(1L)
+        val safeDuration = sessionDuration.coerceAtLeast(1L)
+
+        val sessionEntity = StudySessionEntity(
+            startTime = if (sessionStartMs > 0) sessionStartMs else now - (safeDuration * 1000),
+            endTime = now,
+            durationSeconds = safeDuration,
+            actualFocusedSeconds = safeFocused,
+            pausedSeconds = sessionTotals.pausedSeconds,
+            sessionType = currentState.mode.name,
+            subject = currentState.subject,
+            topic = currentState.topic,
+            goal = currentState.goal,
+            tags = currentState.tags.joinToString(","),
+            distractionCount = currentState.distractionCount,
+            distractionDetails = distractionSummary,
+            completionStatus = if (isEarly) "EARLY_FINISH" else "COMPLETED"
+        )
+
+        runBlocking(Dispatchers.IO) {
+            if (sessionEntity.topic.contains("Revision", ignoreCase = true) || sessionEntity.sessionType == "REVISION") {
+                val chapter = currentState.selectedChapter.ifBlank { sessionEntity.topic.ifBlank { "General Chapter" } }
+                saveRevisionRecordDirectly(sessionEntity, chapter)
+            } else {
+                repository.insertSession(sessionEntity)
+            }
+        }
+
+        _uiState.value = currentState.copy(
+            status = TimerStatus.IDLE,
+            focusedSeconds = 0L,
+            pausedSeconds = 0L,
+            elapsedSeconds = 0L,
+            showCompletionSheet = false,
+            completedSessionData = null
+        )
+
+        updateServiceState(TimerStatus.IDLE)
+        playCompletionSignals()
+    }
+
+    private fun saveRevisionRecordDirectly(session: StudySessionEntity, chapterName: String) {
+        try {
+            val rhJson = runBlocking(Dispatchers.IO) { repository.getSetting("revision_history_json", "") }
+            val array = if (rhJson.isNotBlank()) org.json.JSONArray(rhJson) else org.json.JSONArray()
+            val durMins = (session.actualFocusedSeconds / 60).toInt().coerceAtLeast(1)
+            val newObj = org.json.JSONObject().apply {
+                put("id", java.util.UUID.randomUUID().toString())
+                put("subjectName", session.subject.ifBlank { "General" })
+                put("chapterName", if (chapterName.isNotBlank()) chapterName else "General Chapter")
+                put("durationMinutes", durMins)
+                put("startTime", session.startTime)
+                put("endTime", session.endTime)
+                put("timestamp", session.endTime)
+                put("revisionStage", if (session.topic.isNotBlank()) session.topic else "Revision")
+            }
+            val newArray = org.json.JSONArray()
+            newArray.put(newObj)
+            for (i in 0 until array.length()) {
+                newArray.put(array.get(i))
+            }
+            runBlocking(Dispatchers.IO) { repository.setSetting("revision_history_json", newArray.toString()) }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     fun saveCompletedSessionWithFeedback(
         productivityRating: Int,
         mood: String,

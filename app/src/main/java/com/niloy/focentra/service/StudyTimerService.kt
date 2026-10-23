@@ -153,8 +153,30 @@ class StudyTimerService : Service() {
         when (action) {
             ACTION_PAUSE -> engine?.pauseSession()
             ACTION_RESUME -> engine?.resumeSession()
-            ACTION_FINISH -> engine?.finishSession(isEarly = false)
+            ACTION_FINISH -> engine?.finishAndSaveSessionDirectly(isEarly = false)
             ACTION_STOP -> engine?.cancelSession()
+        }
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        autoFinishAndSaveActiveSession()
+        stopSelf()
+    }
+
+    override fun onDestroy() {
+        autoFinishAndSaveActiveSession()
+        super.onDestroy()
+    }
+
+    private fun autoFinishAndSaveActiveSession() {
+        val app = applicationContext as? com.niloy.focentra.FocentraApp
+        val engine = app?.timerEngine
+        if (engine != null) {
+            val status = engine.uiState.value.status
+            if (status == TimerStatus.RUNNING || status == TimerStatus.PAUSED) {
+                engine.finishAndSaveSessionDirectly(isEarly = false)
+            }
         }
     }
 
