@@ -154,3 +154,36 @@ data class ChapterEntity(
     val isRevision2Completed: Boolean = false,
     val orderIndex: Int = 0
 )
+
+@Entity(
+    tableName = "notifications",
+    indices = [Index(value = ["timestamp"])]
+)
+data class NotificationEntity(
+    @PrimaryKey
+    val id: String,
+    val type: String,
+    val title: String,
+    val message: String,
+    val subjectName: String = "",
+    val chapterName: String = "",
+    val timestamp: Long = System.currentTimeMillis(),
+    val isRead: Boolean = false
+)
+
+@Entity(
+    tableName = "revision_skips",
+    indices = [
+        Index(value = ["subjectName"]),
+        Index(value = ["chapterName"])
+    ]
+)
+data class RevisionSkipEntity(
+    @PrimaryKey
+    val id: String,
+    val subjectName: String,
+    val chapterName: String,
+    val reason: String,
+    val skippedAtTimestamp: Long = System.currentTimeMillis(),
+    val scheduledRecapTimestamp: Long
+)

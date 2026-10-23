@@ -32,9 +32,11 @@ data class SyllabusData(
         ReminderEntity::class,
         SettingEntity::class,
         StudyTaskEntity::class,
-        ChapterEntity::class
+        ChapterEntity::class,
+        NotificationEntity::class,
+        RevisionSkipEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -48,6 +50,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun settingDao(): SettingDao
     abstract fun taskDao(): StudyTaskDao
     abstract fun chapterDao(): ChapterDao
+    abstract fun notificationDao(): NotificationDao
+    abstract fun revisionSkipDao(): RevisionSkipDao
 
     companion object {
         @Volatile
@@ -83,6 +87,16 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS `notifications` (`id` TEXT NOT NULL, `type` TEXT NOT NULL, `title` TEXT NOT NULL, `message` TEXT NOT NULL, `subjectName` TEXT NOT NULL, `chapterName` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, `isRead` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_notifications_timestamp` ON `notifications` (`timestamp`)")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `revision_skips` (`id` TEXT NOT NULL, `subjectName` TEXT NOT NULL, `chapterName` TEXT NOT NULL, `reason` TEXT NOT NULL, `skippedAtTimestamp` INTEGER NOT NULL, `scheduledRecapTimestamp` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_revision_skips_subjectName` ON `revision_skips` (`subjectName`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_revision_skips_chapterName` ON `revision_skips` (`chapterName`)")
+            }
+        }
+
         fun getDatabase(context: Context, scope: CoroutineScope = CoroutineScope(Dispatchers.IO)): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -90,7 +104,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "focentra_database.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .fallbackToDestructiveMigration()
                     .addCallback(DatabaseCallback(scope))
                     .build()

@@ -5,6 +5,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,17 +22,20 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.niloy.focentra.data.local.entity.ChapterEntity
+import com.niloy.focentra.data.local.entity.RevisionSkipEntity
 import com.niloy.focentra.engine.SessionMode
 import com.niloy.focentra.engine.TimerStatus
 import com.niloy.focentra.ui.components.TimerProgressRing
 import com.niloy.focentra.ui.components.parseColorHex
 import com.niloy.focentra.viewmodel.MainViewModel
+import com.niloy.focentra.viewmodel.NotificationType
 import com.niloy.focentra.viewmodel.RevisionRecord
 import java.text.SimpleDateFormat
 import java.util.*
@@ -128,14 +132,14 @@ fun RevisionHubScreen(
             transitionSpec = {
                 val isForward = targetState > initialState
                 (
-                    fadeIn(animationSpec = tween(260, easing = androidx.compose.animation.core.FastOutSlowInEasing)) +
+                    fadeIn(animationSpec = tween(260, easing = FastOutSlowInEasing)) +
                         slideInHorizontally(
-                            animationSpec = tween(320, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                            animationSpec = tween(320, easing = FastOutSlowInEasing)
                         ) { width -> if (isForward) width / 12 else -width / 12 }
                 ) togetherWith (
-                    fadeOut(animationSpec = tween(180, easing = androidx.compose.animation.core.FastOutSlowInEasing)) +
+                    fadeOut(animationSpec = tween(180, easing = FastOutSlowInEasing)) +
                         slideOutHorizontally(
-                            animationSpec = tween(280, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                            animationSpec = tween(280, easing = FastOutSlowInEasing)
                         ) { width -> if (isForward) -width / 12 else width / 12 }
                 )
             },
@@ -155,6 +159,8 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
     val subjects by viewModel.subjects.collectAsStateWithLifecycle()
     val chapters by viewModel.chapters.collectAsStateWithLifecycle()
     val timerState by viewModel.timerEngine.uiState.collectAsStateWithLifecycle()
+    val activeNotifications by viewModel.activeNotifications.collectAsStateWithLifecycle()
+    val dbRevisionSkips by viewModel.dbRevisionSkips.collectAsStateWithLifecycle()
 
     var selectedSubject by remember { mutableStateOf(subjects.firstOrNull()?.name ?: "") }
     var selectedChapter by remember { mutableStateOf("") }
@@ -166,6 +172,35 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
     var pendingSaveData by remember { mutableStateOf<Triple<String, String, Int>?>(null) }
     var showSaveDialog by remember { mutableStateOf(false) }
     var showCancelConfirmDialog by remember { mutableStateOf(false) }
+    var skipDialogData by remember { mutableStateOf<Pair<String, String>?>(null) }
+
+    val pendingRevision = remember(activeNotifications) {
+        activeNotifications.firstOrNull { it.type == NotificationType.REVISION_DUE }
+    }
+
+    if (skipDialogData != null) {
+        val (sub, ch) = skipDialogData!!
+        val currentSkips = dbRevisionSkips.count {
+            it.subjectName.equals(sub, ignoreCase = true) && it.chapterName.equals(ch, ignoreCase = true)
+        }
+        SkipRevisionDialog(
+            subjectName = sub,
+            chapterName = ch,
+            currentSkipCount = currentSkips,
+            onDismiss = { skipDialogData = null },
+            onConfirmSkip = { reason, recapTs ->
+                viewModel.recordRevisionSkip(sub, ch, reason, recapTs) { success, msg ->
+                    if (success) {
+                        skipDialogData = null
+                    } else {
+                        warningTitle = "Cannot Skip Task"
+                        warningMessage = msg
+                        showSelectionWarningDialog = true
+                    }
+                }
+            }
+        )
+    }
 
     if (showCancelConfirmDialog) {
         AlertDialog(
@@ -281,6 +316,93 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Pending Revision Task Banner (if revision due)
+        if (pendingRevision != null) {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f), RoundedCornerShape(20.dp))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Autorenew,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = "Mandatory Revision Due",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    Text(
+                        text = "${pendingRevision.subjectName} -> ${pendingRevision.chapterName}",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Text(
+                        text = pendingRevision.message,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                skipDialogData = Pair(pendingRevision.subjectName, pendingRevision.chapterName)
+                            },
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Skip Task")
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Button(
+                            onClick = {
+                                if (timerState.status == TimerStatus.RUNNING || timerState.status == TimerStatus.PAUSED) {
+                                    viewModel.timerEngine.cancelSession()
+                                    viewModel.timerEngine.dismissCompletionSheet()
+                                }
+                                viewModel.timerEngine.configureSession(
+                                    mode = SessionMode.STOPWATCH,
+                                    subject = pendingRevision.subjectName,
+                                    selectedChapter = pendingRevision.chapterName,
+                                    topic = "Mandatory Revision"
+                                )
+                                viewModel.timerEngine.startSession()
+                            },
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Start 1h Revision")
+                        }
+                    }
+                }
+            }
+        }
+
         // Active Stopwatch Timer Ring inside Revision Hub
         if (timerState.status == TimerStatus.RUNNING || timerState.status == TimerStatus.PAUSED) {
             Card(
@@ -406,17 +528,24 @@ private fun RevisionTimerSection(viewModel: MainViewModel) {
                         warningMessage = "Please select a chapter before starting your revision session."
                         showSelectionWarningDialog = true
                     } else {
-                        if (timerState.status == TimerStatus.RUNNING || timerState.status == TimerStatus.PAUSED) {
-                            viewModel.timerEngine.cancelSession()
-                            viewModel.timerEngine.dismissCompletionSheet()
+                        val (isBlocked, blockReason) = viewModel.isTimerBlockedFor(selectedSubject, selectedChapter)
+                        if (isBlocked) {
+                            warningTitle = "Mandatory Revision Required"
+                            warningMessage = blockReason
+                            showSelectionWarningDialog = true
+                        } else {
+                            if (timerState.status == TimerStatus.RUNNING || timerState.status == TimerStatus.PAUSED) {
+                                viewModel.timerEngine.cancelSession()
+                                viewModel.timerEngine.dismissCompletionSheet()
+                            }
+                            viewModel.timerEngine.configureSession(
+                                mode = SessionMode.STOPWATCH,
+                                subject = selectedSubject,
+                                selectedChapter = selectedChapter,
+                                topic = "Revision Stopwatch"
+                            )
+                            viewModel.timerEngine.startSession()
                         }
-                        viewModel.timerEngine.configureSession(
-                            mode = SessionMode.STOPWATCH,
-                            subject = selectedSubject,
-                            selectedChapter = selectedChapter,
-                            topic = "Revision Stopwatch"
-                        )
-                        viewModel.timerEngine.startSession()
                     }
                 },
                 modifier = Modifier
@@ -759,9 +888,18 @@ private fun ScheduledRevisionCard(
 private fun RevisionHistorySection(viewModel: MainViewModel) {
     val history by viewModel.revisionHistory.collectAsStateWithLifecycle()
     val subjects by viewModel.subjects.collectAsStateWithLifecycle()
+    val dbRevisionSkips by viewModel.dbRevisionSkips.collectAsStateWithLifecycle()
 
-    var selectedSubjectFilter by remember { mutableStateOf("All") }
+    var selectedSubjectFilter by remember { mutableStateOf("All") } // "All", "Skip", or Subject Name
     var itemToDelete by remember { mutableStateOf<RevisionRecord?>(null) }
+    var selectedSkipDetail by remember { mutableStateOf<RevisionSkipEntity?>(null) }
+
+    if (selectedSkipDetail != null) {
+        SkippedTaskDetailDialog(
+            skip = selectedSkipDetail!!,
+            onDismiss = { selectedSkipDetail = null }
+        )
+    }
 
     if (itemToDelete != null) {
         AlertDialog(
@@ -811,7 +949,7 @@ private fun RevisionHistorySection(viewModel: MainViewModel) {
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Subject Filter Chips Row
+        // Subject Filter Chips Row with "Skip" filter placed right after "All"
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
@@ -823,6 +961,22 @@ private fun RevisionHistorySection(viewModel: MainViewModel) {
                     selected = selectedSubjectFilter == "All",
                     onClick = { selectedSubjectFilter = "All" },
                     label = { Text("All") },
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+            item {
+                FilterChip(
+                    selected = selectedSubjectFilter == "Skip",
+                    onClick = { selectedSubjectFilter = "Skip" },
+                    label = { Text("Skip") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.EventBusy,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    },
                     shape = RoundedCornerShape(12.dp)
                 )
             }
@@ -845,7 +999,47 @@ private fun RevisionHistorySection(viewModel: MainViewModel) {
             }
         }
 
-        if (filteredHistory.isEmpty()) {
+        if (selectedSubjectFilter == "Skip") {
+            if (dbRevisionSkips.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.EventBusy,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.size(64.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "No Skipped Revision Tasks",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    contentPadding = PaddingValues(bottom = 100.dp)
+                ) {
+                    items(dbRevisionSkips, key = { it.id }) { skipItem ->
+                        SkippedRevisionCard(
+                            skip = skipItem,
+                            onClick = { selectedSkipDetail = skipItem }
+                        )
+                    }
+                }
+            }
+        } else if (filteredHistory.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -959,4 +1153,331 @@ private fun RevisionHistoryCard(
             }
         }
     }
+}
+
+@Composable
+private fun SkippedRevisionCard(
+    skip: RevisionSkipEntity,
+    onClick: () -> Unit
+) {
+    val dateStr = remember(skip.skippedAtTimestamp) {
+        SimpleDateFormat("MMM d, yyyy • hh:mm a", Locale.getDefault()).format(Date(skip.skippedAtTimestamp))
+    }
+
+    Card(
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .clickable { onClick() }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "${skip.subjectName} -> ${skip.chapterName}",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Skipped on $dateStr",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    text = "Skipped",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun SkipRevisionDialog(
+    subjectName: String,
+    chapterName: String,
+    currentSkipCount: Int,
+    onDismiss: () -> Unit,
+    onConfirmSkip: (reason: String, recapTimestamp: Long) -> Unit
+) {
+    val context = LocalContext.current
+    var reasonText by remember { mutableStateOf("") }
+    var selectedCal by remember {
+        mutableStateOf(Calendar.getInstance().apply { add(Calendar.DAY_OF_MONTH, 1); set(Calendar.HOUR_OF_DAY, 9); set(Calendar.MINUTE, 0) })
+    }
+    var errorMessage by remember { mutableStateOf("") }
+
+    val dateFormat = remember(selectedCal.timeInMillis) {
+        SimpleDateFormat("EEE, MMM d, yyyy 'at' hh:mm a", Locale.getDefault()).format(selectedCal.time)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (currentSkipCount >= 5) return@Button
+                    if (reasonText.isBlank()) {
+                        errorMessage = "Please enter the reason for skipping."
+                    } else if (selectedCal.timeInMillis <= System.currentTimeMillis()) {
+                        errorMessage = "Recap time must be in the future."
+                    } else {
+                        onConfirmSkip(reasonText, selectedCal.timeInMillis)
+                    }
+                },
+                enabled = currentSkipCount < 5,
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text("Confirm Skip")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+        title = {
+            Text(
+                text = "Skip Revision Task",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "$subjectName -> $chapterName",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                        )
+                        Text(
+                            text = "Gaps taken so far: $currentSkipCount/5",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = if (currentSkipCount >= 5) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                if (currentSkipCount >= 5) {
+                    Text(
+                        text = "Maximum 5 skips allowed for this chapter! You must complete 15 hours of revision for this chapter before starting other subjects.",
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                } else {
+                    OutlinedTextField(
+                        value = reasonText,
+                        onValueChange = {
+                            reasonText = it
+                            errorMessage = ""
+                        },
+                        label = { Text("Reason for Skipping (Required)") },
+                        placeholder = { Text("e.g. Tomorrow Chemistry 1st Paper exam...") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        maxLines = 3
+                    )
+
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = "Select Recap Date & Time (Required):",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                        )
+
+                        OutlinedButton(
+                            onClick = {
+                                val dpd = android.app.DatePickerDialog(
+                                    context,
+                                    { _, year, month, dayOfMonth ->
+                                        val newC = Calendar.getInstance().apply { timeInMillis = selectedCal.timeInMillis }
+                                        newC.set(Calendar.YEAR, year)
+                                        newC.set(Calendar.MONTH, month)
+                                        newC.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+                                        selectedCal = newC
+                                        errorMessage = ""
+                                    },
+                                    selectedCal.get(Calendar.YEAR),
+                                    selectedCal.get(Calendar.MONTH),
+                                    selectedCal.get(Calendar.DAY_OF_MONTH)
+                                )
+                                dpd.show()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(Icons.Default.Event, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Select Date (${SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(selectedCal.time)})")
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                val tpd = android.app.TimePickerDialog(
+                                    context,
+                                    { _, hourOfDay, minute ->
+                                        val newC = Calendar.getInstance().apply { timeInMillis = selectedCal.timeInMillis }
+                                        newC.set(Calendar.HOUR_OF_DAY, hourOfDay)
+                                        newC.set(Calendar.MINUTE, minute)
+                                        selectedCal = newC
+                                        errorMessage = ""
+                                    },
+                                    selectedCal.get(Calendar.HOUR_OF_DAY),
+                                    selectedCal.get(Calendar.MINUTE),
+                                    false
+                                )
+                                tpd.show()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Select Time (${SimpleDateFormat("hh:mm a", Locale.getDefault()).format(selectedCal.time)})")
+                        }
+
+                        Text(
+                            text = "Scheduled: $dateFormat",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    if (errorMessage.isNotBlank()) {
+                        Text(
+                            text = errorMessage,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            }
+        }
+    )
+}
+
+@Composable
+fun SkippedTaskDetailDialog(
+    skip: RevisionSkipEntity,
+    onDismiss: () -> Unit
+) {
+    val skippedDateStr = remember(skip.skippedAtTimestamp) {
+        SimpleDateFormat("EEEE, MMM d, yyyy 'at' hh:mm a", Locale.getDefault()).format(Date(skip.skippedAtTimestamp))
+    }
+    val recapDateStr = remember(skip.scheduledRecapTimestamp) {
+        SimpleDateFormat("EEEE, MMM d, yyyy 'at' hh:mm a", Locale.getDefault()).format(Date(skip.scheduledRecapTimestamp))
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text("OK")
+            }
+        },
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.EventBusy,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Skipped Task Details",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "${skip.subjectName} -> ${skip.chapterName}",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                Text(
+                    text = "Skip Reason:",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = skip.reason,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                HorizontalDivider(thickness = 0.5.dp)
+
+                Text(
+                    text = "When Skipped:",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = skippedDateStr,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Text(
+                    text = "Scheduled Recap:",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = recapDateStr,
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    )
 }

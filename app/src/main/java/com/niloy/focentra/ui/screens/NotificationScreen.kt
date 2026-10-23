@@ -30,13 +30,46 @@ fun NotificationScreen(
     viewModel: MainViewModel,
     modifier: Modifier = Modifier
 ) {
+    val dbNotifications by viewModel.dbNotifications.collectAsStateWithLifecycle()
     val activeNotifications by viewModel.activeNotifications.collectAsStateWithLifecycle()
     val seenNotificationIds by viewModel.seenNotificationIds.collectAsStateWithLifecycle()
     val notificationStateLoaded by viewModel.notificationStateLoaded.collectAsStateWithLifecycle()
 
-    LaunchedEffect(notificationStateLoaded, activeNotifications.map { it.id }) {
+    var selectedFilter by remember { mutableStateOf("All") }
+
+    val allList = remember(dbNotifications, activeNotifications) {
+        val mappedDb = dbNotifications.map { entity ->
+            val type = try {
+                NotificationType.valueOf(entity.type)
+            } catch (e: Exception) {
+                NotificationType.MOTIVATION
+            }
+            AppNotification(
+                id = entity.id,
+                type = type,
+                title = entity.title,
+                message = entity.message,
+                subjectName = entity.subjectName,
+                chapterName = entity.chapterName,
+                timestamp = entity.timestamp
+            )
+        }
+        (mappedDb + activeNotifications).distinctBy { it.id }.sortedByDescending { it.timestamp }
+    }
+
+    val filteredNotifications = remember(allList, selectedFilter) {
+        when (selectedFilter) {
+            "Daily Target" -> allList.filter { it.type == NotificationType.GOAL_WARNING || it.type == NotificationType.DAILY_TARGET }
+            "Revision Due" -> allList.filter { it.type == NotificationType.REVISION_DUE || it.type == NotificationType.INACTIVITY_WARNING }
+            "Recap Reminder" -> allList.filter { it.type == NotificationType.RECAP_REMINDER }
+            "Motivation" -> allList.filter { it.type == NotificationType.MOTIVATION }
+            else -> allList
+        }
+    }
+
+    LaunchedEffect(notificationStateLoaded, filteredNotifications.map { it.id }) {
         if (notificationStateLoaded) {
-            viewModel.markNotificationsAsSeen(activeNotifications.map { it.id }.toSet())
+            viewModel.markNotificationsAsSeen(filteredNotifications.map { it.id }.toSet())
         }
     }
 
@@ -48,7 +81,25 @@ fun NotificationScreen(
     ) {
         Spacer(modifier = Modifier.height(12.dp))
 
-        if (activeNotifications.isEmpty()) {
+        // Notification Category Filter Row
+        androidx.compose.foundation.lazy.LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp)
+        ) {
+            val filters = listOf("All", "Daily Target", "Revision Due", "Recap Reminder", "Motivation")
+            items(filters) { filter ->
+                FilterChip(
+                    selected = selectedFilter == filter,
+                    onClick = { selectedFilter = filter },
+                    label = { Text(filter) },
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        }
+
+        if (filteredNotifications.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -83,7 +134,7 @@ fun NotificationScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(bottom = 100.dp)
             ) {
-                items(activeNotifications, key = { it.id }) { notif ->
+                items(filteredNotifications, key = { it.id }) { notif ->
                     val isUnseen = notificationStateLoaded && notif.id !in seenNotificationIds
                     NotificationCardItem(
                         notification = notif,
@@ -119,14 +170,16 @@ private fun NotificationCardItem(
     val iconVector = when (notification.type) {
         NotificationType.REVISION_DUE -> Icons.Default.Autorenew
         NotificationType.INACTIVITY_WARNING -> Icons.Default.Warning
-        NotificationType.GOAL_WARNING -> Icons.Default.AdsClick
+        NotificationType.GOAL_WARNING, NotificationType.DAILY_TARGET -> Icons.Default.AdsClick
+        NotificationType.RECAP_REMINDER -> Icons.Default.Schedule
         NotificationType.MOTIVATION -> Icons.Default.Lightbulb
     }
 
     val iconTint = when (notification.type) {
         NotificationType.REVISION_DUE -> MaterialTheme.colorScheme.primary
         NotificationType.INACTIVITY_WARNING -> Color(0xFFF59E0B)
-        NotificationType.GOAL_WARNING -> Color(0xFF10B981)
+        NotificationType.GOAL_WARNING, NotificationType.DAILY_TARGET -> Color(0xFF10B981)
+        NotificationType.RECAP_REMINDER -> Color(0xFF818CF8)
         NotificationType.MOTIVATION -> MaterialTheme.colorScheme.primary
     }
 

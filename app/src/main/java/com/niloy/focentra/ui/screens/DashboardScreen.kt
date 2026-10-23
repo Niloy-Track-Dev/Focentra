@@ -911,6 +911,7 @@ fun DashboardScreen(
             subjects = subjectNames,
             chapters = chapters,
             mode = mode,
+            viewModel = viewModel,
             onDismiss = { pendingQuickTimerMode = null },
             onStart = { selectedSubj, selectedChap ->
                 viewModel.timerEngine.configureSession(
@@ -932,6 +933,7 @@ fun QuickTimerSubjectDialog(
     subjects: List<String>,
     chapters: List<ChapterEntity>,
     mode: SessionMode,
+    viewModel: MainViewModel,
     onDismiss: () -> Unit,
     onStart: (subject: String, chapter: String) -> Unit
 ) {
@@ -1040,7 +1042,12 @@ fun QuickTimerSubjectDialog(
                     } else if (selectedChapter.isBlank()) {
                         warningText = "Please select a chapter."
                     } else {
-                        onStart(finalSubject, selectedChapter)
+                        val (isBlocked, blockReason) = viewModel.isTimerBlockedFor(finalSubject, selectedChapter)
+                        if (isBlocked) {
+                            warningText = blockReason
+                        } else {
+                            onStart(finalSubject, selectedChapter)
+                        }
                     }
                 },
                 shape = RoundedCornerShape(12.dp)

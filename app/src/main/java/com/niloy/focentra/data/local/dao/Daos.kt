@@ -276,3 +276,42 @@ interface SettingDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun setSettings(settings: List<SettingEntity>)
 }
+
+@Dao
+interface NotificationDao {
+    @Query("SELECT * FROM notifications ORDER BY timestamp DESC")
+    fun getAllNotificationsFlow(): Flow<List<NotificationEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertNotification(notification: NotificationEntity)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertNotifications(notifications: List<NotificationEntity>)
+
+    @Query("UPDATE notifications SET isRead = 1")
+    suspend fun markAllAsRead()
+
+    @Query("DELETE FROM notifications WHERE id = :id")
+    suspend fun deleteNotificationById(id: String)
+
+    @Query("DELETE FROM notifications")
+    suspend fun clearAllNotifications()
+}
+
+@Dao
+interface RevisionSkipDao {
+    @Query("SELECT * FROM revision_skips ORDER BY skippedAtTimestamp DESC")
+    fun getAllSkipsFlow(): Flow<List<RevisionSkipEntity>>
+
+    @Query("SELECT COUNT(*) FROM revision_skips WHERE subjectName = :subjectName AND chapterName = :chapterName")
+    suspend fun getSkipCountForChapter(subjectName: String, chapterName: String): Int
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSkip(skip: RevisionSkipEntity)
+
+    @Delete
+    suspend fun deleteSkip(skip: RevisionSkipEntity)
+
+    @Query("DELETE FROM revision_skips")
+    suspend fun clearAllSkips()
+}
