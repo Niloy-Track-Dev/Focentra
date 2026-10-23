@@ -169,11 +169,19 @@ fun FullScreenFocusScreen(
                                 .background(MaterialTheme.colorScheme.primary)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
+                        val focusContextParts = remember(timerState.subject, timerState.selectedChapter, timerState.topic, timerState.goal) {
+                            listOfNotNull(
+                                timerState.subject.ifBlank { null },
+                                timerState.selectedChapter.ifBlank { null },
+                                timerState.topic.ifBlank { null }?.let { "Topic: $it" },
+                                timerState.goal.ifBlank { null }?.let { "Goal: $it" }
+                            ).joinToString(" • ")
+                        }
                         Text(
-                            text = timerState.subject + if (timerState.topic.isNotBlank()) " • ${timerState.topic}" else "",
+                            text = focusContextParts,
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
+                            maxLines = 2,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                     }

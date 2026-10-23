@@ -10,8 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +34,9 @@ fun AnalyticsScreen(
     val personalRecords by viewModel.personalRecords.collectAsStateWithLifecycle()
     val streakInfo by viewModel.streakInfo.collectAsStateWithLifecycle()
     val heatmapData by viewModel.heatmapData.collectAsStateWithLifecycle()
+    val sessions by viewModel.sessions.collectAsStateWithLifecycle()
+    val chapters by viewModel.chapters.collectAsStateWithLifecycle()
+    val subjects by viewModel.subjects.collectAsStateWithLifecycle()
 
     val totalHrs = periodStats.totalFocusedSeconds / 3600
     val totalMins = (periodStats.totalFocusedSeconds % 3600) / 60
@@ -325,6 +327,15 @@ fun AnalyticsScreen(
             }
         }
 
+        // Chapter-Wise Study Report
+        item {
+            ChapterStudyReportSection(
+                sessions = sessions,
+                chapters = chapters,
+                subjects = subjects
+            )
+        }
+
         // Heatmap Matrix
         item {
             HeatmapGrid(cells = heatmapData)
@@ -534,6 +545,173 @@ fun AnalyticsScreen(
                                 maxLines = 1,
                                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
                             )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ChapterStudyReportSection(
+    sessions: List<com.niloy.focentra.data.local.entity.StudySessionEntity>,
+    chapters: List<com.niloy.focentra.data.local.entity.ChapterEntity>,
+    subjects: List<com.niloy.focentra.data.local.entity.SubjectEntity>
+) {
+    var selectedSubjectFilter by remember { mutableStateOf("All") }
+
+    val subjectNames = remember(subjects) { listOf("All") + subjects.map { it.name } }
+
+    val filteredChapters = remember(chapters, selectedSubjectFilter) {
+        if (selectedSubjectFilter == "All") chapters
+        else chapters.filter { it.subjectName.equals(selectedSubjectFilter, ignoreCase = true) }
+    }
+
+    val chapterStudyMap = remember(sessions, chapters) {
+        val map = mutableMapOf<Long, Long>()
+        sessions.forEach { s ->
+            val matchingCh = chapters.find { ch ->
+                ch.subjectName.equals(s.subject, ignoreCase = true) &&
+                    (s.topic.contains(ch.chapterName, ignoreCase = true) || ch.chapterName.contains(s.topic, ignoreCase = true) && s.topic.isNotBlank())
+            }
+            if (matchingCh != null) {
+                map[matchingCh.id] = (map[matchingCh.id] ?: 0L) + (s.actualFocusedSeconds / 60)
+            }
+        }
+        map
+    }
+
+    val maxChapterMins = (chapterStudyMap.values.maxOrNull() ?: 1L).coerceAtLeast(1L)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Analytics,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Text(
+                        text = "Chapter-Wise Study Report",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer
+                ) {
+                    Text(
+                        text = "${filteredChapters.size} Chapters",
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+
+            if (subjectNames.size > 2) {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(subjectNames) { subName ->
+                        FilterChip(
+                            selected = selectedSubjectFilter == subName,
+                            onClick = { selectedSubjectFilter = subName },
+                            label = { Text(subName, maxLines = 1) },
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                    }
+                }
+            }
+
+            if (filteredChapters.isEmpty()) {
+                Text(
+                    text = "No chapters found for selected subject.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 12.dp)
+                )
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    filteredChapters.take(12).forEach { ch ->
+                        val studiedMins = chapterStudyMap[ch.id] ?: 0L
+                        val hours = studiedMins / 60
+                        val mins = studiedMins % 60
+                        val progressRatio = (studiedMins.toFloat() / maxChapterMins).coerceIn(0f, 1f)
+
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(10.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = ch.chapterName,
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1,
+                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = ch.subjectName,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = if (studiedMins > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                                    ) {
+                                        Text(
+                                            text = if (hours > 0) "${hours}h ${mins}m" else "${mins}m",
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = if (studiedMins > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                LinearProgressIndicator(
+                                    progress = { progressRatio },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(6.dp)
+                                        .clip(RoundedCornerShape(3.dp)),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                )
+                            }
                         }
                     }
                 }

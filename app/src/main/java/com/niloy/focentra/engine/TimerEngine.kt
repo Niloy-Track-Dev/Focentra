@@ -46,6 +46,7 @@ data class TimerUiState(
     val selectedChapter: String = "",
     val topic: String = "",
     val goal: String = "",
+    val targetId: String = "",
     val tags: List<String> = emptyList(),
     val targetDurationSeconds: Long = 25 * 60L,
     val elapsedSeconds: Long = 0L, // Total time elapsed since start
@@ -135,6 +136,7 @@ class TimerEngine private constructor(
         selectedChapter: String = "",
         topic: String = "",
         goal: String = "",
+        targetId: String = "",
         tags: List<String> = emptyList(),
         durationMinutes: Int = 25,
         pomodoroFocusMin: Int = 25,
@@ -167,6 +169,7 @@ class TimerEngine private constructor(
             selectedChapter = selectedChapter,
             topic = topic,
             goal = goal,
+            targetId = targetId,
             tags = tags,
             targetDurationSeconds = targetSec,
             remainingSeconds = targetSec,
@@ -303,6 +306,7 @@ class TimerEngine private constructor(
             subject = currentState.subject,
             topic = currentState.topic,
             goal = currentState.goal,
+            targetId = currentState.targetId,
             tags = currentState.tags.joinToString(","),
             distractionCount = currentState.distractionCount,
             distractionDetails = distractionSummary,
@@ -371,6 +375,7 @@ class TimerEngine private constructor(
             subject = currentState.subject,
             topic = currentState.topic,
             goal = currentState.goal,
+            targetId = currentState.targetId,
             tags = currentState.tags.joinToString(","),
             distractionCount = currentState.distractionCount,
             distractionDetails = distractionSummary,
@@ -430,7 +435,8 @@ class TimerEngine private constructor(
         mood: String,
         energyLevel: String,
         notes: String,
-        location: String
+        location: String,
+        targetId: String = ""
     ) {
         val completed = _uiState.value.completedSessionData ?: return
         if (completed.topic.contains("Revision", ignoreCase = true) || completed.sessionType == "REVISION") {
@@ -448,6 +454,7 @@ class TimerEngine private constructor(
                 energyLevel = energyLevel,
                 notes = notes,
                 location = location,
+                targetId = targetId.ifBlank { completed.targetId },
                 updatedTimestamp = System.currentTimeMillis()
             )
             repository.insertSession(updated)

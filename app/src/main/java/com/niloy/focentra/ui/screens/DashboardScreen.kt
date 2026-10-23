@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,7 +22,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -74,6 +76,8 @@ fun DashboardScreen(
     val chapters by viewModel.chapters.collectAsStateWithLifecycle()
 
     var showAddExamDialog by remember { mutableStateOf(false) }
+    var showFocusNowDialog by remember { mutableStateOf(false) }
+    var focusNowTarget by remember { mutableStateOf<com.niloy.focentra.viewmodel.ExamTarget?>(null) }
     var targetToEdit by remember { mutableStateOf<com.niloy.focentra.viewmodel.ExamTarget?>(null) }
     var targetToDelete by remember { mutableStateOf<com.niloy.focentra.viewmodel.ExamTarget?>(null) }
     var pendingQuickTimerMode by remember { mutableStateOf<Pair<SessionMode, Int>?>(null) }
@@ -159,12 +163,8 @@ fun DashboardScreen(
                 onAddClick = { showAddExamDialog = true },
                 onEditTarget = { target -> targetToEdit = target },
                 onStartTimer = { target ->
-                    viewModel.timerEngine.configureSession(
-                        mode = SessionMode.STOPWATCH,
-                        subject = target.subject.split(",").firstOrNull()?.trim() ?: target.subject
-                    )
-                    viewModel.timerEngine.startSession()
-                    viewModel.navigateTo(NavigationTab.TIMER)
+                    focusNowTarget = target
+                    showFocusNowDialog = true
                 },
                 onDeleteTarget = { id ->
                     targetToDelete = examTargets.find { it.id == id }
@@ -852,6 +852,31 @@ fun DashboardScreen(
         }
     }
 
+    if (showFocusNowDialog) {
+        FocusNowStartDialog(
+            subjects = subjects,
+            chapters = chapters,
+            target = focusNowTarget,
+            onDismiss = {
+                showFocusNowDialog = false
+                focusNowTarget = null
+            },
+            onStart = { subj, chap, targetId ->
+                showFocusNowDialog = false
+                viewModel.timerEngine.configureSession(
+                    mode = SessionMode.STOPWATCH,
+                    subject = subj,
+                    selectedChapter = chap,
+                    goal = focusNowTarget?.title ?: "",
+                    targetId = targetId
+                )
+                viewModel.timerEngine.startSession()
+                viewModel.navigateTo(NavigationTab.TIMER)
+                focusNowTarget = null
+            }
+        )
+    }
+
     if (showAddExamDialog) {
         val availableSubjects = remember(subjects) { subjects.map { it.name }.filter { it.isNotBlank() } }
         AddExamTargetDialog(
@@ -1177,7 +1202,7 @@ fun ExamMilestoneCard(
     onDelete: () -> Unit,
     defaultExpanded: Boolean = false
 ) {
-    var isExpanded by remember { mutableStateOf(defaultExpanded) }
+    var isExpanded by rememberSaveable(target.id) { mutableStateOf(defaultExpanded) }
 
     val now = System.currentTimeMillis()
     val diffMs = target.targetDateEpochMs - now
@@ -1185,7 +1210,8 @@ fun ExamMilestoneCard(
     val hoursRemaining = if (diffMs > 0) ((diffMs % (1000L * 60 * 60 * 24)) / (1000L * 60 * 60)).toInt() else 0
 
     val relevantSessions = sessions.filter {
-        target.subject.equals("General", ignoreCase = true) || it.subject.equals(target.subject, ignoreCase = true)
+        (it.targetId.isNotBlank() && it.targetId == target.id) ||
+            (it.targetId.isBlank() && (target.subject.equals("General", ignoreCase = true) || it.subject.equals(target.subject, ignoreCase = true)))
     }
     val studiedSec = relevantSessions.sumOf { it.actualFocusedSeconds }
     val studiedHours = studiedSec / 3600f
@@ -1220,8 +1246,12 @@ fun ExamMilestoneCard(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            if (!isExpanded) {
-                // Collapsed View (photo_4)
+            AnimatedVisibility(
+                visible = !isExpanded,
+                enter = fadeIn(animationSpec = tween(250, easing = FastOutSlowInEasing)),
+                exit = fadeOut(animationSpec = tween(200, easing = FastOutSlowInEasing))
+            ) {
+                // Collapsed View
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1296,8 +1326,14 @@ fun ExamMilestoneCard(
                         )
                     }
                 }
-            } else {
-                // Expanded View (photo_3)
+            }
+
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = expandVertically(animationSpec = tween(300, easing = FastOutSlowInEasing)) + fadeIn(animationSpec = tween(250)),
+                exit = shrinkVertically(animationSpec = tween(300, easing = FastOutSlowInEasing)) + fadeOut(animationSpec = tween(200))
+            ) {
+                // Expanded View
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)

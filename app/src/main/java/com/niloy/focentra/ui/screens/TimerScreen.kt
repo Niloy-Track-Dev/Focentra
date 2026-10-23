@@ -40,6 +40,7 @@ fun TimerScreen(
     val subjects by viewModel.subjects.collectAsStateWithLifecycle()
     val chapters by viewModel.chapters.collectAsStateWithLifecycle()
     val presets by viewModel.presets.collectAsStateWithLifecycle()
+    val examTargets by viewModel.examTargets.collectAsStateWithLifecycle()
 
     var selectedMode by remember { mutableStateOf(SessionMode.COUNTDOWN) }
     var selectedSubject by remember { mutableStateOf("Mathematics") }
@@ -76,9 +77,10 @@ fun TimerScreen(
         if (completed != null) {
             SessionCompletionDialog(
                 session = completed,
+                examTargets = examTargets,
                 onDismiss = { viewModel.timerEngine.dismissCompletionSheet() },
-                onSave = { rating, mood, energy, notes, loc ->
-                    viewModel.timerEngine.saveCompletedSessionWithFeedback(rating, mood, energy, notes, loc)
+                onSave = { rating, mood, energy, notes, loc, targetId ->
+                    viewModel.timerEngine.saveCompletedSessionWithFeedback(rating, mood, energy, notes, loc, targetId)
                 }
             )
         }

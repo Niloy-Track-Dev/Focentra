@@ -233,21 +233,36 @@ object StatisticsEngine {
 
         // Smart Offline Insights
         val insights = mutableListOf<String>()
-        insights.add("Your focus score for this period is $calculatedFocusScore/100.")
-        if (mostStudiedSubject != "-") {
-            insights.add("«$mostStudiedSubject» was your primary focus area (${subjectStats.firstOrNull()?.percentage?.toInt() ?: 0}% of study time).")
+        insights.add("Overall Focus Score: $calculatedFocusScore/100 across $count focus sessions.")
+
+        if (subjectStats.isNotEmpty()) {
+            val totalSubHoursStr = subjectStats.take(4).joinToString(", ") { "${it.subject}: ${String.format(Locale.getDefault(), "%.1fh", it.focusedMinutes / 60f)}" }
+            insights.add("Subject Study Time: $totalSubHoursStr")
+
+            val topSub = subjectStats.first()
+            insights.add("Most Studied Subject This Week / Period: «${topSub.subject}» with ${String.format(Locale.getDefault(), "%.1f", topSub.focusedMinutes / 60f)} hours (${topSub.percentage.toInt()}% of total study time).")
         }
+
+        // Chapter level breakdown
+        val chapterMap = filtered.filter { it.topic.isNotBlank() }
+            .groupBy { "${it.subject} - ${it.topic}" }
+            .mapValues { entry -> entry.value.sumOf { it.actualFocusedSeconds } / 60 }
+
+        val topChapter = chapterMap.maxByOrNull { it.value }
+        if (topChapter != null && topChapter.value > 0) {
+            insights.add("Top Focused Chapter: «${topChapter.key}» (${topChapter.value / 60}h ${topChapter.value % 60}m studied).")
+        }
+
         if (totalFocusedSec >= 3600) {
-            insights.add("You study with highest concentration around $bestHourStr.")
+            insights.add("Peak Productivity Window: Highest concentration around $bestHourStr.")
         }
         if (mostProductiveDay != "-") {
-            insights.add("Your highest output was recorded on $mostProductiveDay.")
+            insights.add("Most Active Day: $mostProductiveDay recorded highest study volume.")
         }
-        insights.add("Average session duration: ${avgSec / 60}m across $count focus sessions.")
         if (totalDistractions == 0) {
-            insights.add("Clean flow! You logged zero distractions during this period.")
+            insights.add("Flawless Focus: Zero interruptions or distractions logged during this period!")
         } else {
-            insights.add("Logged $totalDistractions distractions total (${String.format("%.1f", totalDistractions.toFloat() / count)} per session).")
+            insights.add("Logged $totalDistractions distractions total (${String.format(Locale.getDefault(), "%.1f", totalDistractions.toFloat() / count)} avg/session).")
         }
 
         return PeriodStatistics(
