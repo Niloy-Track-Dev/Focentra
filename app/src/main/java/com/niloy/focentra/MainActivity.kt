@@ -51,6 +51,17 @@ class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
 
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        handleNotificationIntent(intent)
+    }
+
+    private fun handleNotificationIntent(intent: android.content.Intent?) {
+        if (intent?.getStringExtra("navigate_to") == "NOTIFICATIONS") {
+            viewModel.navigateTo(NavigationTab.NOTIFICATIONS)
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         viewModel.retrySystemNotifications()
@@ -59,6 +70,7 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        handleNotificationIntent(intent)
         enableEdgeToEdge()
 
         setContent {

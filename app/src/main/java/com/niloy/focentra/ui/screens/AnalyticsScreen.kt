@@ -1,7 +1,11 @@
 package com.niloy.focentra.ui.screens
 
 import android.content.Intent
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -559,14 +563,7 @@ fun ChapterStudyReportSection(
     chapters: List<com.niloy.focentra.data.local.entity.ChapterEntity>,
     subjects: List<com.niloy.focentra.data.local.entity.SubjectEntity>
 ) {
-    var selectedSubjectFilter by remember { mutableStateOf("All") }
-
-    val subjectNames = remember(subjects) { listOf("All") + subjects.map { it.name } }
-
-    val filteredChapters = remember(chapters, selectedSubjectFilter) {
-        if (selectedSubjectFilter == "All") chapters
-        else chapters.filter { it.subjectName.equals(selectedSubjectFilter, ignoreCase = true) }
-    }
+    val expandedSubjects = remember { mutableStateMapOf<Long, Boolean>() }
 
     val chapterStudyMap = remember(sessions, chapters) {
         val map = mutableMapOf<Long, Long>()
@@ -610,7 +607,7 @@ fun ChapterStudyReportSection(
                         modifier = Modifier.size(22.dp)
                     )
                     Text(
-                        text = "Chapter-Wise Study Report",
+                        text = "Chapter Report",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -621,7 +618,7 @@ fun ChapterStudyReportSection(
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     Text(
-                        text = "${filteredChapters.size} Chapters",
+                        text = "${chapters.size} Chapters",
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -629,88 +626,130 @@ fun ChapterStudyReportSection(
                 }
             }
 
-            if (subjectNames.size > 2) {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(subjectNames) { subName ->
-                        FilterChip(
-                            selected = selectedSubjectFilter == subName,
-                            onClick = { selectedSubjectFilter = subName },
-                            label = { Text(subName, maxLines = 1) },
-                            shape = RoundedCornerShape(10.dp)
-                        )
-                    }
-                }
-            }
-
-            if (filteredChapters.isEmpty()) {
+            if (subjects.isEmpty()) {
                 Text(
-                    text = "No chapters found for selected subject.",
+                    text = "No subjects found.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 12.dp)
                 )
             } else {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    filteredChapters.take(12).forEach { ch ->
-                        val studiedMins = chapterStudyMap[ch.id] ?: 0L
-                        val hours = studiedMins / 60
-                        val mins = studiedMins % 60
-                        val progressRatio = (studiedMins.toFloat() / maxChapterMins).coerceIn(0f, 1f)
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    subjects.forEach { subject ->
+                        val subChapters = chapters.filter { it.subjectName.equals(subject.name, ignoreCase = true) }
+                        val isExpanded = expandedSubjects[subject.id] ?: false
 
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                            modifier = Modifier.fillMaxWidth()
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                         ) {
                             Column(
-                                modifier = Modifier.padding(10.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .animateContentSize(
+                                        animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing)
+                                    )
+                                    .padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { expandedSubjects[subject.id] = !(isExpanded) },
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = ch.chapterName,
-                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            maxLines = 1,
-                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                            text = subject.name,
+                                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = MaterialTheme.colorScheme.onSurface
                                         )
                                         Text(
-                                            text = ch.subjectName,
+                                            text = "${subChapters.size} Chapters",
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.primary
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
 
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = if (studiedMins > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
-                                    ) {
-                                        Text(
-                                            text = if (hours > 0) "${hours}h ${mins}m" else "${mins}m",
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                            color = if (studiedMins > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
+                                    Icon(
+                                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                        contentDescription = if (isExpanded) "Collapse" else "Expand",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
                                 }
 
-                                LinearProgressIndicator(
-                                    progress = { progressRatio },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(6.dp)
-                                        .clip(RoundedCornerShape(3.dp)),
-                                    color = MaterialTheme.colorScheme.primary,
-                                    trackColor = MaterialTheme.colorScheme.surfaceVariant
-                                )
+                                if (isExpanded) {
+                                    if (subChapters.isEmpty()) {
+                                        Text(
+                                            text = "No chapters added for this subject.",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(vertical = 4.dp)
+                                        )
+                                    } else {
+                                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            subChapters.forEach { ch ->
+                                                val studiedMins = chapterStudyMap[ch.id] ?: 0L
+                                                val hours = studiedMins / 60
+                                                val mins = studiedMins % 60
+                                                val progressRatio = (studiedMins.toFloat() / maxChapterMins).coerceIn(0f, 1f)
+
+                                                Surface(
+                                                    shape = RoundedCornerShape(10.dp),
+                                                    color = MaterialTheme.colorScheme.surface,
+                                                    modifier = Modifier.fillMaxWidth()
+                                                ) {
+                                                    Column(
+                                                        modifier = Modifier.padding(10.dp),
+                                                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                                                    ) {
+                                                        Row(
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            Text(
+                                                                text = ch.chapterName,
+                                                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                                                                color = MaterialTheme.colorScheme.onSurface,
+                                                                modifier = Modifier.weight(1f),
+                                                                maxLines = 1,
+                                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                                            )
+
+                                                            Surface(
+                                                                shape = RoundedCornerShape(6.dp),
+                                                                color = if (studiedMins > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                                                            ) {
+                                                                Text(
+                                                                    text = if (hours > 0) "${hours}h ${mins}m" else "${mins}m",
+                                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                                    color = if (studiedMins > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                                                                )
+                                                            }
+                                                        }
+
+                                                        LinearProgressIndicator(
+                                                            progress = { progressRatio },
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .height(5.dp)
+                                                                .clip(RoundedCornerShape(3.dp)),
+                                                            color = MaterialTheme.colorScheme.primary,
+                                                            trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
