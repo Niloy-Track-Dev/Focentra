@@ -57,9 +57,12 @@ fun BrainDumpDialog(
         )
     }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
+    FocentraPopupDialog(onDismissRequest = onDismiss) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -75,130 +78,136 @@ fun BrainDumpDialog(
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                 )
             }
-        },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 420.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+            IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+                Icon(Icons.Default.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 420.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = "Jot down distracting thoughts or to-dos instantly so your mind stays clear for deep study.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = "Jot down distracting thoughts or to-dos instantly so your mind stays clear for deep study.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                OutlinedTextField(
+                    value = newThoughtText,
+                    onValueChange = { newThoughtText = it },
+                    placeholder = { Text("What just crossed your mind?") },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp)
                 )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                FilledIconButton(
+                    onClick = {
+                        if (newThoughtText.isNotBlank()) {
+                            onAddNote(newThoughtText)
+                            newThoughtText = ""
+                        }
+                    },
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    OutlinedTextField(
-                        value = newThoughtText,
-                        onValueChange = { newThoughtText = it },
-                        placeholder = { Text("What just crossed your mind?") },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    FilledIconButton(
-                        onClick = {
-                            if (newThoughtText.isNotBlank()) {
-                                onAddNote(newThoughtText)
-                                newThoughtText = ""
-                            }
-                        },
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(Icons.Default.Send, contentDescription = "Add")
-                    }
+                    Icon(Icons.Default.Send, contentDescription = "Add")
                 }
+            }
 
-                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
-                if (notes.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 20.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Brain is clear! No distractions logged.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f, fill = false),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        items(notes, key = { it.id }) { note ->
-                            Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                modifier = Modifier.fillMaxWidth()
+            if (notes.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Brain is clear! No distractions logged.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.weight(1f, fill = false),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    items(notes, key = { it.id }) { note ->
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 8.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Checkbox(
-                                        checked = note.isDone,
-                                        onCheckedChange = { onToggleDone(note.id) }
+                                Checkbox(
+                                    checked = note.isDone,
+                                    onCheckedChange = { onToggleDone(note.id) }
+                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = note.note,
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            textDecoration = if (note.isDone) TextDecoration.LineThrough else TextDecoration.None
+                                        ),
+                                        color = if (note.isDone) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
                                     )
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = note.note,
-                                            style = MaterialTheme.typography.bodyMedium.copy(
-                                                textDecoration = if (note.isDone) TextDecoration.LineThrough else TextDecoration.None
-                                            ),
-                                            color = if (note.isDone) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Text(
-                                            text = df.format(Date(note.timestamp)),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                    IconButton(
-                                        onClick = { noteToDelete = note },
-                                        modifier = Modifier.size(28.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Close,
-                                            contentDescription = "Delete",
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
+                                    Text(
+                                        text = df.format(Date(note.timestamp)),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { noteToDelete = note },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = "Delete",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(16.dp)
+                                    )
                                 }
                             }
                         }
                     }
+                }
 
-                    if (notes.any { it.isDone }) {
-                        TextButton(
-                            onClick = onClearCompleted,
-                            modifier = Modifier.align(Alignment.End)
-                        ) {
-                            Text("Clear Completed", style = MaterialTheme.typography.labelSmall)
-                        }
+                if (notes.any { it.isDone }) {
+                    TextButton(
+                        onClick = onClearCompleted,
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text("Clear Completed", style = MaterialTheme.typography.labelSmall)
                     }
                 }
             }
-        },
-        confirmButton = {
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             Button(
                 onClick = onDismiss,
+                modifier = Modifier.align(Alignment.End),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text("Done")
             }
         }
-    )
+    }
 }

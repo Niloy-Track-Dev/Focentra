@@ -24,6 +24,51 @@ import androidx.compose.ui.window.Dialog
 import com.niloy.focentra.data.local.entity.StudySessionEntity
 
 @Composable
+fun FocentraPopupDialog(
+    onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismissRequest,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.65f))
+                .clickable(
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    indication = null
+                ) { onDismissRequest() },
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                modifier = modifier
+                    .fillMaxWidth(0.92f)
+                    .widthIn(max = 380.dp)
+                    .clickable(
+                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                        indication = null
+                    ) {},
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                shadowElevation = 8.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp)
+                ) {
+                    content()
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun DistractionLoggerDialog(
     onDismiss: () -> Unit,
     onLogCategory: (String) -> Unit
@@ -38,9 +83,12 @@ fun DistractionLoggerDialog(
         Pair("Other Distraction", Icons.Default.WarningAmber)
     )
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
+    FocentraPopupDialog(onDismissRequest = onDismiss) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.NotificationsOff,
@@ -54,61 +102,314 @@ fun DistractionLoggerDialog(
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                 )
             }
-        },
-        text = {
-            Column(
+            IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+                Icon(Icons.Default.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "Acknowledge the interruption and return immediately to deep focus:",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            categories.forEach { (catName, icon) ->
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            onLogCategory(catName)
+                            onDismiss()
+                        }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = catName,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FocusNowStartDialog(
+    subjects: List<com.niloy.focentra.data.local.entity.SubjectEntity>,
+    chapters: List<com.niloy.focentra.data.local.entity.ChapterEntity>,
+    target: com.niloy.focentra.viewmodel.ExamTarget? = null,
+    onDismiss: () -> Unit,
+    onStart: (subject: String, chapter: String, targetId: String) -> Unit
+) {
+    var selectedSubject by remember {
+        mutableStateOf(subjects.firstOrNull()?.name ?: "")
+    }
+    var selectedChapter by remember { mutableStateOf("") }
+    var showWarning by remember { mutableStateOf(false) }
+
+    val matchingChapters = remember(chapters, selectedSubject) {
+        if (selectedSubject.isBlank()) emptyList()
+        else chapters.filter { it.subjectName.equals(selectedSubject, ignoreCase = true) }
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.65f))
+                .clickable(
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    indication = null
+                ) { onDismiss() },
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .fillMaxWidth(0.92f)
+                    .widthIn(max = 380.dp)
+                    .clickable(
+                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                        indication = null
+                    ) {},
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surface,
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                shadowElevation = 8.dp
             ) {
-                Text(
-                    text = "Acknowledge the interruption and return immediately to deep focus:",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                categories.forEach { (catName, icon) ->
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onLogCategory(catName)
-                                onDismiss()
-                            }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    // Header
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PlayArrow,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = "Focus Now",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "Start Stopwatch Session",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+                            Icon(Icons.Default.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+
+                    if (target != null) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Flag,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = "Goal: ${target.title}",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                    // Subject Selection
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = "Select Subject *",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        if (subjects.isEmpty()) {
                             Text(
-                                text = catName,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface
+                                text = "No subjects found. Please add subjects first.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
                             )
+                        } else {
+                            androidx.compose.foundation.lazy.LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                items(subjects.size) { index ->
+                                    val sub = subjects[index]
+                                    val isSelected = sub.name == selectedSubject
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = {
+                                            selectedSubject = sub.name
+                                            selectedChapter = ""
+                                            showWarning = false
+                                        },
+                                        label = { Text(sub.name) },
+                                        leadingIcon = {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(8.dp)
+                                                    .clip(CircleShape)
+                                                    .background(parseColorHex(sub.colorHex))
+                                            )
+                                        },
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Chapter Selection
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = "Select Chapter *",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        if (matchingChapters.isEmpty()) {
+                            Text(
+                                text = if (selectedSubject.isBlank()) "Please select a subject first." else "No chapters added for $selectedSubject.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            androidx.compose.foundation.lazy.LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                items(matchingChapters.size) { index ->
+                                    val ch = matchingChapters[index]
+                                    val cleanName = ch.chapterName.replace(Regex("(?i)\\bnoun\\b"), "").trim()
+                                    val isSelected = ch.chapterName == selectedChapter
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = {
+                                            selectedChapter = if (isSelected) "" else ch.chapterName
+                                            showWarning = false
+                                        },
+                                        label = { Text(cleanName) },
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    if (showWarning) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.errorContainer,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "⚠️ Subject & Chapter selection required to start focus!",
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(onClick = onDismiss) {
+                            Text("Cancel")
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                if (selectedSubject.isBlank() || selectedChapter.isBlank()) {
+                                    showWarning = true
+                                } else {
+                                    onStart(selectedSubject, selectedChapter, target?.id ?: "")
+                                }
+                            },
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Start", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
                         }
                     }
                 }
             }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
         }
-    )
+    }
+}
+
+private fun parseColorHex(hex: String): Color {
+    return try {
+        Color(android.graphics.Color.parseColor(hex))
+    } catch (e: Exception) {
+        Color(0xFF818CF8)
+    }
 }
 
 @Composable
@@ -339,36 +640,28 @@ fun RevisionLockWarningDialog(
 @Composable
 fun SessionCompletionDialog(
     session: StudySessionEntity,
+    examTargets: List<com.niloy.focentra.viewmodel.ExamTarget> = emptyList(),
     onDismiss: () -> Unit,
-    onSave: (productivity: Int, mood: String, energy: String, notes: String, location: String) -> Unit
+    onSave: (productivity: Int, mood: String, energy: String, notes: String, location: String, targetId: String) -> Unit
 ) {
     var rating by remember { mutableStateOf(session.productivityRating) }
     var mood by remember { mutableStateOf(session.mood) }
     var energy by remember { mutableStateOf(session.energyLevel) }
     var notes by remember { mutableStateOf(session.notes) }
     var location by remember { mutableStateOf(session.location) }
+    var selectedTargetId by remember { mutableStateOf(session.targetId) }
 
     val totalMins = session.durationSeconds / 60
     val focusedMins = session.actualFocusedSeconds / 60
     val pausedMins = session.pausedSeconds / 60
 
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
+    FocentraPopupDialog(onDismissRequest = onDismiss) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
                 // Header Trophy/Check
                 Box(
                     modifier = Modifier
@@ -530,6 +823,44 @@ fun SessionCompletionDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
+                // Add to Target Selector
+                if (examTargets.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = "Add to Target:",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        val targetOptions = remember(examTargets) {
+                            listOf(Pair("None", "")) + examTargets.map { Pair(it.title, it.id) }
+                        }
+                        androidx.compose.foundation.lazy.LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(targetOptions.size) { idx ->
+                                val (tTitle, tId) = targetOptions[idx]
+                                val isSelected = selectedTargetId == tId
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = { selectedTargetId = tId },
+                                    label = { Text(tTitle, maxLines = 1) },
+                                    leadingIcon = if (isSelected && tId.isNotBlank()) {
+                                        { Icon(Icons.Default.Flag, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                                    } else null,
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
                 // Notes
                 OutlinedTextField(
                     value = notes,
@@ -554,14 +885,13 @@ fun SessionCompletionDialog(
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = {
-                            onSave(rating, mood, energy, notes, location)
+                            onSave(rating, mood, energy, notes, location, selectedTargetId)
                         },
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text("Save Session")
                     }
                 }
-            }
         }
     }
 }

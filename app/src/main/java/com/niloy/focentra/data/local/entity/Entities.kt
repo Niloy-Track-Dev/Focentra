@@ -35,6 +35,7 @@ data class StudySessionEntity(
     val energyLevel: String = "HIGH", // VERY_LOW, LOW, MEDIUM, HIGH, VERY_HIGH
     val location: String = "Desk",
     val completionStatus: String = "COMPLETED", // COMPLETED, EARLY_FINISH, CANCELLED
+    val targetId: String = "",
     val createdTimestamp: Long = System.currentTimeMillis(),
     val updatedTimestamp: Long = System.currentTimeMillis()
 )
