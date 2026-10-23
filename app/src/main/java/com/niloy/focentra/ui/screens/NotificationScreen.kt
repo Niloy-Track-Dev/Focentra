@@ -40,9 +40,16 @@ fun NotificationScreen(
     val allList = remember(dbNotifications, activeNotifications) {
         val mappedDb = dbNotifications.map { entity ->
             val type = try {
-                NotificationType.valueOf(entity.type)
+                NotificationType.valueOf(entity.type.trim().uppercase(Locale.ROOT))
             } catch (e: Exception) {
-                NotificationType.MOTIVATION
+                val typeStr = entity.type.uppercase(Locale.ROOT)
+                val titleStr = entity.title.lowercase(Locale.ROOT)
+                when {
+                    typeStr.contains("TARGET") || typeStr.contains("GOAL") || titleStr.contains("target") || titleStr.contains("goal") -> NotificationType.DAILY_TARGET
+                    typeStr.contains("RECAP") || titleStr.contains("recap") -> NotificationType.RECAP_REMINDER
+                    typeStr.contains("REVISION") || typeStr.contains("INACTIVITY") || titleStr.contains("revision") -> NotificationType.REVISION_DUE
+                    else -> NotificationType.MOTIVATION
+                }
             }
             AppNotification(
                 id = entity.id,
