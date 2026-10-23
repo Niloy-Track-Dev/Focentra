@@ -34,13 +34,11 @@ class StatisticsEngineTest {
     @Test
     fun weeklyPersonalRecordSumsSessionsAcrossTheWeek() {
         val calendar = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 12)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
+            clear()
+            set(2026, Calendar.MARCH, 9, 12, 0, 0) // Monday
         }
         val firstDay = calendar.timeInMillis
-        calendar.add(Calendar.DAY_OF_YEAR, 2)
+        calendar.add(Calendar.DAY_OF_YEAR, 2) // Wednesday
         val thirdDay = calendar.timeInMillis
 
         val records = StatisticsEngine.calculatePersonalRecords(
