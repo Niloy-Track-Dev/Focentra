@@ -255,8 +255,15 @@ fun DashboardScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             val remainingMins = (dailyGoalMins - todayMins).coerceAtLeast(0)
+                            val remHrs = remainingMins / 60
+                            val remMins = remainingMins % 60
+                            val leftText = when {
+                                remMins == 0L -> "${remHrs}h"
+                                remHrs == 0L -> "${remMins}m"
+                                else -> "${remHrs}h ${remMins}m"
+                            }
                             Text(
-                                text = if (remainingMins > 0) "Left: ${remainingMins / 60}h ${remainingMins % 60}m" else "Goal Achieved!",
+                                text = if (remainingMins > 0) "Left: $leftText" else "Goal Achieved!",
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
