@@ -1243,13 +1243,14 @@ fun ExamMilestoneCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .animateContentSize(animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing))
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             AnimatedVisibility(
                 visible = !isExpanded,
-                enter = fadeIn(animationSpec = tween(250, easing = FastOutSlowInEasing)),
-                exit = fadeOut(animationSpec = tween(200, easing = FastOutSlowInEasing))
+                enter = fadeIn(animationSpec = tween(180, easing = FastOutSlowInEasing)),
+                exit = fadeOut(animationSpec = tween(120, easing = FastOutSlowInEasing))
             ) {
                 // Collapsed View
                 Row(
