@@ -899,8 +899,9 @@ fun SessionCompletionDialog(
 @Composable
 fun ManualStudyDataDialog(
     subjects: List<String>,
+    examTargets: List<com.niloy.focentra.viewmodel.ExamTarget> = emptyList(),
     onDismiss: () -> Unit,
-    onSave: (subject: String, topic: String, durationMinutes: Int, category: String, notes: String, rating: Int) -> Unit
+    onSave: (subject: String, topic: String, durationMinutes: Int, category: String, notes: String, rating: Int, targetId: String) -> Unit
 ) {
     var subject by remember { mutableStateOf(subjects.firstOrNull() ?: "General") }
     var customSubject by remember { mutableStateOf("") }
@@ -910,6 +911,7 @@ fun ManualStudyDataDialog(
     var category by remember { mutableStateOf("Study") }
     var notes by remember { mutableStateOf("") }
     var rating by remember { mutableIntStateOf(4) }
+    var selectedTargetId by remember { mutableStateOf("") }
 
     val categories = listOf("Study", "Exam Prep", "Assignment", "Revision", "Research")
 
@@ -950,11 +952,12 @@ fun ManualStudyDataDialog(
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    Row(
+                    androidx.compose.foundation.lazy.LazyRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        subjects.take(4).forEach { sub ->
+                        items(subjects.size) { idx ->
+                            val sub = subjects[idx]
                             FilterChip(
                                 selected = subject == sub,
                                 onClick = { subject = sub },
@@ -1008,11 +1011,12 @@ fun ManualStudyDataDialog(
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Row(
+                androidx.compose.foundation.lazy.LazyRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    categories.forEach { cat ->
+                    items(categories.size) { idx ->
+                        val cat = categories[idx]
                         FilterChip(
                             selected = category == cat,
                             onClick = { category = cat },
@@ -1038,6 +1042,41 @@ fun ManualStudyDataDialog(
                     }
                 }
 
+                // Add to Target Selector
+                if (examTargets.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = "Add to Target:",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        val targetOptions = remember(examTargets) {
+                            listOf(Pair("None", "")) + examTargets.map { Pair(it.title, it.id) }
+                        }
+                        androidx.compose.foundation.lazy.LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(targetOptions.size) { idx ->
+                                val (tTitle, tId) = targetOptions[idx]
+                                val isSelected = selectedTargetId == tId
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = { selectedTargetId = tId },
+                                    label = { Text(tTitle, maxLines = 1) },
+                                    leadingIcon = if (isSelected && tId.isNotBlank()) {
+                                        { Icon(Icons.Default.Flag, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                                    } else null,
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // Notes Input
                 OutlinedTextField(
                     value = notes,
@@ -1055,7 +1094,7 @@ fun ManualStudyDataDialog(
                     val finalSubject = if (useCustomSubject) customSubject.ifBlank { "General" } else subject
                     val durMin = durationMinutesStr.toIntOrNull() ?: 30
                     if (durMin > 0) {
-                        onSave(finalSubject, topic, durMin, category, notes, rating)
+                        onSave(finalSubject, topic, durMin, category, notes, rating, selectedTargetId)
                         onDismiss()
                     }
                 },
