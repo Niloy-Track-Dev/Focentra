@@ -1234,6 +1234,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         category: String = "Study",
         notes: String = "",
         rating: Int = 4,
+        targetId: String = "",
         timestamp: Long = System.currentTimeMillis()
     ) {
         viewModelScope.launch {
@@ -1250,6 +1251,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 category = category.ifBlank { "Study" },
                 notes = notes,
                 productivityRating = rating,
+                targetId = targetId,
                 completionStatus = "COMPLETED",
                 createdTimestamp = timestamp,
                 updatedTimestamp = timestamp
